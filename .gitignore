@@ -1,0 +1,27 @@
+# Unity
+/Library/
+/Temp/
+/Obj/
+/obj/
+/Logs/
+/Builds/
+/UserSettings/
+/MemoryCaptures/
+/Recordings/
+/Screenshots/
+*.csproj
+*.sln
+*.slnx
+*.pidb
+*.userprefs
+.vs/
+.idea/
+.vscode/
+*.tmp
+# Python / tools
+__pycache__/
+/Tools/.venv/
+/Tools/libs/
+# Blender backups
+*.blend1
+*.blend2
