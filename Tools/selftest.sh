@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs every automated check against the current Linux build and prints a summary.
 #
-#   Tools/selftest.sh            static validator, keyboard/gamepad/touch self-tests, UI audit at
+#   Tools/selftest.sh            static validator, audio loop seams, keyboard/gamepad/touch self-tests, UI audit at
 #                                four window shapes, and the expert AutoPilot over all 12 levels
 #   Tools/selftest.sh --quick    skips the AutoPilot campaign
 #
@@ -17,6 +17,8 @@ row() { printf '  %-34s %s\n' "$1" "$2"; }
 echo "Pocket Weather self-test ($(git -C "$ROOT" log --oneline -1 2>/dev/null))"
 
 if python3 "$ROOT/Tools/validate_levels.py" > "$OUT/validate.txt" 2>&1; then row "level validator" "PASS"; else row "level validator" "FAIL (see $OUT/validate.txt)"; fail=1; fi
+
+if "$ROOT/Tools/.venv/bin/python" "$ROOT/Tools/audio/check_loops.py" > "$OUT/loops.txt" 2>&1; then row "audio loop seams" "PASS"; else row "audio loop seams" "FAIL (see $OUT/loops.txt)"; fail=1; fi
 
 run_test() {   # name flag tag
   local name=$1 flag=$2 tag=$3 log="$OUT/$1.log"
