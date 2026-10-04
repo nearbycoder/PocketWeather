@@ -376,8 +376,9 @@ every input method. What has been verified (on the Linux build unless noted):
   par and finds all twelve delights, with no exceptions or missing-asset warnings. The newcomer
   bot also finishes all twelve, with the trickiest days landing 2.5 to 3 game-hours inside par.
 - Keyboard, gamepad, touch and UI-reachability self-tests pass through the real Input System.
-  (On a heavily loaded machine the gamepad test's "rain waters the bed" check has flaked once;
-  it passes on re-runs.)
+  One check is flaky: "rain waters the bed" in the keyboard and gamepad tests fails roughly one
+  run in six (about 2 moisture lands in its 1.2 s window against a threshold of 3, depending on
+  exactly where Pip stopped). It's a marginal test, not a gameplay bug, and passes on re-runs.
 - The WebGL build boots in headless Chrome in about 2 s and plays with real browser touch events
   and a clean console.
 - Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
