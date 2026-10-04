@@ -221,8 +221,9 @@ namespace PocketWeather
             if (!string.IsNullOrEmpty(label))
             {
                 float tx = icon != null ? iconSize * 0.45f : 0;
-                txt = Label(face.transform, label, fontSize, Color.white, new Vector2(size.x - 20 - (icon != null ? iconSize : 0), size.y), new Vector2(tx, 2), true);
-                Shadowed(txt, 3, 0.35f);
+                bool lightFace = color.r * 0.3f + color.g * 0.59f + color.b * 0.11f > 0.85f;   // paper-coloured buttons get ink text
+                txt = Label(face.transform, label, fontSize, lightFace ? Ink : Color.white, new Vector2(size.x - 20 - (icon != null ? iconSize : 0), size.y), new Vector2(tx, 2), true);
+                if (!lightFace) Shadowed(txt, 3, 0.35f);
             }
             if (icon != null)
             {

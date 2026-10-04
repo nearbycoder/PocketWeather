@@ -94,6 +94,19 @@ namespace PocketWeather
             yield return new WaitForSecondsRealtime(1.5f);
             GameSettings.TouchButtons = 0;
 
+            // --- title: the corner buttons must win over the full-screen "tap to play"
+            float tw = 0;
+            while (GameFlow.I.Current != GameFlow.State.Title && tw < 15f) { tw += Time.unscaledDeltaTime; yield return null; }
+            yield return new WaitForSecondsRealtime(1.0f);
+            var gear = GameObject.Find("Settings");
+            if (gear != null) yield return Tap(UiCenter(gear.transform));
+            yield return new WaitForSecondsRealtime(0.6f);
+            var done = FindLabel("Done");
+            Check("tap the title's settings gear", done != null && GameFlow.I.Current == GameFlow.State.Title, done == null ? "settings didn't open" : "");
+            if (done != null) yield return Tap(UiCenter(done));
+            yield return new WaitForSecondsRealtime(0.6f);
+            Check("closing settings returns to the title", GameFlow.I.Current == GameFlow.State.Title && FindLabel("Done") == null);
+
             // --- level 1: drag, hold-to-rain, drag-while-raining
             GameFlow.I.DebugStart(0, true);
             yield return new WaitForSeconds(1.0f);

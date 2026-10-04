@@ -91,10 +91,14 @@ namespace PocketWeather
             var hit = Ui.Image(root, null, new Color(0, 0, 0, 0), Vector2.zero, Vector2.zero, null, "Hit");
             hit.rectTransform.anchorMin = Vector2.zero; hit.rectTransform.anchorMax = Vector2.one;
             hit.raycastTarget = true;
+            hit.transform.SetSiblingIndex(0);   // underneath everything, so the corner buttons get their taps
             var btn = hit.gameObject.AddComponent<Button>();
             btn.transition = Selectable.Transition.None;
             btn.onClick.AddListener(() => { Sfx.Ui("ui_pop"); OnPlay?.Invoke(); });
             var set = Ui.Button(safe, "", Ui.Lilac, new Vector2(100, 100), new Vector2(-80, 80), () => OnSettings?.Invoke(), "gear", new Vector2(1, 0), 40, "Settings");
+            // desktop only: browsers and phones have their own way out
+            if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer)
+                Ui.Button(safe, "Quit", Ui.Paper, new Vector2(170, 84), new Vector2(115, 80), () => { GameSettings.Save(); Application.Quit(); }, null, new Vector2(0, 0), 34, "Quit");
             firstSelected = btn.gameObject;
             var creditPill = Ui.Panel(safe, new Vector2(520, 46), new Vector2(0, 62), new Color(1, 1, 1, 0.7f), new Vector2(0.5f, 0), 23f, false);
             creditPill.raycastTarget = false;

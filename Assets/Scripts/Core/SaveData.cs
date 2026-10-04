@@ -34,8 +34,20 @@ namespace PocketWeather
             {
                 if (data != null) return data;
                 if (GameRoot.HasArg("-pwFreshSave")) PlayerPrefs.DeleteKey(Key);
+                if (GameRoot.HasArg("-pwCorruptSave")) PlayerPrefs.SetString(Key, "{\"levels\":[{\"id\":\"lev");   // test hook
                 var json = PlayerPrefs.GetString(Key, "");
-                data = string.IsNullOrEmpty(json) ? new SaveFile() : (JsonUtility.FromJson<SaveFile>(json) ?? new SaveFile());
+                try
+                {
+                    data = string.IsNullOrEmpty(json) ? new SaveFile() : (JsonUtility.FromJson<SaveFile>(json) ?? new SaveFile());
+                }
+                catch (System.Exception e)
+                {
+                    // a damaged save must never stop the game booting: start fresh, keep the old text aside
+                    Debug.LogWarning($"[PW] save unreadable ({e.Message}); starting fresh, kept a copy in {Key}.corrupt");
+                    PlayerPrefs.SetString(Key + ".corrupt", json);
+                    data = new SaveFile();
+                }
+                data.levels ??= new System.Collections.Generic.List<LevelSave>();
                 return data;
             }
         }
