@@ -141,6 +141,38 @@ namespace PocketWeather
             Check("E blows a gust", C.WaterUsed >= used0 + Cloud.GustCost - 0.01f, $"water used {C.WaterUsed - used0:0.0}");
             Check("the gust pushes the boat", boat.Velocity.magnitude > 0.2f || boat.Met, $"boat speed {boat.Velocity.magnitude:0.00}");
 
+            // --- pause menu: Restart, then Map; results: Next day (real selection + Enter)
+            yield return new WaitForSeconds(0.8f);
+            float hour0 = L.Hour;
+            yield return Press(Key.Escape);
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return Press(Key.DownArrow);                          // Resume -> Restart
+            yield return new WaitForSecondsRealtime(0.2f);
+            var cur = EventSystem.current.currentSelectedGameObject;
+            Check("arrows move through the pause menu", cur != null && cur.name == "Btn_Restart", cur != null ? cur.name : "none");
+            yield return Press(Key.Enter);
+            yield return WaitFor(() => Now == GameFlow.State.Intro || (Now == GameFlow.State.Playing && L.Hour < hour0 - 0.01f), 6f);
+            Check("Restart reloads the day", L != null && L.Def.id == "level04" && L.Hour <= L.Def.startHour + 0.05f, $"{Now}, hour {L?.Hour:0.00}");
+            yield return new WaitForSecondsRealtime(1.2f);
+            if (Now == GameFlow.State.Intro) { yield return Press(Key.Enter); yield return WaitFor(() => Now == GameFlow.State.Playing, 5f); }
+            yield return new WaitForSeconds(0.5f);
+            yield return Press(Key.Escape);
+            yield return new WaitForSecondsRealtime(0.5f);
+            for (int i = 0; i < 3; i++) { yield return Press(Key.DownArrow); yield return new WaitForSecondsRealtime(0.15f); }
+            yield return Press(Key.Enter);
+            yield return WaitFor(() => Now == GameFlow.State.Map, 6f);
+            Check("pause > Map goes to the map", Now == GameFlow.State.Map, Now.ToString());
+
+            GameFlow.I.DebugStart(0, true);
+            yield return new WaitForSeconds(1.0f);
+            GameFlow.I.DebugResults();
+            yield return new WaitForSecondsRealtime(1.8f);
+            cur = EventSystem.current.currentSelectedGameObject;
+            Check("results card selects Next day", cur != null && cur.name == "Btn_Next day", cur != null ? cur.name : "none");
+            yield return Press(Key.Enter);
+            yield return WaitFor(() => Now == GameFlow.State.Intro, 6f);
+            Check("Next day opens day 2's postcard", Now == GameFlow.State.Intro && L != null && L.Def.id == "level02", $"{Now}, {L?.Def.id}");
+
             Debug.Log($"[KeyTest] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);
             Application.Quit();

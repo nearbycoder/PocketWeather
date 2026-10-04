@@ -171,7 +171,7 @@ and prints a one-line verdict per check; `--quick` skips the campaign.
   *not* gust), tapping HUD and menu buttons. 16 checks, PASS/FAIL in the log, then it quits.
 - `Tools/play.sh -pwKeyTest` drives a virtual keyboard from the title: Enter and arrows through
   the menus, arrows/WASD to fly and stop, Space to rain, Esc to pause and resume, E to gust.
-  14 checks.
+  Also pause > Restart, pause > Map and the results card's Next day. 19 checks.
 - `Tools/play.sh -pwPadTest` does the same with a virtual gamepad, starting at the title screen:
   A/B/d-pad through the title, map and postcard, stick to fly and stop, A to rain, Start/B to
   pause and resume, X/RB with right-stick aiming to gust. 22 checks.
@@ -209,7 +209,7 @@ What has been verified (on the Linux build unless noted):
 - The newcomer AutoPilot (`-pwNewcomer`) also finishes all twelve. Sampled over eight seeds, Day 2
   and Heatwave, the levels most likely to trip a beginner, landed about 2.5 to 3 game-hours inside
   par. A drained duck pond can be rained back up in time (`-pwDrainPond`).
-- Keyboard (14 checks), touch (18), gamepad (24) and UI-reachability (9 screens x 4 window
+- Keyboard (19 checks), touch (18), gamepad (24) and UI-reachability (9 screens x 4 window
   shapes) self-tests pass through the real Input System; the
   gamepad test drives the whole game from the title screen.
 - The WebGL build runs in headless Chrome (`node Tools/web_smoke.mjs`, add `--phone` for an
