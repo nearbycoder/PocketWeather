@@ -165,6 +165,10 @@ Tools/unity.sh                # open the editor
 - `Tools/play.sh -pwPadTest` does the same with a virtual gamepad, starting at the title screen:
   A/B/d-pad through the title, map and postcard, stick to fly and stop, A to rain, Start/B to
   pause and resume, X/RB with right-stick aiming to gust. 22 checks.
+- `Tools/play.sh -pwUiAudit` opens every screen (title, map, postcard, HUD, pause, settings,
+  results, sunset, ending) and checks each button, slider and toggle actually receives a tap at
+  its centre (nothing invisible on top) and sits fully on screen. Passes at 16:9, 20:9, 4:3 and
+  portrait; it's what caught the title's untappable Settings gear.
 - `Tools/play.sh -pwAutopilot /tmp/perf -pwPerf` logs `[Perf]` frame-time stats per level
   (average, p95, p99, worst, GC collections) with vsync and the frame cap turned off.
 - `-pwNewcomer` makes the AutoPilot play like a first-timer: it pauses to look around, spends a
@@ -195,7 +199,8 @@ What has been verified (on the Linux build unless noted):
 - The newcomer AutoPilot (`-pwNewcomer`) also finishes all twelve. Sampled over eight seeds, Day 2
   and Heatwave, the levels most likely to trip a beginner, landed about 2.5 to 3 game-hours inside
   par. A drained duck pond can be rained back up in time (`-pwDrainPond`).
-- Touch (16 checks) and gamepad (22 checks) self-tests pass through the real Input System; the
+- Touch (18 checks), gamepad (24 checks) and UI-reachability (9 screens x 4 window shapes)
+  self-tests pass through the real Input System; the
   gamepad test drives the whole game from the title screen.
 - The WebGL build runs in headless Chrome (`node Tools/web_smoke.mjs`, add `--phone` for an
   emulated Android phone in landscape): it boots in about 2 s and is played through title, map,

@@ -128,6 +128,15 @@ namespace PocketWeather
         public void DebugCloseSettings() => CloseSettings();
         public void DebugResume() => Resume();
         public void DebugSunset() => OnSunset();
+        public void DebugResults()
+        {
+            if (Level == null) return;
+            Level.Running = false;
+            Current = State.Results;
+            Hud.SetVisible(false, 0.2f);
+            results.Show(Level.Def, SaveData.StampSaved | SaveData.StampPar, 0, Level.Def.par - 1f, false);
+        }
+        public void DebugCloseMenus() => CloseAll();
         public void DebugEnding() { LevelIndex = LevelLibrary.Campaign.Length - 1; NextLevel(); }
 
         System.Action queuedTransition;
