@@ -30,11 +30,12 @@ The camera looks down at an angle, so Pip floats above your cursor or finger and
 | --- | --- | --- | --- | --- |
 | Move | Pip follows the cursor | WASD / arrows | Left stick | Drag |
 | Rain | Hold left button | Hold Space | Hold A / RT | Hold still until the ring fills, or the 💧 button |
-| Gust | Right button: press, drag to aim, release | E (blows the way you're moving) | X / RB | Flick, or the 🌬 button |
+| Gust | Right button: press, drag to aim, release | E (blows the way you're moving) | X / RB (aim with the right stick) | Flick, or the 🌬 button |
 | Drink | Automatic over open water when not raining | | | |
 | Pause | Esc / P | | Start | ⏸ button |
 
-M toggles the music. Menus work with mouse, touch, keyboard and gamepad.
+M toggles the music. Menus work with mouse, touch, keyboard and gamepad (d-pad/stick to move,
+A to choose, B to go back).
 
 ## Rules
 
@@ -143,6 +144,14 @@ Tools/unity.sh                # open the editor
   the same input API the player uses and prints PASS/FAIL with finishing hour vs par, oopses
   and water used. Add `-pwOnly 6,7` for specific levels, `-pwDelights` to also chase each
   secret, `-pwVerbose` for a trace. Screenshots and `report.txt` land in the given folder.
+- `Tools/play.sh -pwTouchTest` adds a virtual touchscreen and plays real touch gestures through
+  it: drag to fly, hold to rain, drag while raining, flick to gust (and a slow drag that must
+  *not* gust), tapping HUD and menu buttons. 16 checks, PASS/FAIL in the log, then it quits.
+- `Tools/play.sh -pwPadTest` does the same with a virtual gamepad, starting at the title screen:
+  A/B/d-pad through the title, map and postcard, stick to fly and stop, A to rain, Start/B to
+  pause and resume, X/RB with right-stick aiming to gust. 22 checks.
+- `Tools/play.sh -pwAutopilot /tmp/perf -pwPerf` logs `[Perf]` frame-time stats per level
+  (average, p95, p99, worst, GC collections) with vsync and the frame cap turned off.
 - `Tools/play.sh -pwCapture /tmp/shots` takes a scripted screenshot tour.
 - Gameplay video: add `-pwVideo /tmp/vid` to an AutoPilot run to record frames and audio on a
   fixed 30 fps clock (smooth however slow the machine is), then
@@ -150,7 +159,7 @@ Tools/unity.sh                # open the editor
   The showcase in `Builds/PocketWeather_gameplay.mp4` came from
   `-pwOnly 1,2,3,4,6,9,12 -pwDelights -pwFreshSave`.
 - Other flags: `-pwLevel levelNN` boots straight into a level, `-pwUnlockAll`, `-pwFreshSave`.
-  Automated runs use a separate save slot, so they never touch real progress.
+  Automated runs and self-tests use a separate save slot, so they never touch real progress.
 
 ## Status
 
@@ -161,16 +170,23 @@ What has been verified:
   twelve secret delights (including catching the bouquet in the finale). The player log has no
   exceptions or missing-asset warnings during these runs.
 - Title, map, postcards, HUD, results card and the finale were reviewed from screenshots.
+- The touch (16 checks) and gamepad (22 checks) self-tests pass, the gamepad one driving the
+  whole game from the title screen.
 
 What hasn't been, or is known to be rough:
 
 - **No human playtesting.** Par times were set against the bot, which plays faster than a person
   (it knows every rule and never hesitates). Par aims to sit roughly 1.5 to 3 times above the
   bot's time, but the real difficulty curve, especially Heatwave (11), needs people to play it.
-- **Touch and gamepad** are implemented, but have only been exercised through the same input
-  API the bot uses, never on a real touchscreen or controller. There is no mobile build yet.
+- **Touch and gamepad** pass their self-tests (`-pwTouchTest`, `-pwPadTest`), which feed
+  virtual devices through the real Input System. Neither has been tried on a real touchscreen or
+  controller, and there is no mobile build yet.
 - **Audio** was never listened to by a person during development. It was checked numerically
   (loudness, peaks, staying in key), so the mix may need adjusting by ear.
-- **Performance** wasn't profiled. Development ran on a heavily shared machine, where the game
-  sometimes dropped to low frame rates; gameplay stays correct but the cloud gets a little
-  sluggish below about 10 fps.
+- **Performance** was measured only on the development machine (an integrated AMD Radeon
+  shared with several other busy projects). With vsync off, the bot playing every level averaged
+  2 to 8 ms per frame (130 to 550 fps), and 99% of frames came in under 17 ms. The only
+  remaining spike is building a level (roughly 50 ms of work, 200 to 300 ms counting the first
+  render), which happens behind the cloud-wipe transition. A low-end or mobile GPU has not been
+  tried. Under heavy contention the game stays correct, but the cloud gets a little sluggish
+  below about 10 fps.

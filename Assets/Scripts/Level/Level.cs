@@ -76,6 +76,9 @@ namespace PocketWeather
 
         void Build()
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var phases = new System.Text.StringBuilder();
+            void Phase(string name) { phases.Append($" {name} {sw.Elapsed.TotalMilliseconds:0}ms"); sw.Restart(); }
             Hour = Def.startHour;
             // terrain
             var t = Res.Spawn("Terrain/terrain_" + Def.id, transform, Vector3.zero);
@@ -111,6 +114,7 @@ namespace PocketWeather
                 Waters.Add(wb);
             }
             Physics.SyncTransforms();
+            Phase("terrain");
 
             WetMap = gameObject.AddComponent<WetMap>();
             WetMap.Init(Def.island.w, Def.island.d);
@@ -122,6 +126,7 @@ namespace PocketWeather
                     if (rb.Covers(n.transform.position)) { n.OnRainbow(rb); ReportDelight(n.Id, "rainbow_on"); }
             };
 
+            Phase("maps");
             // props
             foreach (var p in Def.props)
             {
@@ -132,6 +137,7 @@ namespace PocketWeather
                 if (p.m.StartsWith("tree") || p.m.StartsWith("bush")) Trees.Add(go.transform);
             }
 
+            Phase("props");
             // needs
             foreach (var nd in Def.needs)
             {
@@ -139,6 +145,7 @@ namespace PocketWeather
                 if (need != null) Needs.Add(need);
             }
             Physics.SyncTransforms();
+            Phase("needs");
             Motes = gameObject.AddComponent<Motes>();
             Motes.Init(this);
             gameObject.AddComponent<LevelScript>().Init(this);
@@ -146,10 +153,13 @@ namespace PocketWeather
             var dressing = new GameObject("Scatter").transform;
             dressing.SetParent(transform, false);
             Scatter.Dress(this, dressing);
+            Phase("scatter");
 
             Cloud = Cloud.Create(this, new Vector3(Def.cloudX, 0, Def.cloudZ), Def.startWater);
             Cloud.transform.SetParent(transform, true);
             Day?.SetHour(Hour);
+            Phase("cloud");
+            Debug.Log($"[PW] built {Def.id}:{phases}");
         }
 
         Need CreateNeed(NeedDef nd)

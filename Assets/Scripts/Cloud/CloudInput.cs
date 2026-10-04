@@ -273,8 +273,7 @@ namespace PocketWeather
                 keyTarget += new Vector3(mv.x, 0, mv.y).normalized * 6.5f * dt;
                 keyTarget = cloud.ClampToBounds(keyTarget);
                 // keep the target close so releasing keys stops quickly
-                var gp = cloud.GroundPoint;
-                if (mv == Vector2.zero) keyTarget = Vector3.Lerp(keyTarget, new Vector3(gp.x, keyTarget.y, gp.z), 0.1f);
+                if (mv == Vector2.zero) SettleKeyTarget(dt);
                 Target = keyTarget;
             }
             if (kb.spaceKey.isPressed) rain = true;
@@ -301,11 +300,7 @@ namespace PocketWeather
             if (LastDevice != Device.Pad) return;
             keyTarget += new Vector3(st.x, 0, st.y) * 7f * dt;
             keyTarget = cloud.ClampToBounds(keyTarget);
-            if (st == Vector2.zero)
-            {
-                var gp = cloud.GroundPoint;
-                keyTarget = Vector3.Lerp(keyTarget, new Vector3(gp.x, keyTarget.y, gp.z), 0.1f);
-            }
+            if (st == Vector2.zero) SettleKeyTarget(dt);
             Target = keyTarget;
             if (pad.buttonSouth.isPressed || pad.rightTrigger.isPressed) rain = true;
             padGustCooldown -= dt;
@@ -319,6 +314,15 @@ namespace PocketWeather
         }
 
         // ------------------------------------------------------------------ helpers
+        /// <summary>Stick/keys released: pull the target back to just ahead of Pip, so it glides a
+        /// little and stops near where the player let go instead of catching up with a lead.</summary>
+        void SettleKeyTarget(float dt)
+        {
+            var stop = cloud.GroundPoint + cloud.Velocity * 0.07f;
+            keyTarget = Vector3.Lerp(keyTarget, new Vector3(stop.x, keyTarget.y, stop.z), 1f - Mathf.Exp(-14f * dt));
+        }
+
+
         public bool GroundPointFromScreen(Vector2 screen, out Vector3 point)
         {
             var ray = cam.ScreenPointToRay(screen);

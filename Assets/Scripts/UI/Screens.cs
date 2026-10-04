@@ -13,6 +13,9 @@ namespace PocketWeather
         protected CanvasGroup group;
         public bool IsOpen { get; private set; }
         protected GameObject firstSelected;
+        int openedFrame = -1;
+        /// <summary>True on the frame the screen opened, so the press that opened it isn't read again.</summary>
+        protected bool JustOpened => Time.frameCount == openedFrame;
 
         public void Setup(Transform parent, string name)
         {
@@ -31,6 +34,7 @@ namespace PocketWeather
         public virtual void Open()
         {
             IsOpen = true;
+            openedFrame = Time.frameCount;
             root.gameObject.SetActive(true);
             root.SetAsLastSibling();
             group.blocksRaycasts = true;
@@ -79,9 +83,9 @@ namespace PocketWeather
             var l2 = Ui.Label(logo, "Weather", 170, Color.white, new Vector2(900, 190), new Vector2(120, -60), true);
             Ui.Outlined(l2, Res.Hex("7A8FD6"), 5);
             Ui.Shadowed(l2, 10, 0.3f);
-            var sub = Ui.Label(logo, "a tiny cloud helps a miniature world through its day", 40, Color.white, new Vector2(1100, 60), new Vector2(40, -175), false);
-            Ui.Outlined(sub, Res.Hex("7A8FD6"), 2.5f);
-            Ui.Shadowed(sub, 3, 0.45f);
+            var subPill = Ui.Panel(logo, new Vector2(860, 64), new Vector2(60, -178), Ui.Paper, null, 32f);
+            subPill.raycastTarget = false;
+            Ui.Label(subPill.transform, "a tiny cloud helps a miniature world through its day", 34, Ui.Ink, new Vector2(840, 60), Vector2.zero, false, TextAnchor.MiddleCenter);
             tap = Ui.Label(safe, "Tap to play", 58, Color.white, new Vector2(800, 90), new Vector2(0, 150), true, TextAnchor.MiddleCenter, new Vector2(0.5f, 0));
             Ui.Outlined(tap, Res.Hex("6C7FCC"), 3);
             var hit = Ui.Image(root, null, new Color(0, 0, 0, 0), Vector2.zero, Vector2.zero, null, "Hit");
@@ -92,8 +96,9 @@ namespace PocketWeather
             btn.onClick.AddListener(() => { Sfx.Ui("ui_pop"); OnPlay?.Invoke(); });
             var set = Ui.Button(safe, "", Ui.Lilac, new Vector2(100, 100), new Vector2(-80, 80), () => OnSettings?.Invoke(), "star", new Vector2(1, 0), 40, "Settings");
             firstSelected = btn.gameObject;
-            var credit = Ui.Label(safe, "Mouse, touch, keyboard or gamepad", 28, new Color(1, 1, 1, 0.8f), new Vector2(800, 50), new Vector2(0, 60), false, TextAnchor.MiddleCenter, new Vector2(0.5f, 0));
-            Ui.Shadowed(credit, 2, 0.4f);
+            var creditPill = Ui.Panel(safe, new Vector2(520, 46), new Vector2(0, 62), new Color(1, 1, 1, 0.7f), new Vector2(0.5f, 0), 23f, false);
+            creditPill.raycastTarget = false;
+            Ui.Label(creditPill.transform, "Mouse, touch, keyboard or gamepad", 26, Ui.Ink, new Vector2(500, 44), Vector2.zero, false, TextAnchor.MiddleCenter);
         }
 
         protected override void OnOpen()
@@ -103,7 +108,7 @@ namespace PocketWeather
 
         void Update()
         {
-            if (!IsOpen) return;
+            if (!IsOpen || JustOpened) return;
             float t = Time.unscaledTime;
             tap.color = new Color(1, 1, 1, 0.65f + 0.35f * Mathf.Sin(t * 3f));
             tap.rectTransform.localScale = Vector3.one * (1 + 0.04f * Mathf.Sin(t * 3f));
@@ -186,9 +191,10 @@ namespace PocketWeather
 
         void Update()
         {
-            if (!IsOpen) return;
+            if (!IsOpen || JustOpened) return;
             var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame) OnBack?.Invoke();
+            var pad = UnityEngine.InputSystem.Gamepad.current;
+            if ((kb != null && kb.escapeKey.wasPressedThisFrame) || (pad != null && pad.buttonEast.wasPressedThisFrame)) OnBack?.Invoke();
         }
     }
 
@@ -284,7 +290,7 @@ namespace PocketWeather
 
         void Update()
         {
-            if (!IsOpen) return;
+            if (!IsOpen || JustOpened) return;
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
             if ((kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (pad != null && pad.startButton.wasPressedThisFrame))
@@ -319,7 +325,7 @@ namespace PocketWeather
 
         void Update()
         {
-            if (!IsOpen) return;
+            if (!IsOpen || JustOpened) return;
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
             if ((kb != null && (kb.escapeKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame)) || (pad != null && (pad.startButton.wasPressedThisFrame || pad.buttonEast.wasPressedThisFrame)))
@@ -371,9 +377,10 @@ namespace PocketWeather
 
         void Update()
         {
-            if (!IsOpen) return;
+            if (!IsOpen || JustOpened) return;
             var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame) { GameSettings.Save(); OnClose?.Invoke(); }
+            var pad = UnityEngine.InputSystem.Gamepad.current;
+            if ((kb != null && kb.escapeKey.wasPressedThisFrame) || (pad != null && pad.buttonEast.wasPressedThisFrame)) { GameSettings.Save(); OnClose?.Invoke(); }
         }
     }
 
@@ -523,6 +530,8 @@ namespace PocketWeather
         readonly List<(RectTransform rt, float delay, float size)> puffs = new();
         Image back;
         public bool Busy { get; private set; }
+        /// <summary>The new screen is already showing and the clouds are rolling away.</summary>
+        public bool Revealing { get; private set; }
 
         public static CloudWipe Create(Transform parent)
         {
@@ -568,6 +577,7 @@ namespace PocketWeather
             Tween.Delay(0.85f, () =>
             {
                 covered?.Invoke();
+                Revealing = true;
                 Tween.Delay(0.25f, () =>
                 {
                     Sfx.Ui("whoosh", 0.7f);
@@ -577,7 +587,7 @@ namespace PocketWeather
                         var r = rt;
                         Tween.To(1, 0, 0.4f, k => { if (r != null) r.localScale = Vector3.one * k; }, Ease.InCubic, 0.3f - d, null, r);
                     }
-                    Tween.Delay(0.75f, () => { root.gameObject.SetActive(false); Busy = false; finished?.Invoke(); });
+                    Tween.Delay(0.75f, () => { root.gameObject.SetActive(false); Busy = Revealing = false; finished?.Invoke(); });
                 });
             });
         }

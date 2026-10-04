@@ -126,10 +126,23 @@ namespace PocketWeather
         public void DebugPause() => Pause();
         public void DebugResume() => Resume();
 
+        System.Action queuedTransition;
+
         void Transition(System.Action covered)
         {
-            if (wipe.Busy) return;
-            wipe.Run(covered);
+            if (wipe.Busy)
+            {
+                // a press on the new screen while the clouds are still rolling away runs right after;
+                // presses on the old screen while it's being covered are dropped
+                if (wipe.Revealing) queuedTransition = covered;
+                return;
+            }
+            wipe.Run(covered, () =>
+            {
+                var next = queuedTransition;
+                queuedTransition = null;
+                if (next != null) Transition(next);
+            });
         }
 
         // ------------------------------------------------------------------ title & map
@@ -151,8 +164,8 @@ namespace PocketWeather
             Current = State.Title;
             LoadDisplayLevel();
             Hud.SetVisible(false);
-            root.Rig.Zoom = 1.12f;
-            root.Rig.FocusOffset = new Vector3(0, 0, 2.4f);
+            root.Rig.Zoom = 1.18f;
+            root.Rig.FocusOffset = new Vector3(0, 0, 3.0f);
             AudioHub.I?.PlayMusic("title");
             AudioHub.I?.PlayAmbience("meadow");
             title.Open();
@@ -204,7 +217,13 @@ namespace PocketWeather
 
         void LoadLevelObject(LevelDef def)
         {
-            if (Level != null) Destroy(Level.gameObject);
+            if (Level != null)
+            {
+                // Destroy is deferred to the end of the frame: deactivate first so the old island's
+                // colliders are gone before the new one raycasts for ground heights and scatter
+                Level.gameObject.SetActive(false);
+                Destroy(Level.gameObject);
+            }
             if (onboarding != null) Destroy(onboarding);
             Level = Level.Load(def, root.Day);
             root.SetLevel(Level);
@@ -351,6 +370,7 @@ namespace PocketWeather
         public void Pause()
         {
             if (Current != State.Playing) return;
+            pauseToggleFrame = Time.frameCount;
             Current = State.Paused;
             pausedTimeScale = Time.timeScale;
             Time.timeScale = 0f;
@@ -360,9 +380,12 @@ namespace PocketWeather
             AudioHub.I?.Duck(0.5f, 9999f);
         }
 
+        int pauseToggleFrame = -1;
+
         public void Resume()
         {
             if (Current != State.Paused) return;
+            pauseToggleFrame = Time.frameCount;
             pause.Close();
             if (settings.IsOpen) settings.Close();
             Time.timeScale = pausedTimeScale <= 0 ? 1f : pausedTimeScale;
@@ -388,7 +411,7 @@ namespace PocketWeather
         {
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
-            if (Current == State.Playing)
+            if (Current == State.Playing && Time.frameCount != pauseToggleFrame)   // the press that resumed mustn't re-pause
             {
                 if ((kb != null && (kb.escapeKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame)) || (pad != null && pad.startButton.wasPressedThisFrame))
                     Pause();
@@ -415,7 +438,7 @@ namespace PocketWeather
             if (timer <= 0)
             {
                 timer = Random.Range(2.5f, 5f);
-                var p = new Vector3(Random.Range(-d.w * 0.35f, d.w * 0.35f), 0, Random.Range(-d.d * 0.3f, d.d * 0.25f));
+                var p = new Vector3(Random.Range(-d.w * 0.35f, d.w * 0.35f), 0, Random.Range(-d.d * 0.32f, d.d * 0.05f));
                 cloud.Input.Virtual(p, false);
                 if (Random.value < 0.3f) rainTimer = 1.2f;
             }
