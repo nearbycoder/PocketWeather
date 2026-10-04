@@ -570,13 +570,19 @@ def chirp(rng):
     return np.sin(ph + 0.6 * np.sin(2 * math.pi * rng.uniform(30, 90) * tt)) * np.sin(np.pi * tt / d) ** 2
 
 
+def loop_bed(noise_fn, length, xf=1.5):
+    """A noise bed exactly `length` seconds long whose end flows into its start (no seam)."""
+    return dsp.loop_crossfade(noise_fn(length + xf), xf)[0][: int(round(length * dsp.SR))]
+
+
 def amb_meadow(seed_n=301, birds=40, length=30.0):
     seed(seed_n)
     rng = dsp.RNG
     m = Mix(length, tail=2)
-    t = T(length + 2)
+    t = T(length)
     for ch, pan in ((0, -0.7), (1, 0.7)):
-        breeze = lowpass(pink(length + 2), 700) * (0.55 + 0.45 * np.sin(2 * math.pi * (0.05 + 0.02 * ch) * t + ch)) * 0.25
+        # gusts of breeze on periods that divide the loop (15 s and 10 s), so the loop doesn't jump
+        breeze = loop_bed(lambda d: lowpass(pink(d), 700), length) * (0.55 + 0.45 * np.sin(2 * math.pi * t / (length / (2 + ch)) + ch)) * 0.25
         m.add(breeze, 0, pan=pan, gain=1, rev=0)
     for _ in range(birds):
         st = rng.uniform(0, length)
@@ -593,10 +599,11 @@ def amb_sea(length=30.0):
     seed(302)
     rng = dsp.RNG
     m = Mix(length, tail=2)
-    t = T(length + 2)
+    t = T(length)
     for ch, pan in ((0, -0.6), (1, 0.6)):
-        w = bandpass(pink(length + 2), 150, 2500)
-        swell = 0.25 + 0.75 * (0.5 + 0.5 * np.sin(2 * math.pi * t / (7.5 + ch * 1.3) + ch * 2)) ** 3
+        w = loop_bed(lambda d: bandpass(pink(d), 150, 2500), length)
+        # wave swells every 7.5 s and 10 s: both divide the 30 s loop
+        swell = 0.25 + 0.75 * (0.5 + 0.5 * np.sin(2 * math.pi * t / (length / (4 - ch)) + ch * 2)) ** 3
         m.add(w * swell * 0.35, 0, pan=pan, gain=1, rev=0)
     for _ in range(5):
         m.add(gull() * 0.25, rng.uniform(0, length - 1), pan=rng.uniform(-0.8, 0.8), gain=0.5, rev=0.5)
@@ -607,9 +614,8 @@ def amb_night(length=30.0):
     seed(303)
     rng = dsp.RNG
     m = Mix(length, tail=2)
-    t = T(length + 2)
     for ch, pan in ((0, -0.6), (1, 0.6)):
-        m.add(lowpass(pink(length + 2), 500) * 0.15, 0, pan=pan, rev=0)
+        m.add(loop_bed(lambda d: lowpass(pink(d), 500), length) * 0.15, 0, pan=pan, rev=0)
     for c in range(6):
         f = rng.uniform(4200, 5200)
         pan = rng.uniform(-0.8, 0.8)

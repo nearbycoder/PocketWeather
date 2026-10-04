@@ -154,7 +154,8 @@ Tools/unity.sh                # open the editor
 
 ## Testing
 
-`Tools/selftest.sh` runs everything below that can run unattended (validator, keyboard, gamepad and
+`Tools/selftest.sh` runs everything below that can run unattended (validator, audio loop seams,
+keyboard, gamepad and
 touch self-tests, the UI audit at four window shapes, and the AutoPilot campaign with delights)
 and prints a one-line verdict per check; `--quick` skips the campaign.
 
@@ -215,6 +216,9 @@ What has been verified (on the Linux build unless noted):
   emulated Android phone in landscape): it boots in about 2 s and is played through title, map,
   postcard and a level using real browser touch events, with no errors in the console.
 - Layout was checked from screenshots at 16:9, 20:9, 4:3 and portrait window shapes.
+- Every looping clip is seamless (`Tools/.venv/bin/python Tools/audio/check_loops.py`): no click at
+  the loop point and no level jump bigger than the clip's own variation. This caught and fixed
+  a once-per-loop swell in the sea ambience and a faint click in the village ambience.
 - Audio was checked on the recorded in-game mix, not by ear: about -14 LUFS integrated, 7 LU
   range, and after adding the master limiter, no clipped samples (before it, ~2000 samples
   clipped across 30 of 220 seconds).
