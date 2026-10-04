@@ -107,6 +107,7 @@ namespace PocketWeather
             transform.position = p;
             Input.Virtual(p, false);
             Input.VirtualMode = false;
+            Input.ResetTarget(new Vector3(ground.x, 0, ground.z));
         }
 
         void Update()

@@ -146,6 +146,8 @@ namespace PocketWeather
             toast.gameObject.SetActive(false);
         }
 
+        public bool TouchButtonsVisible => touchRoot != null && touchRoot.gameObject.activeInHierarchy;
+
         public void Bind(Level lvl)
         {
             level = lvl;
@@ -172,6 +174,16 @@ namespace PocketWeather
             }
             float trayW = n * 92;
             tray.sizeDelta = new Vector2(trayW, 92);
+            FitTray();
+        }
+
+        /// <summary>Shrinks the tray when many needs would run into the sun track.</summary>
+        void FitTray()
+        {
+            var safeRt = (RectTransform)tray.parent;
+            float avail = safeRt.rect.width * 0.5f - sunTrack.rect.width * 0.5f - 150f - 24f;
+            float s = tray.sizeDelta.x > 1f ? Mathf.Clamp(avail / tray.sizeDelta.x, 0.55f, 1f) : 1f;
+            tray.localScale = new Vector3(s, s, 1f);
         }
 
         void MakeBubble(Need need)
@@ -297,6 +309,7 @@ namespace PocketWeather
             float dt = Time.unscaledDeltaTime;
             float t = Time.unscaledTime;
             var cloud = Cloud.Instance;
+            if (trayItems.Count > 0) FitTray();
 
             // ---- gauge
             if (cloud != null)

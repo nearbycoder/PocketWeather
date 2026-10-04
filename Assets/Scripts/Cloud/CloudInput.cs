@@ -70,6 +70,12 @@ namespace PocketWeather
             VirtualRain = rain;
         }
 
+        /// <summary>Re-aims every input source at p (after the cloud is moved directly).</summary>
+        public void ResetTarget(Vector3 p)
+        {
+            Target = keyTarget = VirtualTarget = p;
+        }
+
         public void VirtualGust(Vector3 dir)
         {
             VirtualMode = true;
@@ -206,10 +212,16 @@ namespace PocketWeather
             {
                 // released: flick?
                 float dur = Time.unscaledTime - touchStart;
-                float speed = touchVel.magnitude / Mathf.Max(1, Screen.height) * 1080f;
-                if (!touchRaining && dur < 0.4f && speed > 1500f)
+                float px = 1080f / Mathf.Max(1, Screen.height);
+                float speed = touchVel.magnitude * px;
+                // short flicks span only a few frames, so also judge them by their average speed
+                Vector2 travel = touchLastPos - touchStartPos;
+                float avg = travel.magnitude * px / Mathf.Max(dur, 1f / 60f);
+                bool fast = speed > 1500f;
+                bool swipe = travel.magnitude * px > 80f && avg > 700f;
+                if (!touchRaining && dur < 0.4f && (fast || swipe))
                 {
-                    Vector3 dir = ScreenDirToGround(touchVel);
+                    Vector3 dir = ScreenDirToGround(fast ? touchVel : travel);
                     RequestGust(dir);
                     Target = touchStartTarget;
                 }
@@ -233,7 +245,9 @@ namespace PocketWeather
                 if (HoldCharge >= 1f) touchRaining = true;
             }
             else HoldCharge = 1;
-            if (GroundPointFromScreen(pos, out var g)) Target = g;
+            // a flick in progress blows from where Pip is, so don't drag Pip along with it
+            bool flicking = !touchRaining && Time.unscaledTime - touchStart < 0.4f && delta.magnitude * scale / Mathf.Max(dt, 1e-3f) > 1200f;
+            if (!flicking && GroundPointFromScreen(pos, out var g)) Target = g;
             keyTarget = Target;
             if (touchRaining) rain = true;
         }
