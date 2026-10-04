@@ -127,8 +127,10 @@ def gust():
     seed(201)
     d = 1.1
     t = T(d)
-    inhale = bandpass(noise(d), 600, 2500) * np.clip(t / 0.15, 0, 1) * (t < 0.16) * 0.25
-    ph_f = curve([(0, 400), (0.15, 400), (0.35, 1800), (1.1, 500)], d)
+    # a quick catch of breath, then the blow lands ~40 ms in: gusts are a direct action, so the
+    # sound mustn't trail the visual (it used to take ~150 ms to arrive)
+    inhale = bandpass(noise(d), 600, 2500) * np.clip(t / 0.04, 0, 1) * (t < 0.05) * 0.22
+    ph_f = curve([(0, 500), (0.05, 500), (0.24, 1800), (1.1, 500)], d)
     blow = np.zeros_like(t)
     w = noise(d)
     # moving bandpass approximated by mixing fixed bands with time weights
@@ -136,7 +138,7 @@ def gust():
         band = bandpass(w, lo, hi)
         weight = np.exp(-((ph_f - c) / 600) ** 2)
         blow += band * weight
-    env = np.clip((t - 0.14) / 0.06, 0, 1) * np.exp(-np.maximum(t - 0.2, 0) * 3.2)
+    env = np.clip((t - 0.025) / 0.035, 0, 1) * np.exp(-np.maximum(t - 0.09, 0) * 3.2)
     x = inhale + blow * env * 1.2
     return normalize(fade(x, 0.002, 0.1), 0.85)
 
@@ -179,6 +181,7 @@ def oops():
     t = T(d)
     vib = 1 + 0.04 * np.sin(2 * math.pi * 18 * t)
     x = np.sin(ph * vib) * env_ad(d, 0.01, 0.5) + 0.3 * np.sin(2 * ph) * env_ad(d, 0.01, 0.3)
+    x = x - x.mean()   # the falling sweep left a DC offset (a soft thump at start and end)
     return normalize(fade(x), 0.75)
 
 
