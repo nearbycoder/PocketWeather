@@ -21,6 +21,12 @@ Tools/play.sh                 # windowed 1600x900 (uses native Wayland when avai
 Builds/Linux/PocketWeather.x86_64
 ```
 
+A web build lives in `Builds/WebGL/`. Browsers won't run it from `file://`, so serve it:
+
+```sh
+Tools/serve_web.sh            # http://localhost:8080, plus LAN addresses for a phone or tablet
+```
+
 ## Controls
 
 The pointer marks the spot **on the ground under Pip**. That's where rain lands and shade falls.
@@ -77,9 +83,9 @@ A to choose, B to go back).
 | 12 | The Wedding | finale: the sneeze, then a rainbow for the couple |
 
 Also included: title screen over a live diorama, a map of Pocketvale with stamps, level
-postcards, pause and settings (volumes, fullscreen, screen shake, tilt-shift blur, hints, touch
-buttons, reset progress), a results card, an ending, wordless device-aware onboarding hints,
-and save/progress in PlayerPrefs.
+postcards, pause and settings (volumes, graphics Auto/High/Low, fullscreen, screen shake,
+tilt-shift blur, hints, touch buttons, reset progress), a results card, an ending, wordless
+device-aware onboarding hints, and save/progress in PlayerPrefs.
 
 ## Project layout
 
@@ -95,17 +101,22 @@ Assets/
                  rainbow wish, fire, campfire, keep-dry, pond line, delights)
     World/       WaterBody, WetMap (wetness/greenness render texture), Rainbows, Motes, Critter,
                  Scatter (set dressing), AmbientLife (butterflies, fireflies)
-    Fx/          Fx (particles, splashes, ripples), CameraRig (auto-framing), PostFx
-    Audio/       AudioHub (music, ambience, buses), Sfx (pooled one-shots, musical rain notes)
+    Fx/          Fx (particles, splashes, ripples), CameraRig (auto-framing), PostFx (tilt-shift
+                 DoF, bloom, grading), Quality (Auto/High/Low graphics)
+    Audio/       AudioHub (music, ambience, buses), Sfx (pooled one-shots, musical rain notes),
+                 MasterLimiter (look-ahead limiter on the listener)
     UI/          UiKit (runtime uGUI kit), Hud, Screens (title, map, postcard, pause, settings,
                  results, ending), Onboarding
-    Automation/  AutoPilot (bot that plays every level), Capture (scripted screenshot tour)
+    Automation/  AutoPilot (bot that plays every level, expert or newcomer), Capture (scripted
+                 screenshot tour), TouchTest / PadTest (virtual-device self-tests), PerfProbe,
+                 Recorder (gameplay video)
   Editor/        BuildScript (batch build), ProjectSetup (URP asset, renderer, volume)
   Shaders/       Toon, Ground, Water, CloudPuff, CloudFace, Rainbow, Sky, Fx, WetMapUpdate
   Resources/     Levels/*.json, Models/*.fbx (+ Terrain/), Audio/, Icons/, Fonts/
 ArtSource/       Blender generators: pw_lib (kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
-Tools/           unity.sh, play.sh, make_levels.py, validate_levels.py, audio/ (synth, sfx, music)
+Tools/           unity.sh, play.sh, serve_web.sh, make_levels.py, validate_levels.py, make_video.py,
+                 audio/ (synth, sfx, music)
 docs/            BRIEF.md, PLAN.md (design and technical plan)
 ```
 
@@ -132,6 +143,7 @@ Tools/.venv/bin/python Tools/audio/synth.py
 # Unity (Tools/unity.sh works around the editor's libxml2.so.2 dependency on Arch/CachyOS)
 Tools/unity.sh compile        # import + compile, print errors
 Tools/unity.sh build          # Builds/Linux/PocketWeather.x86_64
+Tools/unity.sh webgl          # Builds/WebGL (switches the editor's platform; slow the first time)
 Tools/unity.sh                # open the editor
 ```
 
@@ -152,7 +164,16 @@ Tools/unity.sh                # open the editor
   pause and resume, X/RB with right-stick aiming to gust. 22 checks.
 - `Tools/play.sh -pwAutopilot /tmp/perf -pwPerf` logs `[Perf]` frame-time stats per level
   (average, p95, p99, worst, GC collections) with vsync and the frame cap turned off.
-- `Tools/play.sh -pwCapture /tmp/shots` takes a scripted screenshot tour.
+- `-pwNewcomer` makes the AutoPilot play like a first-timer: it pauses to look around, spends a
+  few seconds working out each new kind of need, aims Pip and its gusts imprecisely, and lets go
+  of the rain a beat late. It's a rough stand-in for a new player when judging par.
+- `-pwDrainPond` starts Duck Pond Park with the pond far below the ducks' line, to prove a
+  drained pond can be rained back up in time.
+- `-pwLowQuality` forces Low graphics; `-pwFakeSlow` simulates a slow machine to exercise the
+  Auto graphics downgrade.
+- `Tools/play.sh -pwCapture /tmp/shots` takes a scripted screenshot tour (title, map, postcard,
+  pause, settings, every level). `PW_W=1200 PW_H=900 Tools/play.sh ...` picks the window size,
+  which is how 20:9, 4:3 and portrait layouts were checked.
 - Gameplay video: add `-pwVideo /tmp/vid` to an AutoPilot run to record frames and audio on a
   fixed 30 fps clock (smooth however slow the machine is), then
   `python3 Tools/make_video.py /tmp/vid <player log> out.mp4` adds captions and encodes it.
@@ -163,30 +184,45 @@ Tools/unity.sh                # open the editor
 
 ## Status
 
-What has been verified:
+What has been verified (on the Linux build unless noted):
 
 - All twelve levels are complete and pass the static validator.
-- The AutoPilot finishes all twelve levels before par in the Linux build, and also finds all
-  twelve secret delights (including catching the bouquet in the finale). The player log has no
-  exceptions or missing-asset warnings during these runs.
-- Title, map, postcards, HUD, results card and the finale were reviewed from screenshots.
-- The touch (16 checks) and gamepad (22 checks) self-tests pass, the gamepad one driving the
-  whole game from the title screen.
+- The expert AutoPilot finishes all twelve levels before par and finds all twelve secret delights
+  (including catching the bouquet in the finale), with no exceptions or missing-asset warnings.
+- The newcomer AutoPilot (`-pwNewcomer`) also finishes all twelve. Sampled over eight seeds, Day 2
+  and Heatwave, the levels most likely to trip a beginner, landed about 2.5 to 3 game-hours inside
+  par. A drained duck pond can be rained back up in time (`-pwDrainPond`).
+- Touch (16 checks) and gamepad (22 checks) self-tests pass through the real Input System; the
+  gamepad test drives the whole game from the title screen.
+- The WebGL build runs in headless Chrome (`node Tools/web_smoke.mjs`, add `--phone` for an
+  emulated Android phone in landscape): it boots in about 2 s and is played through title, map,
+  postcard and a level using real browser touch events, with no errors in the console.
+- Layout was checked from screenshots at 16:9, 20:9, 4:3 and portrait window shapes.
+- Audio was checked on the recorded in-game mix, not by ear: about -14 LUFS integrated, 7 LU
+  range, and after adding the master limiter, no clipped samples (before it, ~2000 samples
+  clipped across 30 of 220 seconds).
+- Performance: with vsync off, the bot playing every level averaged 2 to 8 ms per frame on the
+  development machine's integrated Radeon 8060S (shared with other busy projects); 99% of frames
+  were under 17 ms; on Vulkan the GPU itself took about 1.6 ms a frame. The only spike is building
+  a level (about 50 ms of work), hidden behind the cloud-wipe transition.
 
 What hasn't been, or is known to be rough:
 
-- **No human playtesting.** Par times were set against the bot, which plays faster than a person
-  (it knows every rule and never hesitates). Par aims to sit roughly 1.5 to 3 times above the
-  bot's time, but the real difficulty curve, especially Heatwave (11), needs people to play it.
-- **Touch and gamepad** pass their self-tests (`-pwTouchTest`, `-pwPadTest`), which feed
-  virtual devices through the real Input System. Neither has been tried on a real touchscreen or
-  controller, and there is no mobile build yet.
-- **Audio** was never listened to by a person during development. It was checked numerically
-  (loudness, peaks, staying in key), so the mix may need adjusting by ear.
-- **Performance** was measured only on the development machine (an integrated AMD Radeon
-  shared with several other busy projects). With vsync off, the bot playing every level averaged
-  2 to 8 ms per frame (130 to 550 fps), and 99% of frames came in under 17 ms. The only
-  remaining spike is building a level (roughly 50 ms of work, 200 to 300 ms counting the first
-  render), which happens behind the cloud-wipe transition. A low-end or mobile GPU has not been
-  tried. Under heavy contention the game stays correct, but the cloud gets a little sluggish
-  below about 10 fps.
+- **No human playtesting.** The newcomer bot is a heuristic stand-in (pauses, learning time,
+  sloppy aim, late reactions), not a person. Real players will be slower and will misread things
+  the bot can't, so par times and the difficulty curve still need people.
+- **No real touchscreen or controller.** Touch and gamepad are exercised through virtual devices
+  and emulated browser touch only. The quickest real-device test is `Tools/unity.sh webgl`, then
+  `Tools/serve_web.sh` and opening the printed address on a phone on the same network. There is
+  no native Android/iOS build (those Unity modules aren't installed on this machine), and phone
+  browsers' performance is untested.
+- **Audio has never been listened to by a person**, so balance, tone and repetitiveness may need
+  adjusting by ear.
+- **Graphics on weak GPUs:** Auto quality drops to Low when frame times stay high. On a pure
+  software renderer (SwiftShader, in the headless browser test) the game stayed correct but ran at
+  about 5 fps. No real low-end GPU has been tried.
+- **Depth of field was invisible until late in development:** URP had been stripping its shaders
+  from builds, so earlier screenshots and the first gameplay video had no tilt-shift blur. It now
+  renders and was tuned in a build, but only against screenshots.
+- The Linux player uses OpenGL Core by default; Vulkan also works (`-force-vulkan`) and reports GPU
+  timings, but hasn't had a full test pass.

@@ -25,3 +25,6 @@ __pycache__/
 # Blender backups
 *.blend1
 *.blend2
+
+# Burst output dropped in the project root by WebGL builds
+/Data/

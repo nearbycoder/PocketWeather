@@ -24,7 +24,7 @@ namespace PocketWeather
         // a while figuring out each new kind of need, aims the cloud and gusts imprecisely, and
         // reacts late when a bed is full. Seeded, so runs are repeatable.
         readonly bool newcomer = GameRoot.HasArg("-pwNewcomer");
-        readonly System.Random rng = new(1234);
+        readonly System.Random rng = new(int.Parse(GameRoot.Arg("-pwSeed", "1234")));
         readonly HashSet<string> learned = new();
         float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
         Vector3 Sloppy(Vector3 p, float r = 0.32f)

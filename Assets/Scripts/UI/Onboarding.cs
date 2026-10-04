@@ -25,7 +25,9 @@ namespace PocketWeather
         }
 
         CloudInput.Device Dev => level.Cloud.Input.LastDevice;
-        bool Touch => Dev == CloudInput.Device.Touch;
+        // before the first input, guess from the platform (phones and tablets, including their browsers)
+        bool Touch => Dev == CloudInput.Device.Touch || (Dev == CloudInput.Device.None && Application.isMobilePlatform);
+        string shownText;   // the move/rain hint on screen, re-worded if the player switches device
         bool Keys => Dev == CloudInput.Device.Keys || Dev == CloudInput.Device.Pad;
 
         string MoveText => Touch ? "Drag to fly" : Keys ? "Arrows to fly" : "Point to fly";
@@ -61,21 +63,25 @@ namespace PocketWeather
                 var bed = FirstNeed<BedNeed>();
                 if (bed == null) { step = 2; return; }
                 hud.ShowHint(MoveText, "hand", 30f);
+                shownText = MoveText;
                 hud.Hand("drag", cloud.GroundPoint, bed.transform.position, 30f);
                 step = 1;
             }
             else if (teach.Contains("move") && step == 1)
             {
+                if (shownText != MoveText) { shownText = MoveText; hud.ShowHint(MoveText, "hand", 30f); }
                 var bed = FirstNeed<BedNeed>();
                 if (bed == null || cloud.Shades(bed.transform.position, 0.2f))
                 {
                     hud.ShowHint(RainText, "drop", 30f);
+                    shownText = RainText;
                     if (bed != null) hud.Hand("hold", bed.transform.position, bed.transform.position, 30f);
                     step = 2;
                 }
             }
             else if (teach.Contains("move") && step == 2)
             {
+                if (shownText != RainText) { shownText = RainText; hud.ShowHint(RainText, "drop", 30f); }
                 if (cloud.Raining)
                 {
                     hud.HideHint();
