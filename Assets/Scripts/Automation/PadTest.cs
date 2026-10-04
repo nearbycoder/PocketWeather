@@ -153,6 +153,17 @@ namespace PocketWeather
             yield return new WaitForSeconds(0.4f);
             Check("releasing A stops the rain", !C.Raining);
 
+            // --- accessibility: toggle rain (a press starts it, another stops it)
+            bool hadToggle = GameSettings.RainToggle;
+            GameSettings.RainToggle = true;
+            yield return Press(GamepadButton.South);
+            yield return new WaitForSeconds(0.6f);
+            Check("toggle mode: one press keeps it raining", C.Raining);
+            yield return Press(GamepadButton.South);
+            yield return new WaitForSeconds(0.4f);
+            Check("toggle mode: a second press stops it", !C.Raining);
+            GameSettings.RainToggle = hadToggle;
+
             // --- pause with Start, resume with B
             yield return Press(GamepadButton.Start);
             yield return new WaitForSecondsRealtime(0.5f);

@@ -45,6 +45,7 @@ namespace PocketWeather
         Vector3 touchStartTarget;
         float stillTimer;
         bool touchRaining;
+        bool rawRainBefore, rainToggled;   // toggle-rain mode (accessibility setting)
         Vector2 touchVel;
         bool touchOverUi;
         Vector3 keyTarget;
@@ -100,6 +101,7 @@ namespace PocketWeather
             if (!Enabled)
             {
                 RainHeld = false;
+                rainToggled = rawRainBefore = false;
                 Aiming = false;
                 touchId = -1;
                 return;
@@ -119,6 +121,15 @@ namespace PocketWeather
                 ButtonGust = false;
                 RequestGust(cloud.Facing);
             }
+            if (GameSettings.RainToggle)
+            {
+                // each fresh press flips the rain; running dry switches it off so Pip can drink again
+                if (rain && !rawRainBefore) rainToggled = !rainToggled;
+                if (cloud.Water <= 0.5f) rainToggled = false;
+                rawRainBefore = rain;
+                rain = rainToggled;
+            }
+            else rainToggled = rawRainBefore = false;
             RainHeld = rain;
         }
 

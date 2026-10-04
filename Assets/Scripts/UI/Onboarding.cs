@@ -28,11 +28,14 @@ namespace PocketWeather
         // before the first input, guess from the platform (phones and tablets, including their browsers)
         bool Touch => Dev == CloudInput.Device.Touch || (Dev == CloudInput.Device.None && Application.isMobilePlatform);
         string shownText;   // the move/rain hint on screen, re-worded if the player switches device
-        bool Keys => Dev == CloudInput.Device.Keys || Dev == CloudInput.Device.Pad;
+        bool Keys => Dev == CloudInput.Device.Keys;
+        bool Pad => Dev == CloudInput.Device.Pad;
 
-        string MoveText => Touch ? "Drag to fly" : Keys ? "Arrows to fly" : "Point to fly";
-        string RainText => Touch ? "Hold still to rain" : Keys ? "Space to rain" : "Hold click to rain";
-        string GustText => Touch ? "Flick to blow" : Keys ? "E to blow" : "Right-drag to blow";
+        string MoveText => Touch ? "Drag to fly" : Pad ? "Left stick to fly" : Keys ? "Arrows to fly" : "Point to fly";
+        string RainText => GameSettings.RainToggle
+            ? (Touch ? "Hold still to start rain" : Pad ? "Press A to rain" : Keys ? "Space to rain" : "Click to rain")
+            : (Touch ? "Hold still to rain" : Pad ? "Hold A to rain" : Keys ? "Space to rain" : "Hold click to rain");
+        string GustText => Touch ? "Flick to blow" : Pad ? "X to blow" : Keys ? "E to blow" : "Right-drag to blow";
 
         T FirstNeed<T>() where T : Need
         {

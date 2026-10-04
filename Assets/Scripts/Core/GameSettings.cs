@@ -12,6 +12,8 @@ namespace PocketWeather
         public static float TiltShift { get => PlayerPrefs.GetFloat("pw.tilt", 1f); set => PlayerPrefs.SetFloat("pw.tilt", value); }
         /// <summary>0 = Auto, 1 = High, 2 = Low (see Quality).</summary>
         public static int Graphics { get => PlayerPrefs.GetInt("pw.gfx", 0); set => PlayerPrefs.SetInt("pw.gfx", value); }
+        /// <summary>Accessibility: a press starts the rain and another stops it, instead of holding.</summary>
+        public static bool RainToggle { get => PlayerPrefs.GetInt("pw.raintoggle", 0) == 1; set => PlayerPrefs.SetInt("pw.raintoggle", value ? 1 : 0); }
         public static bool Hints { get => PlayerPrefs.GetInt("pw.hints", 1) == 1; set => PlayerPrefs.SetInt("pw.hints", value ? 1 : 0); }
         /// <summary>0 auto (when touch is used), 1 always, 2 never.</summary>
         public static int TouchButtons { get => PlayerPrefs.GetInt("pw.touchbtn", 0); set => PlayerPrefs.SetInt("pw.touchbtn", value); }

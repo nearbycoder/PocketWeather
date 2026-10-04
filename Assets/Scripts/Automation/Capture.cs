@@ -204,6 +204,13 @@ namespace PocketWeather
                     yield return new WaitForSecondsRealtime(0.4f);
                 }
             }
+            // the end-of-day screens nobody sees in a winning run
+            flow.DebugSunset();
+            yield return new WaitForSeconds(3.2f);
+            yield return Shot("t05_fail");
+            flow.DebugEnding();
+            yield return new WaitForSeconds(4.5f);
+            yield return Shot("t06_ending");
         }
 
         void Log(string s) => Debug.Log("[PW] " + s);

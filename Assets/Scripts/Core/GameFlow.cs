@@ -127,6 +127,8 @@ namespace PocketWeather
         public void DebugSettings() => OpenSettings(pause);
         public void DebugCloseSettings() => CloseSettings();
         public void DebugResume() => Resume();
+        public void DebugSunset() => OnSunset();
+        public void DebugEnding() { LevelIndex = LevelLibrary.Campaign.Length - 1; NextLevel(); }
 
         System.Action queuedTransition;
 
@@ -360,6 +362,9 @@ namespace PocketWeather
                     Level.SetHour(18.8f);
                     Level.Cloud.Input.Enabled = false;
                     Level.Cloud.gameObject.AddComponent<Wander>();
+                    Level.gameObject.AddComponent<EndingCelebration>().Init(Level);
+                    root.Rig.Zoom = 1.16f;
+                    root.Rig.FocusOffset = new Vector3(0, 0, 2.4f);   // island lower, under the card
                     AudioHub.I?.PlayMusic("wedding");
                     ending.Open();
                 });
@@ -383,6 +388,15 @@ namespace PocketWeather
         }
 
         int pauseToggleFrame = -1;
+
+        // alt-tabbing away, a phone going to the background or a browser tab losing focus pauses the
+        // day instead of letting the sun run on
+        void OnApplicationFocus(bool focused) { if (!focused) AutoPause(); }
+        void OnApplicationPause(bool paused) { if (paused) AutoPause(); }
+        void AutoPause()
+        {
+            if (Current == State.Playing && !GameRoot.Automated) Pause();
+        }
 
         public void Resume()
         {

@@ -350,13 +350,13 @@ namespace PocketWeather
         protected override void Build()
         {
             Dim(0.55f);
-            var p = Ui.Panel(root, new Vector2(760, 1030), Vector2.zero, Ui.Paper, null, 48f);
-            Ui.Label(p.transform, "Settings", 70, Ui.Ink, new Vector2(600, 90), new Vector2(0, 438), true);
-            float y = 335;
-            Ui.Slider(p.transform, "Music", GameSettings.Music, new Vector2(0, y), v => { GameSettings.Music = v; }, 640); y -= 85;
-            Ui.Slider(p.transform, "Sounds", GameSettings.Sfx, new Vector2(0, y), v => { GameSettings.Sfx = v; }, 640); y -= 85;
-            Ui.Slider(p.transform, "Ambience", GameSettings.Ambience, new Vector2(0, y), v => { GameSettings.Ambience = v; }, 640); y -= 85;
-            Ui.Slider(p.transform, "Tilt-shift", GameSettings.TiltShift, new Vector2(0, y), v => { GameSettings.TiltShift = v; PostFx.ApplySettings(); }, 640); y -= 86;
+            var p = Ui.Panel(root, new Vector2(760, 1060), Vector2.zero, Ui.Paper, null, 48f);
+            Ui.Label(p.transform, "Settings", 70, Ui.Ink, new Vector2(600, 90), new Vector2(0, 455), true);
+            float y = 362;
+            Ui.Slider(p.transform, "Music", GameSettings.Music, new Vector2(0, y), v => { GameSettings.Music = v; }, 640); y -= 78;
+            Ui.Slider(p.transform, "Sounds", GameSettings.Sfx, new Vector2(0, y), v => { GameSettings.Sfx = v; }, 640); y -= 78;
+            Ui.Slider(p.transform, "Ambience", GameSettings.Ambience, new Vector2(0, y), v => { GameSettings.Ambience = v; }, 640); y -= 78;
+            Ui.Slider(p.transform, "Tilt-shift", GameSettings.TiltShift, new Vector2(0, y), v => { GameSettings.TiltShift = v; PostFx.ApplySettings(); }, 640); y -= 80;
             // graphics: tap to cycle Auto / High / Low
             var gfxRow = Ui.Rect("Row_Graphics", p.transform, new Vector2(0.5f, 0.5f), new Vector2(640, 76), new Vector2(0, y));
             Ui.Label(gfxRow, "Graphics", 34, Ui.Ink, new Vector2(300, 60), new Vector2(-170, 0), false, TextAnchor.MiddleLeft);
@@ -366,15 +366,16 @@ namespace PocketWeather
                 Quality.Apply();
                 gfxButton.SetLabel(GraphicsLabel());
             }, null, null, 30, "Graphics");
-            y -= 82;
-            Ui.Toggle(p.transform, "Screen shake", GameSettings.ScreenShake, new Vector2(0, y), v => GameSettings.ScreenShake = v, 640); y -= 80;
-            Ui.Toggle(p.transform, "Hints", GameSettings.Hints, new Vector2(0, y), v => GameSettings.Hints = v, 640); y -= 80;
-            Ui.Toggle(p.transform, "Touch buttons", GameSettings.TouchButtons == 1, new Vector2(0, y), v => GameSettings.TouchButtons = v ? 1 : 0, 640); y -= 80;
+            y -= 78;
+            Ui.Toggle(p.transform, "Screen shake", GameSettings.ScreenShake, new Vector2(0, y), v => GameSettings.ScreenShake = v, 640); y -= 72;
+            Ui.Toggle(p.transform, "Hints", GameSettings.Hints, new Vector2(0, y), v => GameSettings.Hints = v, 640); y -= 72;
+            Ui.Toggle(p.transform, "Touch buttons", GameSettings.TouchButtons == 1, new Vector2(0, y), v => GameSettings.TouchButtons = v ? 1 : 0, 640); y -= 72;
+            Ui.Toggle(p.transform, "Tap to rain (no holding)", GameSettings.RainToggle, new Vector2(0, y), v => GameSettings.RainToggle = v, 640); y -= 72;
             Ui.Toggle(p.transform, "Fullscreen", UnityEngine.Screen.fullScreen, new Vector2(0, y), v =>
             {
                 UnityEngine.Screen.fullScreenMode = v ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
             }, 640);
-            y -= 106;
+            y -= 100;
             resetBtn = Ui.Button(p.transform, "Reset progress", Ui.Coral, new Vector2(300, 84), new Vector2(-170, y), () =>
             {
                 if (!confirmReset) { confirmReset = true; resetBtn.SetLabel("Sure?"); return; }
@@ -407,7 +408,7 @@ namespace PocketWeather
     {
         public Action OnNext, OnReplay, OnMap;
         RectTransform card;
-        Text title, subtitle;
+        Text title, subtitle, timeLine;
         readonly Image[] stamps = new Image[3];
         readonly Text[] stampLabels = new Text[3];
         JuicyButton next;
@@ -420,11 +421,12 @@ namespace PocketWeather
             banner.pixelsPerUnitMultiplier = 52f / 40f;
             title = Ui.Label(banner.transform, "Day saved!", 74, Color.white, new Vector2(680, 110), new Vector2(0, 2), true);
             Ui.Outlined(title, Res.Hex("E09A3A"), 4);
-            subtitle = Ui.Label(card, "", 36, Ui.InkSoft, new Vector2(960, 60), new Vector2(0, 190), false);
+            subtitle = Ui.Label(card, "", 36, Ui.Ink, new Vector2(960, 50), new Vector2(0, 200), false);
+            timeLine = Ui.Label(card, "", 28, Ui.InkSoft, new Vector2(960, 40), new Vector2(0, 158), false);
             string[] labels = { "Helped everyone", "Before 12:00", "Secret delight" };
             for (int i = 0; i < 3; i++)
             {
-                var slot = Ui.Rect("Slot" + i, card, new Vector2(0.5f, 0.5f), new Vector2(300, 260), new Vector2((i - 1) * 320, 20));
+                var slot = Ui.Rect("Slot" + i, card, new Vector2(0.5f, 0.5f), new Vector2(300, 260), new Vector2((i - 1) * 320, 0));
                 Ui.Image(slot, Ui.Circle, Res.Hex("EFE6D8"), new Vector2(190, 190), new Vector2(0, 30), null, "Plate");
                 stamps[i] = Ui.Icon(slot, "stamp_empty", 180, new Vector2(0, 30));
                 stampLabels[i] = Ui.Label(slot, labels[i], 30, Ui.Ink, new Vector2(300, 70), new Vector2(0, -100), true);
@@ -437,7 +439,8 @@ namespace PocketWeather
 
         public void Show(LevelDef def, int stampsEarnedThisRun, int fresh, float finishHour, bool isLast)
         {
-            subtitle.text = $"{(string.IsNullOrEmpty(def.thanks) ? "Everyone is happy!" : def.thanks)}  Finished at {Postcard.FormatHour(finishHour)}.";
+            subtitle.text = string.IsNullOrEmpty(def.thanks) ? "Everyone is happy!" : def.thanks;
+            timeLine.text = $"Finished at {Postcard.FormatHour(finishHour)}";
             stampLabels[1].text = $"Before {Postcard.FormatHour(def.par)}";
             stampLabels[2].text = SaveData.Has(def.id, SaveData.StampDelight) ? def.delight.title : "Secret delight";
             next.SetLabel(isLast ? "The end" : "Next day");
@@ -485,16 +488,20 @@ namespace PocketWeather
     {
         public Action OnRetry, OnMap;
         RectTransform card, row;
+        Text tip;
 
         protected override void Build()
         {
             Dim(0.4f);
-            card = Ui.Panel(root, new Vector2(900, 560), Vector2.zero, Ui.Paper, null, 48f).rectTransform;
-            Ui.Label(card, "The sun has set", 70, Ui.Ink, new Vector2(820, 90), new Vector2(0, 200), true);
-            Ui.Label(card, "Some friends still needed you. Try again tomorrow!", 36, Ui.InkSoft, new Vector2(800, 90), new Vector2(0, 110), false);
-            row = Ui.Rect("Row", card, new Vector2(0.5f, 0.5f), new Vector2(800, 120), new Vector2(0, -10));
-            Ui.Button(card, "Map", Ui.Lilac, new Vector2(240, 96), new Vector2(-180, -190), () => OnMap?.Invoke(), null, null, 42);
-            var r = Ui.Button(card, "Try again", Ui.Coral, new Vector2(320, 104), new Vector2(160, -190), () => OnRetry?.Invoke(), null, null, 46);
+            card = Ui.Panel(root, new Vector2(980, 640), Vector2.zero, Ui.Paper, null, 48f).rectTransform;
+            Ui.Label(card, "The sun has set", 70, Ui.Ink, new Vector2(900, 90), new Vector2(0, 235), true);
+            Ui.Label(card, "Some friends still needed you. Try again tomorrow!", 36, Ui.InkSoft, new Vector2(900, 50), new Vector2(0, 160), false);
+            row = Ui.Rect("Row", card, new Vector2(0.5f, 0.5f), new Vector2(800, 120), new Vector2(0, 55));
+            var tipPill = Ui.Image(card, Ui.Rounded, Res.Hex("EAF4FB"), new Vector2(880, 96), new Vector2(0, -78), null, "TipPill");
+            tipPill.pixelsPerUnitMultiplier = 52f / 30f;
+            tip = Ui.Label(tipPill.transform, "", 30, Ui.Ink, new Vector2(840, 90), Vector2.zero, false);
+            Ui.Button(card, "Map", Ui.Lilac, new Vector2(240, 96), new Vector2(-180, -225), () => OnMap?.Invoke(), null, null, 42);
+            var r = Ui.Button(card, "Try again", Ui.Coral, new Vector2(320, 104), new Vector2(160, -225), () => OnRetry?.Invoke(), null, null, 46);
             firstSelected = r.gameObject;
         }
 
@@ -510,35 +517,70 @@ namespace PocketWeather
                 Ui.Icon(it, unmet[i].Icon, 72, new Vector2(0, 2));
                 Ui.PopIn(it, 0.3f + 0.08f * i, 0.4f);
             }
+            tip.text = unmet.Count > 0 ? Tip(unmet[0]) : "";
             Open();
             Tween.To(600, 0, 0.55f, y => card.anchoredPosition = new Vector2(0, y), k => Ease.OutBack(k, 1.1f), 0, null, card);
         }
+
+        /// <summary>One concrete hint for the first friend left unhelped.</summary>
+        static string Tip(Need n) => n switch
+        {
+            FireNeed _ => "Tip: rain on a fire the moment it starts, before it spreads.",
+            SunnyNeed _ => "Tip: give them a little rain, then fly away so the sun can shine on them.",
+            BedNeed b when b.Soggy => "Tip: that bed got soggy. Rain in short bursts and stop inside the band.",
+            BedNeed _ => "Tip: some beds were still thirsty. Drink your fill, then rain until the bar fills.",
+            ShadeNeed _ => "Tip: hover over hot animals and keep your shadow on them for a while.",
+            BoatNeed _ => "Tip: blow from behind a boat, pointing where it needs to go.",
+            LaundryNeed _ => "Tip: blow gusts at the washing to dry it, and keep the rain away.",
+            WindmillNeed _ => "Tip: keep blowing gusts at the sails until the windmill spins up.",
+            RainbowWishNeed _ => "Tip: rain right beside them, then move away so the sun makes a rainbow.",
+            CampfireNeed _ => "Tip: the campfire should keep burning, so keep your rain off it.",
+            KeepDryNeed _ => "Tip: some things want to stay dry. Watch where your rain falls.",
+            PondLineNeed _ => "Tip: don't drink the duck pond below its line. Raining into it fills it back up.",
+            _ => "Tip: the bubbles over everyone's heads show what they need.",
+        };
     }
 
     // ===================================================================== Ending
     public class EndingScreen : MenuScreen
     {
         public Action OnDone;
-        RectTransform scroll;
-        float t;
+        RectTransform card, stampIcon;
+        Text stampsText;
 
         protected override void Build()
         {
-            Dim(0.35f);
-            var title = Ui.Label(root, "The End", 120, Color.white, new Vector2(1000, 150), new Vector2(0, 330), true);
-            Ui.Outlined(title, Res.Hex("D9779B"), 5);
-            Ui.Shadowed(title, 8, 0.3f);
-            var sub = Ui.Label(root, "Rosa and Tom were married under a rainbow,\nand Pocketvale had the loveliest summer it can remember.", 40, Color.white, new Vector2(1400, 120), new Vector2(0, 190), false);
-            Ui.Shadowed(sub, 3, 0.45f);
-            scroll = Ui.Rect("Credits", root, new Vector2(0.5f, 0.5f), new Vector2(1000, 400), new Vector2(0, -60));
-            string credits = "POCKET WEATHER\n\nDesign, code, models, music & sound\nmade procedurally with Unity, Blender and numpy\n\nFonts: Fredoka and Nunito (SIL Open Font License)\n\nThank you for helping Pip!";
-            var c = Ui.Label(scroll, credits, 36, Color.white, new Vector2(1000, 400), Vector2.zero, false);
-            Ui.Shadowed(c, 3, 0.45f);
-            var b = Ui.Button(root, "Back to Pocketvale", Ui.Coral, new Vector2(460, 104), new Vector2(0, -360), () => OnDone?.Invoke(), "heart", null, 40);
+            Dim(0.12f);
+            card = Ui.Panel(root, new Vector2(1120, 380), new Vector2(0, 270), Ui.Paper, null, 48f).rectTransform;
+            var banner = Ui.Image(card, Ui.Rounded, Res.Hex("F2A7C3"), new Vector2(620, 124), new Vector2(0, 186), null, "Banner");
+            banner.pixelsPerUnitMultiplier = 52f / 40f;
+            var title = Ui.Label(banner.transform, "The End", 84, Color.white, new Vector2(600, 116), new Vector2(0, 2), true);
+            Ui.Outlined(title, Res.Hex("C9638A"), 4);
+            Ui.Icon(card, "rainbow", 120, new Vector2(-440, 186));
+            Ui.Icon(card, "heart", 96, new Vector2(440, 186));
+            Ui.Label(card, "Rosa and Tom were married under a rainbow,\nand Pocketvale had the loveliest summer it can remember.",
+                36, Ui.Ink, new Vector2(1060, 100), new Vector2(0, 62), false);
+            stampsText = Ui.Label(card, "", 34, Ui.InkSoft, new Vector2(900, 56), new Vector2(30, -38), true);
+            stampIcon = Ui.Icon(card, "stamp_flower", 64, new Vector2(-200, -38)).rectTransform;
+            Ui.Label(card, "Thank you for helping Pip!", 32, Ui.Ink, new Vector2(900, 50), new Vector2(0, -122), true);
+
+            var b = Ui.Button(root, "Back to Pocketvale", Ui.Coral, new Vector2(480, 104), new Vector2(0, -300), () => OnDone?.Invoke(), "heart", null, 40);
+            var credits = Ui.Panel(root, new Vector2(1180, 96), new Vector2(0, -440), new Color(1, 1, 1, 0.78f), null, 30f, false);
+            credits.raycastTarget = false;
+            Ui.Label(credits.transform, "Code, models, music and sound made procedurally with Unity, Blender and numpy\nFonts: Fredoka and Nunito (SIL Open Font License)",
+                26, Ui.InkSoft, new Vector2(1140, 90), Vector2.zero, false);
             firstSelected = b.gameObject;
         }
 
-        protected override void OnOpen() { t = 0; }
+        protected override void OnOpen()
+        {
+            int total = SaveData.TotalStamps(), max = LevelLibrary.Campaign.Length * 3;
+            stampsText.text = total >= max ? $"Every stamp of the summer: {total} / {max}!" : $"Summer stamps collected: {total} / {max}";
+            // keep the stamp icon just left of the (centred) text, whatever its length
+            stampIcon.anchoredPosition = new Vector2(30 - stampsText.preferredWidth / 2f - 46f, -38);
+            card.anchoredPosition = new Vector2(0, 870);
+            Tween.To(-600, 0, 0.7f, y => card.anchoredPosition = new Vector2(0, 270 - y), k => Ease.OutBack(k, 1.1f), 0.2f, null, card);
+        }
     }
 
     // ===================================================================== Cloud wipe transition

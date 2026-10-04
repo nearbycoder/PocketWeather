@@ -29,6 +29,10 @@ namespace PocketWeather
 
         public static bool HasArg(string name) => Array.IndexOf(Environment.GetCommandLineArgs(), name) >= 0;
 
+        /// <summary>A bot, self-test or capture is driving the game (its window is rarely focused).</summary>
+        public static bool Automated => HasArg("-pwAutopilot") || HasArg("-pwCapture") || HasArg("-pwTouchTest") ||
+                                        HasArg("-pwPadTest") || HasArg("-pwVideo") || HasArg("-pwPerf");
+
         void Awake()
         {
             Application.targetFrameRate = 60;

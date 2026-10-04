@@ -41,7 +41,9 @@ The camera looks down at an angle, so Pip floats above your cursor or finger and
 | Pause | Esc / P | | Start | ⏸ button |
 
 M toggles the music. Menus work with mouse, touch, keyboard and gamepad (d-pad/stick to move,
-A to choose, B to go back).
+A to choose, B to go back). For players who find holding a button tiring, **Settings → Tap to
+rain** makes every rain control a toggle (it switches off by itself when Pip runs dry). The game
+pauses itself when the window loses focus or a phone sends it to the background.
 
 ## Rules
 
@@ -84,8 +86,9 @@ A to choose, B to go back).
 
 Also included: title screen over a live diorama, a map of Pocketvale with stamps, level
 postcards, pause and settings (volumes, graphics Auto/High/Low, fullscreen, screen shake,
-tilt-shift blur, hints, touch buttons, reset progress), a results card, an ending, wordless
-device-aware onboarding hints, and save/progress in PlayerPrefs.
+tilt-shift blur, hints, touch buttons, tap-to-rain, reset progress), a results card, a
+sunset card with a tip for whatever was left undone, an ending, device-aware onboarding hints
+(mouse, touch, keyboard and gamepad wording), and save/progress in PlayerPrefs.
 
 ## Project layout
 
@@ -172,7 +175,7 @@ Tools/unity.sh                # open the editor
 - `-pwLowQuality` forces Low graphics; `-pwFakeSlow` simulates a slow machine to exercise the
   Auto graphics downgrade.
 - `Tools/play.sh -pwCapture /tmp/shots` takes a scripted screenshot tour (title, map, postcard,
-  pause, settings, every level). `PW_W=1200 PW_H=900 Tools/play.sh ...` picks the window size,
+  pause, settings, every level, the sunset card and the ending). `PW_W=1200 PW_H=900 Tools/play.sh ...` picks the window size,
   which is how 20:9, 4:3 and portrait layouts were checked.
 - Gameplay video: add `-pwVideo /tmp/vid` to an AutoPilot run to record frames and audio on a
   fixed 30 fps clock (smooth however slow the machine is), then

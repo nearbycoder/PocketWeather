@@ -43,6 +43,7 @@ namespace PocketWeather
         float hintTimer;
         RectTransform toast;
         Text toastText;
+        RectTransform toastPanel;
         Image toastIcon;
         public JuicyButton PauseButton { get; private set; }
         public System.Action OnPause;
@@ -141,6 +142,7 @@ namespace PocketWeather
             // ---- toast (top-centre, below the sun track)
             toast = Ui.Rect("Toast", safe, new Vector2(0.5f, 1), new Vector2(640, 96), new Vector2(0, -190));
             var tp = Ui.Panel(toast, new Vector2(640, 96), Vector2.zero, Ui.Butter, null, 48f);
+            toastPanel = tp.rectTransform;
             toastIcon = Ui.Icon(tp.transform, "stamp_flower", 84, new Vector2(-260, 2));
             toastText = Ui.Label(tp.transform, "", 38, Ui.Ink, new Vector2(500, 80), new Vector2(40, 2), true);
             toast.gameObject.SetActive(false);
@@ -255,6 +257,13 @@ namespace PocketWeather
         {
             toastText.text = text;
             toastIcon.sprite = Ui.IconSprite(icon);
+            // fit the banner to the message so it stays on one line
+            float w = Mathf.Clamp(toastText.preferredWidth + 170f, 520f, 1300f);
+            toastPanel.sizeDelta = new Vector2(w, 96);
+            toast.sizeDelta = new Vector2(w, 96);
+            toastIcon.rectTransform.anchoredPosition = new Vector2(-w / 2f + 62f, 2);
+            toastText.rectTransform.sizeDelta = new Vector2(w - 150f, 80);
+            toastText.rectTransform.anchoredPosition = new Vector2(40, 2);
             toast.GetComponentInChildren<Image>().color = color ?? Ui.Butter;
             toast.gameObject.SetActive(true);
             Tween.KillOwner(toast);
