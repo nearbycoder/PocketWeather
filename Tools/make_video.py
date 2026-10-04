@@ -78,7 +78,7 @@ def main():
         elif kind == "delight":
             d = json.load(open(os.path.join(LEVELS, arg + ".json"))).get("delight", {})
             if d.get("title") and d.get("type") != "catch":
-                cue(frame, 3.5, f"Every level hides a secret delight: {d['title'].lower()}.")
+                cue(frame, 3.5, f"Every level hides a secret delight: {d['title'][:1].lower() + d['title'][1:]}.")
         elif kind == "sneeze":
             cue(frame, 4.0, "...the pollen makes Pip sneeze all over the wedding! Make a rainbow to save the day.")
         elif kind == "bouquet":
