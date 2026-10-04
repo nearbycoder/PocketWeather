@@ -111,14 +111,16 @@ Assets/
     UI/          UiKit (runtime uGUI kit), Hud, Screens (title, map, postcard, pause, settings,
                  results, ending), Onboarding
     Automation/  AutoPilot (bot that plays every level, expert or newcomer), Capture (scripted
-                 screenshot tour), TouchTest / PadTest (virtual-device self-tests), PerfProbe,
+                 screenshot tour), KeyTest / PadTest / TouchTest (virtual-device self-tests),
+                 UiAudit, PerfProbe,
                  Recorder (gameplay video)
   Editor/        BuildScript (batch build), ProjectSetup (URP asset, renderer, volume)
   Shaders/       Toon, Ground, Water, CloudPuff, CloudFace, Rainbow, Sky, Fx, WetMapUpdate
   Resources/     Levels/*.json, Models/*.fbx (+ Terrain/), Audio/, Icons/, Fonts/
 ArtSource/       Blender generators: pw_lib (kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
-Tools/           unity.sh, play.sh, serve_web.sh, make_levels.py, validate_levels.py, make_video.py,
+Tools/           unity.sh, play.sh, selftest.sh, serve_web.sh, web_smoke.mjs, make_levels.py,
+                 validate_levels.py, make_video.py,
                  audio/ (synth, sfx, music)
 docs/            BRIEF.md, PLAN.md (design and technical plan)
 ```
@@ -152,6 +154,10 @@ Tools/unity.sh                # open the editor
 
 ## Testing
 
+`Tools/selftest.sh` runs everything below that can run unattended (validator, keyboard, gamepad and
+touch self-tests, the UI audit at four window shapes, and the AutoPilot campaign with delights)
+and prints a one-line verdict per check; `--quick` skips the campaign.
+
 - `python3 Tools/validate_levels.py` statically checks every level: referenced models and icons
   exist, needs sit inside Pip's reachable area and on land (boats on water), and it estimates
   a water budget and a lower-bound completion time against par and sundown.
@@ -162,6 +168,9 @@ Tools/unity.sh                # open the editor
 - `Tools/play.sh -pwTouchTest` adds a virtual touchscreen and plays real touch gestures through
   it: drag to fly, hold to rain, drag while raining, flick to gust (and a slow drag that must
   *not* gust), tapping HUD and menu buttons. 16 checks, PASS/FAIL in the log, then it quits.
+- `Tools/play.sh -pwKeyTest` drives a virtual keyboard from the title: Enter and arrows through
+  the menus, arrows/WASD to fly and stop, Space to rain, Esc to pause and resume, E to gust.
+  14 checks.
 - `Tools/play.sh -pwPadTest` does the same with a virtual gamepad, starting at the title screen:
   A/B/d-pad through the title, map and postcard, stick to fly and stop, A to rain, Start/B to
   pause and resume, X/RB with right-stick aiming to gust. 22 checks.
@@ -199,8 +208,8 @@ What has been verified (on the Linux build unless noted):
 - The newcomer AutoPilot (`-pwNewcomer`) also finishes all twelve. Sampled over eight seeds, Day 2
   and Heatwave, the levels most likely to trip a beginner, landed about 2.5 to 3 game-hours inside
   par. A drained duck pond can be rained back up in time (`-pwDrainPond`).
-- Touch (18 checks), gamepad (24 checks) and UI-reachability (9 screens x 4 window shapes)
-  self-tests pass through the real Input System; the
+- Keyboard (14 checks), touch (18), gamepad (24) and UI-reachability (9 screens x 4 window
+  shapes) self-tests pass through the real Input System; the
   gamepad test drives the whole game from the title screen.
 - The WebGL build runs in headless Chrome (`node Tools/web_smoke.mjs`, add `--phone` for an
   emulated Android phone in landscape): it boots in about 2 s and is played through title, map,
