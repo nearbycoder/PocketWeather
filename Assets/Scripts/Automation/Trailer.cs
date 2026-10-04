@@ -273,7 +273,7 @@ namespace PocketWeather
             var u = buoy.transform.position;
             Frame(u, 0.6f, true);
             yield return Wait(0.6f);
-            yield return Shot("delight_buoy", GustOn(buoy, u + Vector3.up * 0.4f, 2.0f, 2.0f));
+            yield return Shot("delight_buoy", GustOn(u + Vector3.up * 0.4f, 2.0f, 2.0f));
 
             C.SetWater(100f);
             var bp = boat.Position;
@@ -365,14 +365,22 @@ namespace PocketWeather
             C.Teleport(k + new Vector3(1.6f, 0, -1.8f));
             Frame(k, 0.6f, true);
             yield return Wait(0.8f);
-            yield return Shot("delight_kite", GustOn(kite, k + Vector3.up * 0.4f, 2.0f, 2.4f));
+            yield return Shot("delight_kite", GustOn(k + Vector3.up * 0.4f, 2.0f, 2.4f));
 
+            // close on the sails, Pip blowing from the west so it doesn't hide them
             Flow.Hud.SetChrome(false);
             C.SetWater(100f);
-            C.Teleport(mill.transform.position + new Vector3(-1.6f, 0, -2.2f));
-            Frame(mill.transform.position, 0.46f, true);
+            var m = mill.transform.position;
+            C.Teleport(m + new Vector3(-2.6f, 0, 0.2f));
+            Frame(m + new Vector3(-0.9f, 0, 0), 0.5f, true);
             yield return Wait(0.8f);
-            yield return Shot("m_windmill", GustAt(mill.GustPoint, 2.4f));
+            yield return Shot("m_windmill", Puffs(mill.GustPoint, 2.4f, 2, 0.8f));
+        }
+
+        IEnumerator Puffs(Vector3 at, float standoff, int count, float after)
+        {
+            for (int i = 0; i < count; i++) yield return GustAt(at, standoff);
+            yield return Wait(after);
         }
 
         IEnumerator SpinUp(WindmillNeed mill)
@@ -432,12 +440,13 @@ namespace PocketWeather
             yield return Wait(0.6f);
             yield return Shot("fire", Douse(hay1, 1.4f));
 
+            // the campers' secret: gust the campfire into a roar, from the west so Pip doesn't hide it
             var c = camp.transform.position;
             C.SetWater(100f);
-            C.Teleport(c + new Vector3(1.6f, 0, -1.8f));
-            Frame(c, 0.56f, true);
+            C.Teleport(c + new Vector3(-2.4f, 0, 0.3f));
+            Frame(c + new Vector3(-0.7f, 0, 0), 0.56f, true);
             yield return Wait(0.8f);
-            yield return Shot("delight_campfire", GustOn(camp, camp.GustPoint, 2.2f, 2.2f));
+            yield return Shot("delight_campfire", GustOn(camp.GustPoint, 2.2f, 2.2f));
 
             Flow.Hud.SetChrome(false);
             C.SetWater(100f);
@@ -508,7 +517,8 @@ namespace PocketWeather
             var sun = L.FindNeed("sunflowers");
             var cow = (ShadeNeed)L.FindNeed("cow1");
             var cart = L.FindNeed("icecream");
-            Frame(sun.transform.position + new Vector3(1.4f, 0, 0), 0.62f, true);
+            // wide enough to hold both the sunflowers and the cows across the farm
+            Frame((sun.transform.position + cow.transform.position) * 0.5f, 0.84f, true);
             yield return Wait(0.8f);
             yield return Shot("heatwave", Heatwave(sun, cow));
 
@@ -523,9 +533,9 @@ namespace PocketWeather
         {
             var s = sunflowers.transform.position;
             yield return Fly(s, 0.2f);
-            yield return Wait(1.6f);      // shaded sunflowers droop and sulk
+            yield return Wait(1.8f);      // shaded sunflowers droop and sulk
             yield return Fly(s + new Vector3(2.4f, 0, -0.6f), 0.3f);
-            yield return Wait(1.2f);      // back in the sun, they perk up
+            yield return Wait(1.0f);      // back in the sun, they perk up
             var c = cow.transform.position;
             yield return Fly(c, 0.2f);
             float t = 0;
@@ -730,9 +740,10 @@ namespace PocketWeather
             yield return Hover(C.GroundPoint, 0.8f);
         }
 
-        IEnumerator GustOn(Need target, Vector3 at, float standoff, float after)
+        /// <summary>Gusts at a delight's target until the delight is found (at most three puffs).</summary>
+        IEnumerator GustOn(Vector3 at, float standoff, float after)
         {
-            for (int i = 0; i < 3 && !target.Met; i++) yield return GustAt(at, standoff);
+            for (int i = 0; i < 3 && !Flow.DelightFoundThisRun; i++) yield return GustAt(at, standoff);
             yield return Wait(after);
         }
 
