@@ -14,17 +14,38 @@
 *.slnx
 *.pidb
 *.userprefs
+*.apk
+*.aab
+*.unitypackage
 .vs/
 .idea/
 .vscode/
 *.tmp
+*.log
+
+# Burst output dropped in the project root by WebGL builds
+/Data/
+
 # Python / tools
 __pycache__/
-/Tools/.venv/
+*.pyc
+.venv/
+venv/
 /Tools/libs/
+node_modules/
+dist/
+
 # Blender backups
 *.blend1
 *.blend2
 
-# Burst output dropped in the project root by WebGL builds
-/Data/
+# Raw captures (trailer frames, screenshot tours); the curated media lives in docs/media/
+/Captures/
+*.f32
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~

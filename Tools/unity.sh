@@ -3,8 +3,9 @@
 #
 # The editor links against libxml2.so.2, but CachyOS/Arch ship libxml2.so.16, so the editor
 # exits at once with "libxml2.so.2: cannot open shared object file". The proper fix is
-# `sudo pacman -S libxml2-legacy`; until then we point the loader at a local copy in Tools/libs
-# (falls back to ~/.local/share/ptt-unity-libs, where another project on this machine keeps one).
+# `sudo pacman -S libxml2-legacy`; until then, drop a copy of libxml2.so.2 into Tools/libs
+# (gitignored) and this script points the loader at it. Other distros don't need it.
+# UNITY=/path/to/Editor/Unity overrides the default Unity Hub install location.
 #
 #   Tools/unity.sh                      open the project in the editor (GUI)
 #   Tools/unity.sh build                batch-build Builds/Linux/PocketWeather.x86_64
@@ -17,8 +18,7 @@ set -euo pipefail
 UNITY="${UNITY:-$HOME/Unity/Hub/Editor/6000.6.2f1/Editor/Unity}"
 PROJECT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LIBS="$PROJECT/Tools/libs"
-[ -e "$LIBS/libxml2.so.2" ] || LIBS="$HOME/.local/share/ptt-unity-libs"
-export LD_LIBRARY_PATH="$LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+if [ -e "$LIBS/libxml2.so.2" ]; then export LD_LIBRARY_PATH="$LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"; fi
 LOGDIR="$PROJECT/Logs"; mkdir -p "$LOGDIR"
 
 batch() {
