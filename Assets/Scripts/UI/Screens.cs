@@ -80,6 +80,7 @@ namespace PocketWeather
             Ui.Outlined(l2, Res.Hex("7A8FD6"), 5);
             Ui.Shadowed(l2, 10, 0.3f);
             var sub = Ui.Label(logo, "a tiny cloud helps a miniature world through its day", 40, Color.white, new Vector2(1100, 60), new Vector2(40, -175), false);
+            Ui.Outlined(sub, Res.Hex("7A8FD6"), 2.5f);
             Ui.Shadowed(sub, 3, 0.45f);
             tap = Ui.Label(safe, "Tap to play", 58, Color.white, new Vector2(800, 90), new Vector2(0, 150), true, TextAnchor.MiddleCenter, new Vector2(0.5f, 0));
             Ui.Outlined(tap, Res.Hex("6C7FCC"), 3);

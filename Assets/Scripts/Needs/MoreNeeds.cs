@@ -112,12 +112,12 @@ namespace PocketWeather
 
         public override void Tick(float dt)
         {
-            if (!Met) Charge = Mathf.Max(0, Charge - dt * 0.025f);
             if (Charge >= 0.999f && !Met)
             {
                 SetMet(true);
                 Fx.Steam(transform.position + Vector3.up * 0.4f + transform.forward * -0.7f, 10, 0.3f, new Color(1, 0.98f, 0.92f, 0.8f));
             }
+            if (!Met) Charge = Mathf.Max(0, Charge - dt * 0.025f);
             Progress = Charge;
             float target = Met ? 160f : Charge * 120f;
             spin = Mathf.Lerp(spin, target, 1 - Mathf.Exp(-0.8f * dt));
@@ -606,6 +606,7 @@ namespace PocketWeather
         {
             if (trigger != "rain") return;
             acc += amount;
+            if (Level.DebugLog) Debug.Log($"[PW] {Id} rained {acc:0.00}/{Mathf.Max(0.5f, Def.amount)}");
             if (acc >= Mathf.Max(0.5f, Def.amount)) Fire();
         }
 

@@ -14,11 +14,23 @@ namespace PocketWeather
         Level level;
         bool[] fired;
         bool sneezed, tossed;
+        public bool BouquetFlying { get; private set; }
+        public Vector3 BouquetStart { get; private set; }
+        public Vector3 BouquetLand { get; private set; }
+        public const float BouquetArc = 3.6f;
 
         public void Init(Level l)
         {
             level = l;
             fired = new bool[l.Def.events.Length];
+            // a pending spark is part of the level: finishing early brings it forward instead of skipping it
+            foreach (var e in l.Def.events) if (e.type == "ignite") l.HoldCompletion++;
+        }
+
+        bool RequiredMet()
+        {
+            foreach (var n in level.Needs) if (n.Required && !n.Met) return false;
+            return true;
         }
 
         void Update()
@@ -27,11 +39,14 @@ namespace PocketWeather
             var ev = level.Def.events;
             for (int i = 0; i < ev.Length; i++)
             {
-                if (fired[i] || level.Hour < ev[i].hour) continue;
+                if (fired[i]) continue;
+                bool early = ev[i].type == "ignite" && RequiredMet();
+                if (level.Hour < ev[i].hour && !early) continue;
                 fired[i] = true;
                 switch (ev[i].type)
                 {
                     case "ignite":
+                        level.HoldCompletion--;
                         if (level.FindNeed(ev[i].target) is FireNeed f) { f.Ignite(0.7f); GameFlow.I?.Hud.Toast("Fire! Rain on it!", "fire", 2.5f, Res.Hex("FFB38A")); }
                         break;
                     case "toast":
@@ -102,8 +117,10 @@ namespace PocketWeather
             var dir = Quaternion.Euler(0, Random.Range(-40f, 40f), 0) * Vector3.back;
             var land = start + dir * 2.2f;
             land.y = level.GroundHeight(land.x, land.z) + 0.1f;
-            var b = Res.Spawn("flower_pot", level.transform, start, 0, 0.8f).transform;
-            // use petals as a bouquet stand-in tint
+            var b = Res.Spawn("bouquet", level.transform, start, 0, 1.6f).transform;
+            BouquetStart = start;
+            BouquetLand = land;
+            BouquetFlying = true;
             float t = 0, dur = 2.4f;
             bool caught = false;
             var cloud = level.Cloud;
@@ -112,7 +129,7 @@ namespace PocketWeather
             {
                 t += Time.deltaTime;
                 float k = t / dur;
-                var p = Vector3.Lerp(start, land, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * 3.6f;
+                var p = Vector3.Lerp(start, land, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * BouquetArc;
                 b.position = p;
                 b.rotation = Quaternion.Euler(t * 300f, t * 200f, 0);
                 if (Random.value < Time.deltaTime * 20f) Fx.Petals(p, new Color(1f, 0.6f, 0.75f), 1, 0.4f);
@@ -124,6 +141,7 @@ namespace PocketWeather
                 }
                 yield return null;
             }
+            BouquetFlying = false;
             if (caught)
             {
                 b.SetParent(cloud.transform, true);

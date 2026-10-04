@@ -12,6 +12,7 @@ namespace PocketWeather
     public class Level : MonoBehaviour
     {
         public static Level Current { get; private set; }
+        public static readonly bool DebugLog = GameRoot.HasArg("-pwVerbose");
 
         public LevelDef Def { get; private set; }
         public float BaseHeight => Def.island.@base;
@@ -266,6 +267,7 @@ namespace PocketWeather
                 if (ang > Cloud.GustHalfAngle) continue;
                 float k = Mathf.Pow(1f - dist / range, 0.5f) * (1f - (ang / Cloud.GustHalfAngle) * (ang / Cloud.GustHalfAngle) * 0.5f);
                 g.ReceiveGust(dir, k * power);
+                if (DebugLog) Debug.Log($"[PW] gust hit {g} k={k:0.00} power={power:0.00} dist={dist:0.00} ang={ang:0}");
             }
             foreach (var tr in Trees)
             {

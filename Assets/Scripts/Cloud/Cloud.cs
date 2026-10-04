@@ -111,7 +111,7 @@ namespace PocketWeather
 
         void Update()
         {
-            float dt = Mathf.Min(Time.deltaTime, 0.05f);
+            float dt = Mathf.Min(Time.deltaTime, 0.1f);
             if (dt <= 0) return;
             Input.Tick(dt);
 

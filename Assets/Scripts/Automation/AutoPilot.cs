@@ -104,11 +104,13 @@ namespace PocketWeather
         IEnumerator Step()
         {
             var lvl = L;
+            var script = lvl.GetComponent<LevelScript>();
+            if (delights && script != null && script.BouquetFlying) { yield return CatchBouquet(script); yield break; }
             var needs = lvl.Needs.Where(n => n.Required && !n.Met).ToList();
             if (needs.Count == 0) { yield return Hover(C.GroundPoint, 0.3f); yield break; }
             // order: fires first, then things that drink water, by distance
             Need pick = needs.OrderBy(n => Priority(n)).ThenBy(n => Dist(n.transform.position)).First();
-            if (verbose) Debug.Log($"[AutoPilot] t={lvl.Elapsed:0.0} pick={pick.Id} water={C.Water:0} pos={C.transform.position} drinking={C.Drinking} from={(C.DrinkingFrom != null ? C.DrinkingFrom.Def.id : "-")}");
+            if (verbose) Debug.Log($"[AutoPilot] t={lvl.Elapsed:0.0} pick={pick.Id} progress={pick.Progress:0.00} rainbows={lvl.Rainbows.Active.Count} water={C.Water:0} pos={C.transform.position} drinking={C.Drinking} from={(C.DrinkingFrom != null ? C.DrinkingFrom.Def.id : "-")}");
             if (NeedsWater(pick) && C.Water < WaterFor(pick))
             {
                 yield return Refill(Mathf.Min(Cloud.MaxWater, WaterFor(pick) + 25f));
@@ -142,12 +144,15 @@ namespace PocketWeather
         {
             switch (n)
             {
-                case BedNeed b: return Mathf.Max(8f, (b.BandMin + b.BandMax) * 0.5f - b.Moisture + 4f);
+                case BedNeed b: return Mathf.Max(8f, BedGoal(b) - b.Moisture + 4f);
                 case FireNeed f: return 40f;
                 case RainbowWishNeed _: return 28f;
                 default: return 16f;
             }
         }
+
+        // on drying levels, top beds up near the top of their band so they stay in it longer
+        float BedGoal(BedNeed b) => Mathf.Lerp(b.BandMin, b.BandMax, L.Def.island.dryRate > 0 ? 0.8f : 0.5f);
 
         float Dist(Vector3 p) => Vector2.Distance(new Vector2(p.x, p.z), new Vector2(C.transform.position.x, C.transform.position.z));
 
@@ -234,7 +239,7 @@ namespace PocketWeather
         {
             var p = b.transform.position;
             yield return MoveTo(p);
-            float goal = (b.BandMin + b.BandMax) * 0.5f;
+            float goal = BedGoal(b);
             float t = 0;
             C.Input.Virtual(p, true);
             while (b.Moisture < goal - 1.5f && C.Water > 0.5f && t < 8f && GameFlow.I.Current == GameFlow.State.Playing)
@@ -249,7 +254,7 @@ namespace PocketWeather
         IEnumerator WaterSunny(SunnyNeed b)
         {
             var p = b.transform.position;
-            float goal = (b.BandMin + b.BandMax) * 0.5f;
+            float goal = BedGoal(b);
             while (b.Moisture < goal - 1.5f && C.Water > 0.5f && GameFlow.I.Current == GameFlow.State.Playing)
             {
                 yield return MoveTo(p);
@@ -312,15 +317,27 @@ namespace PocketWeather
             // rain right next to the target so the mist covers it, then step off into the sun
             var p = target + new Vector3(0.0f, 0, -0.45f);
             yield return MoveTo(p);
+            if (verbose) Debug.Log($"[AutoPilot]   rainbow: at {C.transform.position} want {p} water {C.Water:0}");
             C.Input.Virtual(p, true);
-            float t = 0;
-            while (t < 1.6f && C.Water > 0.5f) { t += Time.deltaTime; yield return null; }
+            float t = 0, used0 = C.WaterUsed;
+            while (C.WaterUsed - used0 < 20f && t < 6f && C.Water > 0.5f) { t += Time.deltaTime; yield return null; }
             C.Input.Virtual(p, false);
+            if (verbose) Debug.Log($"[AutoPilot]   rainbow: rained, water {C.Water:0} mist {L.Rainbows.MistAt(target):0.0}");
             var off = C.ClampToBounds(target + new Vector3(target.x > 0 ? -3.2f : 3.2f, 0, -0.6f));
             yield return MoveTo(off, 0.3f, 3f);
             t = 0;
             while (t < 2.5f && L.Rainbows.Active.Count == 0) { t += Time.deltaTime; yield return null; }
             yield return Wait(0.6f);
+        }
+
+        IEnumerator CatchBouquet(LevelScript s)
+        {
+            // where the arc comes down through Pip's flying height
+            float h = C.transform.position.y - s.BouquetStart.y;
+            float k = 1f - Mathf.Asin(Mathf.Clamp01(h / LevelScript.BouquetArc)) / Mathf.PI;
+            var p = Vector3.Lerp(s.BouquetStart, s.BouquetLand, k);
+            if (verbose) Debug.Log($"[AutoPilot]   bouquet: heading to {p} (k {k:0.00})");
+            while (s.BouquetFlying) { C.Input.Virtual(C.ClampToBounds(p), false); yield return null; }
         }
 
         IEnumerator Douse(FireNeed f)
@@ -346,7 +363,12 @@ namespace PocketWeather
                     {
                         var p = target.transform.position;
                         yield return MoveTo(p);
-                        yield return Hover(p, 1.2f, true);
+                        if (verbose) Debug.Log($"[AutoPilot]   delight rain_on {target.Id}: at {C.transform.position} want {p} water {C.Water:0}");
+                        C.Input.Virtual(C.ClampToBounds(p), true);
+                        float t = 0;
+                        while (!target.Met && t < 4f && C.Water > 0.5f && GameFlow.I.Current == GameFlow.State.Playing) { t += Time.deltaTime; yield return null; }
+                        C.Input.Virtual(C.ClampToBounds(p), false);
+                        if (verbose) Debug.Log($"[AutoPilot]   delight rain_on done: water {C.Water:0} met {target.Met}");
                     }
                     break;
                 case "gust_on":

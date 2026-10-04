@@ -613,6 +613,22 @@ def bush_flowers():
     return [("flower_pot", m)]
 
 
+def bouquet():
+    """The bride's bouquet (pivot at its middle so it tumbles nicely in flight)."""
+    m = Model("bouquet", pivot=(0, 0.16, 0))
+    m.cone(0.07, 0.2, pos=(0, 0.06, 0), rot=(0, 0, 180), color="7CC45A", segs=10)
+    m.torus(0.045, 0.014, pos=(0, 0.12, 0), color="FBFAF7", segs=14, rsegs=6)
+    for k in range(5):
+        a = k / 5 * math.tau
+        m.blob(0.045, pos=(math.cos(a) * 0.09, 0.19, math.sin(a) * 0.09), scale=(1.4, 0.5, 0.8), rot=(0, -math.degrees(a), 25),
+               color=LEAF, subdiv=1, amp=0.1, seed=30 + k)
+    for k, (c, r, y) in enumerate(((CORAL, 0.0, 0.27), (BUTTER, 0.07, 0.24), (PINK, 0.07, 0.24), ("B79CFF", 0.07, 0.24),
+                                   ("FBFAF7", 0.07, 0.24), (PINK, 0.12, 0.2), (CORAL, 0.12, 0.2), (BUTTER, 0.12, 0.2))):
+        a = k * 2.4
+        m.sphere(0.045 if k else 0.052, pos=(math.cos(a) * r, y, math.sin(a) * r), color=c, subdiv=2)
+    return [("bouquet", m)]
+
+
 def rock_island():
     m = Model("rock_big")
     m.blob(0.45, pos=(0, 0.15, 0), scale=(1.3, 0.6, 1.0), color="9E978C", subdiv=2, amp=0.2, freq=2, seed=77, smooth=False, flat_bottom=-0.2)
@@ -632,5 +648,5 @@ def all_props():
     out += chair() + chapel() + rowboat() + buoy() + birdbath() + fountain() + kite() + scarecrow() + rain_barrel()
     out += mailbox() + pine() + pine("tree_pine_small", 1.0) + fruit_tree() + tree_round("tree_round_b", seed=7, leaf="4FA84A", h=1.15)
     out += hedge() + hedge("hedge_long", 2.0) + reeds() + lily_pads() + window_box() + crop_bed() + mud_wallow()
-    out += crops() + sapling() + umbrella_small() + bush_flowers() + rock_island()
+    out += crops() + sapling() + umbrella_small() + bush_flowers() + bouquet() + rock_island()
     return out

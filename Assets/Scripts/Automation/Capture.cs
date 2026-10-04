@@ -23,7 +23,7 @@ namespace PocketWeather
             if (i < 0 || i + 1 >= args.Length) return;
             var c = new GameObject("Capture").AddComponent<Capture>();
             c.outDir = args[i + 1];
-            c.script = GameRoot.Arg("-pwScript", "proto");
+            c.script = GameRoot.Arg("-pwScript", "tour");
             DontDestroyOnLoad(c.gameObject);
         }
 
@@ -61,8 +61,10 @@ namespace PocketWeather
             yield return new WaitForSeconds(settle);
         }
 
+        /// <summary>The M1 prototype tour; needs <c>-pwLevel proto</c>.</summary>
         IEnumerator Proto()
         {
+            if (L == null || L.Def.id != "proto") { Log("proto script needs -pwLevel proto"); yield break; }
             yield return Shot("01_start");
             // drink
             var pond = L.FindWater("pond");
@@ -188,6 +190,14 @@ namespace PocketWeather
                 flow.DebugStart(i, true);
                 yield return new WaitForSeconds(1.6f);
                 yield return Shot($"L{i + 1:00}_start");
+                if (i == 0)
+                {
+                    flow.DebugPause();
+                    yield return new WaitForSecondsRealtime(0.8f);
+                    yield return Shot("t03_pause");
+                    flow.DebugResume();
+                    yield return new WaitForSecondsRealtime(0.4f);
+                }
             }
         }
 
