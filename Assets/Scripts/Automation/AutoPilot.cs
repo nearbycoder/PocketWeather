@@ -19,6 +19,7 @@ namespace PocketWeather
         string outDir;
         bool delights;
         bool verbose = GameRoot.HasArg("-pwVerbose");
+        bool video = GameRoot.HasArg("-pwVideo");     // showcase pacing: title, map and postcards on screen
         int passes, fails;
         readonly List<string> report = new();
 
@@ -41,6 +42,12 @@ namespace PocketWeather
         {
             Directory.CreateDirectory(outDir);
             yield return new WaitForSeconds(1.0f);
+            if (video)
+            {
+                yield return new WaitForSeconds(3.5f);
+                GameFlow.I.DebugShowMap();
+                yield return new WaitForSeconds(3.5f);
+            }
             string only = GameRoot.Arg("-pwOnly");
             float speed = float.Parse(GameRoot.Arg("-pwSpeed", "1"), System.Globalization.CultureInfo.InvariantCulture);
             for (int i = 0; i < LevelLibrary.Campaign.Length; i++)
@@ -58,7 +65,15 @@ namespace PocketWeather
 
         IEnumerator PlayLevel(int index, float speed)
         {
-            GameFlow.I.DebugStart(index, true);
+            if (video)
+            {
+                GameFlow.I.DebugStart(index, false);    // the postcard pops up
+                yield return new WaitForSeconds(3.6f);
+                GameFlow.I.DebugBeginPlay();
+                Recorder.Mark("play " + L.Def.id);
+                yield return new WaitForSeconds(1.0f);
+            }
+            else GameFlow.I.DebugStart(index, true);
             yield return null;
             yield return null;
             var lvl = L;
@@ -72,18 +87,21 @@ namespace PocketWeather
                 if (!delightTried && lvl.Elapsed > 2f)
                 {
                     delightTried = true;
+                    Recorder.Mark("delight " + lvl.Def.id);
                     yield return TryDelight();
                     continue;
                 }
                 yield return Step();
                 if (!shotMid && lvl.Elapsed > 12f) { shotMid = true; yield return Shot($"{id}_mid"); }
-                if (Time.realtimeSinceStartup - startReal > 400f) break;
+                if (Time.realtimeSinceStartup - startReal > (video ? 3000f : 400f)) break;
             }
             Time.timeScale = 1f;
             // wait for the results/fail card
             float t = 0;
             while (GameFlow.I.Current != GameFlow.State.Results && GameFlow.I.Current != GameFlow.State.Failed && t < 12f) { t += Time.unscaledDeltaTime; yield return null; }
-            yield return new WaitForSecondsRealtime(1.6f);
+            Recorder.Mark("results " + id);
+            if (video) yield return new WaitForSeconds(3.5f);
+            else yield return new WaitForSecondsRealtime(1.6f);
             yield return Shot($"{id}_end");
             bool ok = GameFlow.I.Current == GameFlow.State.Results;
             float finish = lvl.Elapsed;
@@ -105,7 +123,7 @@ namespace PocketWeather
         {
             var lvl = L;
             var script = lvl.GetComponent<LevelScript>();
-            if (delights && script != null && script.BouquetFlying) { yield return CatchBouquet(script); yield break; }
+            if (delights && script != null && script.BouquetFlying) { Recorder.Mark("bouquet"); yield return CatchBouquet(script); yield break; }
             var needs = lvl.Needs.Where(n => n.Required && !n.Met).ToList();
             if (needs.Count == 0) { yield return Hover(C.GroundPoint, 0.3f); yield break; }
             // order: fires first, then things that drink water, by distance

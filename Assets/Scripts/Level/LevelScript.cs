@@ -67,6 +67,7 @@ namespace PocketWeather
         IEnumerator Sneeze()
         {
             sneezed = true;
+            Recorder.Mark("sneeze");
             level.HoldCompletion++;
             var cloud = level.Cloud;
             var arch = level.FindNeed("arch");

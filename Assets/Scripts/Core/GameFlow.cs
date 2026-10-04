@@ -120,6 +120,7 @@ namespace PocketWeather
         }
 
         public void DebugShowPostcard() { if (Level != null) postcard.Show(Level.Def, LevelIndex); }
+        public void DebugBeginPlay() => BeginPlay();
         public void DebugShowMap() => ShowMapNow();
         public void DebugShowTitle() => ShowTitleNow();
         public void DebugPause() => Pause();

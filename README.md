@@ -144,6 +144,11 @@ Tools/unity.sh                # open the editor
   and water used. Add `-pwOnly 6,7` for specific levels, `-pwDelights` to also chase each
   secret, `-pwVerbose` for a trace. Screenshots and `report.txt` land in the given folder.
 - `Tools/play.sh -pwCapture /tmp/shots` takes a scripted screenshot tour.
+- Gameplay video: add `-pwVideo /tmp/vid` to an AutoPilot run to record frames and audio on a
+  fixed 30 fps clock (smooth however slow the machine is), then
+  `python3 Tools/make_video.py /tmp/vid <player log> out.mp4` adds captions and encodes it.
+  The showcase in `Builds/PocketWeather_gameplay.mp4` came from
+  `-pwOnly 1,2,3,4,6,9,12 -pwDelights -pwFreshSave`.
 - Other flags: `-pwLevel levelNN` boots straight into a level, `-pwUnlockAll`, `-pwFreshSave`.
   Automated runs use a separate save slot, so they never touch real progress.
 
