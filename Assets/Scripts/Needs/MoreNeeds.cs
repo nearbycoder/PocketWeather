@@ -516,11 +516,14 @@ namespace PocketWeather
         WaterBody water;
         readonly List<(Transform t, float phase, float r)> ducks = new();
         float line;
-        bool wasMet = true;
+        bool wasMet = true, warned;
+        public WaterBody Water => water;
+        public float Line => line;
 
         protected override void Build()
         {
             water = Level.FindWater(Def.water);
+            if (water != null) water.DrinkScale = 0.5f;
             line = Def.target != null && Def.target.Length > 0 ? Def.target[0] : 0.4f;
             int n = Mathf.Max(1, Mathf.RoundToInt(Def.time));
             for (int i = 0; i < n; i++)
@@ -536,10 +539,20 @@ namespace PocketWeather
             if (water == null) return;
             float f = water.Fraction;
             bool met = f >= line;
+            // warn while Pip is drinking it down towards the line; once below, say how to fix it
+            var cloud = Level.Cloud;
+            if (!warned && met && f < line + 0.12f && cloud != null && cloud.DrinkingFrom == water)
+            {
+                warned = true;
+                Sfx.Play("duck", BubbleAnchor, 0.7f);
+                GameFlow.I?.Hud.Toast("Careful! The ducks need their pond", "duck", 2.4f);
+            }
+            if (f > line + 0.2f) warned = false;
             if (!met && wasMet)
             {
                 Oops(BubbleAnchor);
                 Sfx.Play("duck", BubbleAnchor);
+                GameFlow.I?.Hud.Toast("Rain into the pond to fill it back up!", "drop", 3.2f, Res.Hex("CFE6F7"));
             }
             wasMet = met;
             SetMet(met);

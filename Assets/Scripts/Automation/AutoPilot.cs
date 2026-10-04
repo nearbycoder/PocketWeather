@@ -20,6 +20,20 @@ namespace PocketWeather
         bool delights;
         bool verbose = GameRoot.HasArg("-pwVerbose");
         bool video = GameRoot.HasArg("-pwVideo");     // showcase pacing: title, map and postcards on screen
+        // -pwNewcomer: plays like a first-timer, to sanity-check par. Pauses to read the scene, spends
+        // a while figuring out each new kind of need, aims the cloud and gusts imprecisely, and
+        // reacts late when a bed is full. Seeded, so runs are repeatable.
+        readonly bool newcomer = GameRoot.HasArg("-pwNewcomer");
+        readonly System.Random rng = new(1234);
+        readonly HashSet<string> learned = new();
+        float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
+        Vector3 Sloppy(Vector3 p, float r = 0.32f)
+        {
+            if (!newcomer) return p;
+            float ang = R(0, Mathf.PI * 2), d = Mathf.Sqrt(R(0, 1)) * r;
+            return p + new Vector3(Mathf.Cos(ang) * d, 0, Mathf.Sin(ang) * d);
+        }
+        Vector3 SloppyDir(Vector3 dir) => newcomer ? Quaternion.Euler(0, R(-18f, 18f), 0) * dir : dir;
         int passes, fails;
         readonly List<string> report = new();
 
@@ -78,6 +92,8 @@ namespace PocketWeather
             yield return null;
             var lvl = L;
             string id = lvl.Def.id;
+            if (GameRoot.HasArg("-pwDrainPond"))   // recovery test: start with every duck pond well below its line
+                foreach (var n in lvl.Needs) if (n is PondLineNeed pl && pl.Water != null) pl.Water.DebugSetFraction(pl.Line * 0.45f);
             Time.timeScale = speed;
             float startReal = Time.realtimeSinceStartup;
             bool shotMid = false;
@@ -105,7 +121,7 @@ namespace PocketWeather
             yield return Shot($"{id}_end");
             bool ok = GameFlow.I.Current == GameFlow.State.Results;
             float finish = lvl.Elapsed;
-            string line = $"{(ok ? "PASS" : "FAIL")} {id} \"{lvl.Def.title}\" finished {(ok ? "" : "NOT ")}by sundown; elapsed {lvl.Elapsed:0}s of {lvl.Def.dayLength}s; " +
+            string line = $"{(ok ? "PASS" : "FAIL")}{(newcomer ? " (newcomer)" : "")} {id} \"{lvl.Def.title}\" finished {(ok ? "" : "NOT ")}by sundown; elapsed {lvl.Elapsed:0}s of {lvl.Def.dayLength}s; " +
                           $"hour {SaveData.Get(id).bestHour:0.00} par {lvl.Def.par:0.00} {(SaveData.Has(id, SaveData.StampPar) ? "(par stamp)" : "(missed par)")}; " +
                           $"delight {(SaveData.Has(id, SaveData.StampDelight) ? "found" : "not found")}; oopses {lvl.Oopses}; water used {C?.WaterUsed:0}";
             if (!ok)
@@ -128,6 +144,17 @@ namespace PocketWeather
             if (needs.Count == 0) { yield return Hover(C.GroundPoint, 0.3f); yield break; }
             // order: fires first, then things that drink water, by distance
             Need pick = needs.OrderBy(n => Priority(n)).ThenBy(n => Dist(n.transform.position)).First();
+            if (newcomer)
+            {
+                // look around before acting; the first time a kind of need shows up, work out what it wants
+                yield return Wait(R(0.5f, 1.4f));
+                string kind = pick.GetType().Name;
+                if (learned.Add(kind))
+                {
+                    if (verbose) Debug.Log($"[AutoPilot] newcomer: figuring out {kind}");
+                    yield return Hover(Sloppy(pick.transform.position + new Vector3(1.2f, 0, -0.8f), 0.6f), R(2.5f, 4.5f));
+                }
+            }
             if (verbose) Debug.Log($"[AutoPilot] t={lvl.Elapsed:0.0} pick={pick.Id} progress={pick.Progress:0.00} rainbows={lvl.Rainbows.Active.Count} water={C.Water:0} pos={C.transform.position} drinking={C.Drinking} from={(C.DrinkingFrom != null ? C.DrinkingFrom.Def.id : "-")}");
             if (NeedsWater(pick) && C.Water < WaterFor(pick))
             {
@@ -144,6 +171,7 @@ namespace PocketWeather
                 case LaundryNeed ln: yield return GustAt(ln.GustPoint, 2.4f, ln); break;
                 case WindmillNeed wm: yield return GustAt(wm.GustPoint, 2.6f, wm); break;
                 case RainbowWishNeed rw: yield return MakeRainbow(rw.transform.position); break;
+                case PondLineNeed pl when !pl.Met: yield return RefillPond(pl); break;
                 case KeepDryNeed _:
                 case CampfireNeed _:
                 case PondLineNeed _:
@@ -176,7 +204,7 @@ namespace PocketWeather
 
         IEnumerator MoveTo(Vector3 p, float tol = 0.18f, float timeout = 5f)
         {
-            p = C.ClampToBounds(p);
+            p = C.ClampToBounds(Sloppy(p));
             C.Input.Virtual(p, false);
             float t = 0;
             while (t < timeout && GameFlow.I.Current == GameFlow.State.Playing)
@@ -265,6 +293,7 @@ namespace PocketWeather
                 t += Time.deltaTime;
                 yield return null;
             }
+            if (newcomer) yield return Hover(p, R(0.1f, 0.35f), true);   // lets go a beat late
             C.Input.Virtual(p, false);
             yield return Wait(0.35f);
         }
@@ -305,7 +334,7 @@ namespace PocketWeather
             if (C.Water < Cloud.GustCost + 1) { yield return Refill(40); yield break; }
             bp = b.Position;
             dir = (b.Goal - new Vector3(bp.x, 0, bp.z)); dir.y = 0; dir.Normalize();
-            C.Input.VirtualGust(dir);
+            C.Input.VirtualGust(SloppyDir(dir));
             yield return Hover(C.GroundPoint, 0.7f);
             // wait for the boat to coast a little
             float t = 0;
@@ -326,7 +355,7 @@ namespace PocketWeather
             yield return MoveTo(new Vector3(spot.x, 0, spot.z), 0.3f, 4f);
             if (C.Water < Cloud.GustCost + 1) { yield return Refill(40); yield break; }
             var dir = new Vector3(target.x - C.transform.position.x, 0, target.z - C.transform.position.z).normalized;
-            C.Input.VirtualGust(dir);
+            C.Input.VirtualGust(SloppyDir(dir));
             yield return Hover(C.GroundPoint, 0.7f);
         }
 
@@ -346,6 +375,35 @@ namespace PocketWeather
             t = 0;
             while (t < 2.5f && L.Rainbows.Active.Count == 0) { t += Time.deltaTime; yield return null; }
             yield return Wait(0.6f);
+        }
+
+        /// <summary>The pond fell below the ducks' line: fetch water elsewhere and rain it back in.</summary>
+        IEnumerator RefillPond(PondLineNeed pl)
+        {
+            var w = pl.Water;
+            if (w == null) { yield return Wait(1f); yield break; }
+            if (C.Water < 12f)
+            {
+                // anywhere but the duck pond: the fountain's motes, or other water
+                var near = L.Motes != null ? L.Motes.Nearest(C.transform.position) : null;
+                WaterBody other = null;
+                foreach (var o in L.Waters) if (o != w && (other == null || Dist(WaterPoint(o)) < Dist(WaterPoint(other)))) other = o;
+                if (other != null) { yield return MoveTo(WaterPoint(other), 0.25f); float t0 = 0; while (C.Water < 90 && t0 < 5f) { t0 += Time.deltaTime; yield return null; } }
+                else if (near.HasValue) yield return MoveTo(near.Value, 0.25f, 3f);
+                else yield return Wait(1f);
+                yield break;
+            }
+            var p = new Vector3(w.Def.x, 0, w.Def.z);
+            yield return MoveTo(p, 0.3f);
+            C.Input.Virtual(p, true);
+            float t = 0;
+            while (!pl.Met && C.Water > 0.5f && t < 8f && GameFlow.I.Current == GameFlow.State.Playing) { t += Time.deltaTime; yield return null; }
+            // a little extra margin above the line
+            t = 0;
+            while (C.Water > 0.5f && t < 0.8f) { t += Time.deltaTime; yield return null; }
+            C.Input.Virtual(p, false);
+            // don't sit over the pond drinking it straight back down
+            yield return MoveTo(p + new Vector3(w.Def.rx + 1.2f, 0, 0), 0.3f, 3f);
         }
 
         IEnumerator CatchBouquet(LevelScript s)

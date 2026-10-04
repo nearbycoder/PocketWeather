@@ -195,6 +195,11 @@ namespace PocketWeather
                     flow.DebugPause();
                     yield return new WaitForSecondsRealtime(0.8f);
                     yield return Shot("t03_pause");
+                    flow.DebugSettings();
+                    yield return new WaitForSecondsRealtime(0.8f);
+                    yield return Shot("t04_settings");
+                    flow.DebugCloseSettings();
+                    yield return new WaitForSecondsRealtime(0.4f);
                     flow.DebugResume();
                     yield return new WaitForSecondsRealtime(0.4f);
                 }

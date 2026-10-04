@@ -285,6 +285,21 @@ def star(col="FFD23F", name="star"):
     return m
 
 
+def gear():
+    m = Model("gear")
+    pts, teeth = [], 8
+    step = 2 * math.pi / teeth
+    for k in range(teeth):
+        a = math.pi / 2 + k * step
+        # base-left, tip-left, tip-right, base-right: flat-topped teeth narrower than the gaps
+        for off, r in ((-0.30, 0.35), (-0.17, 0.49), (0.17, 0.49), (0.30, 0.35)):
+            pts.append((math.cos(a + off * step) * r, math.sin(a + off * step) * r))
+    m.prism(pts, 0.18, color="FFD86B", bevel=0.035)
+    # the axle hole, faked with a recessed disc in the button's lilac
+    m.cyl(0.15, 0.04, pos=(0, 0, -0.08), rot=(90, 0, 0), color="8E7BD8", segs=28, bevel=0.01)
+    return m
+
+
 def check():
     m = Model("check")
     m.prism([(-0.4, 0.05), (-0.25, 0.2), (-0.08, 0.02), (0.3, 0.42), (0.45, 0.27), (-0.08, -0.3)], 0.16, color="5DC25A", bevel=0.05)
@@ -487,7 +502,7 @@ ICONS = {
     "drop": drop, "sun": sun, "wind": wind, "flower": flower, "carrot": carrot, "cabbage": cabbage, "tomato": tomato,
     "wheat": wheat, "pumpkin": pumpkin, "mud": pig, "pig": pig, "boat": boat, "shirt": shirt, "windmill": windmill,
     "rainbow": rainbow, "fire": fire, "campfire": campfire, "castle": castle, "cake": cake, "sunflower": sunflower,
-    "duck": duck, "heart": heart, "star": star, "check": check, "lock": lock, "soggy": soggy, "oops": oops,
+    "duck": duck, "heart": heart, "star": star, "gear": gear, "check": check, "lock": lock, "soggy": soggy, "oops": oops,
     "grumpy": grumpy, "clock": clock, "pip": pip, "sheep": sheep_icon, "person": person, "bell": bell_icon,
     "kite": kite, "hand": hand, "snail": snail, "birdbath": birdbath, "seal": seal, "icecream": icecream, "bouquet": bouquet,
     "stamp_sun": lambda: stamp("F2A93B", em_sun, "stamp_sun"),

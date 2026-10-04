@@ -12,6 +12,8 @@ namespace PocketWeather
         public bool IsSea { get; private set; }
         public float Level => surfaceY;
         public float Amount { get; private set; }
+        /// <summary>How fast Pip drinks here (the duck pond is sipped, so a pause over it isn't ruinous).</summary>
+        public float DrinkScale = 1f;
         public float Capacity => Def.capacity;
         public float Fraction => Def.finite ? Amount / Mathf.Max(1, Def.capacity) : 1f;
         public bool Finite => Def.finite;
@@ -79,6 +81,9 @@ namespace PocketWeather
             Amount -= got;
             return got;
         }
+
+        /// <summary>Test hook: set how full a finite body is (0..1).</summary>
+        public void DebugSetFraction(float f) { if (Def.finite) Amount = Mathf.Clamp01(f) * Def.capacity; }
 
         public void AddWater(float amount)
         {

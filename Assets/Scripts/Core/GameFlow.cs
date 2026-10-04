@@ -124,6 +124,8 @@ namespace PocketWeather
         public void DebugShowMap() => ShowMapNow();
         public void DebugShowTitle() => ShowTitleNow();
         public void DebugPause() => Pause();
+        public void DebugSettings() => OpenSettings(pause);
+        public void DebugCloseSettings() => CloseSettings();
         public void DebugResume() => Resume();
 
         System.Action queuedTransition;

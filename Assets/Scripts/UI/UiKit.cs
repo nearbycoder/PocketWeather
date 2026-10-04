@@ -101,8 +101,9 @@ namespace PocketWeather
             var scaler = go.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.7f;
+            // Expand: the whole 1920x1080 design area always fits, on 20:9 phones, 4:3 tablets
+            // and even portrait windows; at 16:9 it's identical to a fixed reference
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             go.AddComponent<GraphicRaycaster>();
             return c;
         }

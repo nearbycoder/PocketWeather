@@ -174,7 +174,7 @@ namespace PocketWeather
                     DrinkingFrom = wb;
                     if (Water < MaxWater - 0.01f)
                     {
-                        float want = Mathf.Min(DrinkRate * dt, MaxWater - Water);
+                        float want = Mathf.Min(DrinkRate * wb.DrinkScale * dt, MaxWater - Water);
                         float got = wb.Take(want);
                         Water += got;
                         DrinkAmount = got;

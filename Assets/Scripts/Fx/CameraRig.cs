@@ -43,6 +43,7 @@ namespace PocketWeather
             data.requiresDepthOption = CameraOverrideOption.On;
             data.requiresColorOption = CameraOverrideOption.On;
             camGo.AddComponent<AudioListener>();
+            camGo.AddComponent<MasterLimiter>();
             return rig;
         }
 
@@ -124,7 +125,8 @@ namespace PocketWeather
                 pos += new Vector3(Mathf.PerlinNoise(t * 25f, 0) - 0.5f, Mathf.PerlinNoise(0, t * 25f) - 0.5f, 0) * s;
             }
             Cam.transform.SetPositionAndRotation(pos, rot);
-            FocusDistance = Vector3.Distance(pos, target);
+            // focus a little above the ground, between the island and Pip's flying height
+            FocusDistance = Vector3.Distance(pos, target) - Cloud.Altitude * 0.4f * Mathf.Sin(Pitch * Mathf.Deg2Rad);
             PostFx.SetFocus(FocusDistance);
         }
     }

@@ -35,6 +35,7 @@ namespace PocketWeather
             QualitySettings.vSyncCount = 1;
             Fx.Init();
             PostFx.Create();
+            Quality.Init();
             AudioHub.Create();
             Rig = CameraRig.Create();
             DontDestroyOnLoad(Rig.gameObject);

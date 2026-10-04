@@ -94,7 +94,7 @@ namespace PocketWeather
             var btn = hit.gameObject.AddComponent<Button>();
             btn.transition = Selectable.Transition.None;
             btn.onClick.AddListener(() => { Sfx.Ui("ui_pop"); OnPlay?.Invoke(); });
-            var set = Ui.Button(safe, "", Ui.Lilac, new Vector2(100, 100), new Vector2(-80, 80), () => OnSettings?.Invoke(), "star", new Vector2(1, 0), 40, "Settings");
+            var set = Ui.Button(safe, "", Ui.Lilac, new Vector2(100, 100), new Vector2(-80, 80), () => OnSettings?.Invoke(), "gear", new Vector2(1, 0), 40, "Settings");
             firstSelected = btn.gameObject;
             var creditPill = Ui.Panel(safe, new Vector2(520, 46), new Vector2(0, 62), new Color(1, 1, 1, 0.7f), new Vector2(0.5f, 0), 23f, false);
             creditPill.raycastTarget = false;
@@ -146,7 +146,7 @@ namespace PocketWeather
             Ui.Icon(tp.transform, "stamp_flower", 64, new Vector2(-70, 2));
             total = Ui.Label(tp.transform, "0/36", 40, Ui.Ink, new Vector2(140, 70), new Vector2(30, 2), true);
             var back = Ui.Button(safe, "Title", Ui.Lilac, new Vector2(220, 90), new Vector2(150, 80), () => OnBack?.Invoke(), null, new Vector2(0, 0), 38);
-            Ui.Button(safe, "", Ui.Lilac, new Vector2(90, 90), new Vector2(-80, 80), () => OnSettings?.Invoke(), "star", new Vector2(1, 0), 38, "Settings");
+            Ui.Button(safe, "", Ui.Lilac, new Vector2(90, 90), new Vector2(-80, 80), () => OnSettings?.Invoke(), "gear", new Vector2(1, 0), 38, "Settings");
             grid = Ui.Rect("Grid", safe, new Vector2(0.5f, 0.5f), new Vector2(1700, 700), new Vector2(0, -20));
         }
 
@@ -337,27 +337,44 @@ namespace PocketWeather
     public class SettingsMenu : MenuScreen
     {
         public Action OnClose;
-        JuicyButton resetBtn;
+        JuicyButton resetBtn, gfxButton;
         bool confirmReset;
+
+        static string GraphicsLabel() => GameSettings.Graphics switch
+        {
+            1 => "High",
+            2 => "Low",
+            _ => Quality.AutoDowngraded ? "Auto (low)" : "Auto",
+        };
 
         protected override void Build()
         {
             Dim(0.55f);
-            var p = Ui.Panel(root, new Vector2(760, 900), Vector2.zero, Ui.Paper, null, 48f);
-            Ui.Label(p.transform, "Settings", 70, Ui.Ink, new Vector2(600, 90), new Vector2(0, 380), true);
-            float y = 270;
-            Ui.Slider(p.transform, "Music", GameSettings.Music, new Vector2(0, y), v => { GameSettings.Music = v; }, 640); y -= 90;
-            Ui.Slider(p.transform, "Sounds", GameSettings.Sfx, new Vector2(0, y), v => { GameSettings.Sfx = v; }, 640); y -= 90;
-            Ui.Slider(p.transform, "Ambience", GameSettings.Ambience, new Vector2(0, y), v => { GameSettings.Ambience = v; }, 640); y -= 90;
-            Ui.Slider(p.transform, "Tilt-shift", GameSettings.TiltShift, new Vector2(0, y), v => { GameSettings.TiltShift = v; PostFx.ApplySettings(); }, 640); y -= 92;
-            Ui.Toggle(p.transform, "Screen shake", GameSettings.ScreenShake, new Vector2(0, y), v => GameSettings.ScreenShake = v, 640); y -= 84;
-            Ui.Toggle(p.transform, "Hints", GameSettings.Hints, new Vector2(0, y), v => GameSettings.Hints = v, 640); y -= 84;
-            Ui.Toggle(p.transform, "Touch buttons", GameSettings.TouchButtons == 1, new Vector2(0, y), v => GameSettings.TouchButtons = v ? 1 : 0, 640); y -= 84;
+            var p = Ui.Panel(root, new Vector2(760, 1030), Vector2.zero, Ui.Paper, null, 48f);
+            Ui.Label(p.transform, "Settings", 70, Ui.Ink, new Vector2(600, 90), new Vector2(0, 438), true);
+            float y = 335;
+            Ui.Slider(p.transform, "Music", GameSettings.Music, new Vector2(0, y), v => { GameSettings.Music = v; }, 640); y -= 85;
+            Ui.Slider(p.transform, "Sounds", GameSettings.Sfx, new Vector2(0, y), v => { GameSettings.Sfx = v; }, 640); y -= 85;
+            Ui.Slider(p.transform, "Ambience", GameSettings.Ambience, new Vector2(0, y), v => { GameSettings.Ambience = v; }, 640); y -= 85;
+            Ui.Slider(p.transform, "Tilt-shift", GameSettings.TiltShift, new Vector2(0, y), v => { GameSettings.TiltShift = v; PostFx.ApplySettings(); }, 640); y -= 86;
+            // graphics: tap to cycle Auto / High / Low
+            var gfxRow = Ui.Rect("Row_Graphics", p.transform, new Vector2(0.5f, 0.5f), new Vector2(640, 76), new Vector2(0, y));
+            Ui.Label(gfxRow, "Graphics", 34, Ui.Ink, new Vector2(300, 60), new Vector2(-170, 0), false, TextAnchor.MiddleLeft);
+            gfxButton = Ui.Button(gfxRow, GraphicsLabel(), Ui.Sky, new Vector2(230, 66), new Vector2(205, 0), () =>
+            {
+                GameSettings.Graphics = (GameSettings.Graphics + 1) % 3;
+                Quality.Apply();
+                gfxButton.SetLabel(GraphicsLabel());
+            }, null, null, 30, "Graphics");
+            y -= 82;
+            Ui.Toggle(p.transform, "Screen shake", GameSettings.ScreenShake, new Vector2(0, y), v => GameSettings.ScreenShake = v, 640); y -= 80;
+            Ui.Toggle(p.transform, "Hints", GameSettings.Hints, new Vector2(0, y), v => GameSettings.Hints = v, 640); y -= 80;
+            Ui.Toggle(p.transform, "Touch buttons", GameSettings.TouchButtons == 1, new Vector2(0, y), v => GameSettings.TouchButtons = v ? 1 : 0, 640); y -= 80;
             Ui.Toggle(p.transform, "Fullscreen", UnityEngine.Screen.fullScreen, new Vector2(0, y), v =>
             {
                 UnityEngine.Screen.fullScreenMode = v ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
             }, 640);
-            y -= 112;
+            y -= 106;
             resetBtn = Ui.Button(p.transform, "Reset progress", Ui.Coral, new Vector2(300, 84), new Vector2(-170, y), () =>
             {
                 if (!confirmReset) { confirmReset = true; resetBtn.SetLabel("Sure?"); return; }
@@ -373,6 +390,7 @@ namespace PocketWeather
         {
             confirmReset = false;
             resetBtn.SetLabel("Reset progress");
+            gfxButton.SetLabel(GraphicsLabel());
         }
 
         void Update()

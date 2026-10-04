@@ -8,6 +8,7 @@
 #
 #   Tools/unity.sh                      open the project in the editor (GUI)
 #   Tools/unity.sh build                batch-build Builds/Linux/PocketWeather.x86_64
+#   Tools/unity.sh webgl                batch-build Builds/WebGL (serve with Tools/serve_web.sh)
 #   Tools/unity.sh method <Name>        batch-run a static editor method (e.g. PocketWeather.EditorTools.ProjectSetup.Apply)
 #   Tools/unity.sh compile              batch import + compile only, print compiler errors
 #   Tools/unity.sh serve                resident batch editor (no -quit) for `unity command`
@@ -37,6 +38,9 @@ case "${1:-open}" in
   build)
     batch "$LOGDIR/build.log" -executeMethod PocketWeather.EditorTools.BuildScript.BuildLinux
     ;;
+  webgl)
+    batch "$LOGDIR/build-webgl.log" -buildTarget WebGL -executeMethod PocketWeather.EditorTools.BuildScript.BuildWebGL
+    ;;
   method)
     batch "$LOGDIR/method.log" -executeMethod "$2"
     ;;
@@ -47,7 +51,7 @@ case "${1:-open}" in
     exec "$UNITY" -batchmode -projectPath "$PROJECT" -logFile "$LOGDIR/serve.log"
     ;;
   *)
-    echo "usage: $0 [open|build|method <Name>|compile|serve]" >&2
+    echo "usage: $0 [open|build|webgl|method <Name>|compile|serve]" >&2
     exit 2
     ;;
 esac

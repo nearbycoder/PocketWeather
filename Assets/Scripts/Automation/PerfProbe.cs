@@ -16,6 +16,7 @@ namespace PocketWeather
         float levelStart, worst, worstAt;
         int hitches, lastGc;
         long lastHeap, allocated;
+        double gpuSum; int gpuN;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Boot()
@@ -49,6 +50,7 @@ namespace PocketWeather
                 worst = worstAt = 0;
                 hitches = 0;
                 allocated = 0;
+                gpuSum = 0; gpuN = 0;
                 lastHeap = System.GC.GetTotalMemory(false);
             }
             if (!playing || Time.frameCount <= 2) return;
@@ -56,6 +58,7 @@ namespace PocketWeather
             if (quitAfter > 0 && Time.realtimeSinceStartup - levelStart > quitAfter) { Flush(); Application.Quit(); quitAfter = 0; return; }
             float ms = Time.unscaledDeltaTime * 1000f;
             samples.Add(ms);
+            if (Quality.GpuMs > 0) { gpuSum += Quality.GpuMs; gpuN++; }
             float at = Time.realtimeSinceStartup - levelStart;
             int gc = System.GC.CollectionCount(0);
             bool gcThisFrame = gc != lastGc;
@@ -83,7 +86,8 @@ namespace PocketWeather
             float P(float q) => samples[Mathf.Min(samples.Count - 1, (int)(q * samples.Count))];
             Debug.Log($"[Perf] {levelId} frames {samples.Count} avg {avg:0.00}ms ({1000f / avg:0} fps) " +
                       $"p95 {P(0.95f):0.00}ms p99 {P(0.99f):0.00}ms worst {worst:0.00}ms at {worstAt:0.0}s " +
-                      $"hitches>50ms {hitches} gc0 {System.GC.CollectionCount(0) - gcStart} alloc {allocated / 1024f / samples.Count:0.0}KB/frame");
+                      $"hitches>50ms {hitches} gc0 {System.GC.CollectionCount(0) - gcStart} alloc {allocated / 1024f / samples.Count:0.0}KB/frame " +
+                      $"gpu {(gpuN > 0 ? (gpuSum / gpuN).ToString("0.00") + "ms" : "n/a")} quality {(Quality.Low ? "low" : "high")}");
             samples.Clear();
         }
     }

@@ -92,6 +92,7 @@ namespace PocketWeather.EditorTools
 
         static void ConfigureUrp()
         {
+            PlayerSettings.enableFrameTimingStats = true;   // GPU frame time for Auto graphics quality
             foreach (var path in new[] { "Assets/Settings/PC_RPAsset.asset", "Assets/Settings/Mobile_RPAsset.asset" })
             {
                 var asset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(path);
