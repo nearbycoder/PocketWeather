@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace PocketWeather
@@ -6,6 +7,9 @@ namespace PocketWeather
     public class GameRoot : MonoBehaviour
     {
         public static GameRoot Instance { get; private set; }
+        public CameraRig Rig { get; private set; }
+        public DayCycle Day { get; private set; }
+        public Level Level { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -16,24 +20,41 @@ namespace PocketWeather
             Instance = go.AddComponent<GameRoot>();
         }
 
+        public static string Arg(string name, string fallback = null)
+        {
+            var args = Environment.GetCommandLineArgs();
+            int i = Array.IndexOf(args, name);
+            return i >= 0 && i + 1 < args.Length ? args[i + 1] : fallback;
+        }
+
         void Awake()
         {
             Application.targetFrameRate = 60;
-            var cam = new GameObject("Main Camera").AddComponent<Camera>();
-            cam.tag = "MainCamera";
-            cam.transform.position = new Vector3(0, 6, -8);
-            cam.transform.LookAt(Vector3.zero);
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.6f, 0.8f, 1f);
-            var sun = new GameObject("Sun").AddComponent<Light>();
-            sun.type = LightType.Directional;
-            sun.transform.rotation = Quaternion.Euler(50, -30, 0);
-            sun.shadows = LightShadows.Soft;
-            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.transform.rotation = Quaternion.Euler(0, 30, 0);
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.transform.position = new Vector3(0, -0.5f, 0);
+            QualitySettings.vSyncCount = 1;
+            Fx.Init();
+            PostFx.Create();
+            Rig = CameraRig.Create();
+            DontDestroyOnLoad(Rig.gameObject);
+            Day = DayCycle.Create();
+            DontDestroyOnLoad(Day.gameObject);
             Debug.Log("[PW] GameRoot booted");
+            LoadLevel(Arg("-pwLevel", "proto"));
+        }
+
+        public Level LoadLevel(string id)
+        {
+            if (Level != null) Destroy(Level.gameObject);
+            var def = LevelLibrary.Load(id);
+            if (def == null) return null;
+            Level = Level.Load(def, Day);
+            Rig.Frame(def.island.w, def.island.d);
+            Level.Running = true;
+            return Level;
+        }
+
+        void Update()
+        {
+            if (Day != null) PostFx.SetDayLook(Day.Exposure, Mathf.Lerp(0f, 8f, Mathf.InverseLerp(16f, 19.5f, Day.Hour)) - Day.Night * 10f);
         }
     }
 }

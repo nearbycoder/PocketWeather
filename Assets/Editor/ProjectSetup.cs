@@ -7,22 +7,39 @@ using UnityEngine.Rendering.Universal;
 namespace PocketWeather.EditorTools
 {
     /// <summary>
-    /// Project wiring that must live in assets: the (empty) Main scene, build settings, URP quality.
-    /// Everything visible is built at runtime by GameRoot. Run with
-    /// -executeMethod PocketWeather.EditorTools.ProjectSetup.Apply.
+    /// Project wiring that must live in assets: the (empty) Main scene, build settings, physics
+    /// layers, one material template per custom shader in Resources/Materials (which also keeps
+    /// the shaders in builds), and URP quality. Everything visible is built at runtime by GameRoot.
+    /// Run with -executeMethod PocketWeather.EditorTools.ProjectSetup.Apply.
     /// </summary>
     public static class ProjectSetup
     {
         const string MainScene = "Assets/Scenes/Main.unity";
+        const string MaterialDir = "Assets/Resources/Materials";
+
+        static readonly (string name, string shader)[] Templates =
+        {
+            ("PW_Toon", "PW/Toon"),
+            ("PW_Ground", "PW/Ground"),
+            ("PW_Water", "PW/Water"),
+            ("PW_CloudPuff", "PW/CloudPuff"),
+            ("PW_CloudFace", "PW/CloudFace"),
+            ("PW_Rainbow", "PW/Rainbow"),
+            ("PW_Fx", "PW/Fx"),
+            ("PW_Sky", "PW/Sky"),
+            ("PW_WetMapUpdate", "Hidden/PW/WetMapUpdate"),
+        };
 
         [MenuItem("Pocket Weather/Apply Project Setup")]
         public static void Apply()
         {
             EnsureScene();
+            EnsureLayers();
+            bool ok = EnsureMaterials();
             ConfigureUrp();
             AssetDatabase.SaveAssets();
-            Debug.Log("[PW] project setup applied");
-            if (Application.isBatchMode) EditorApplication.Exit(0);
+            Debug.Log(ok ? "[PW] project setup applied" : "[PW] project setup FAILED (missing shaders)");
+            if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
         }
 
         public static void EnsureScene()
@@ -33,6 +50,44 @@ namespace PocketWeather.EditorTools
                 EditorSceneManager.SaveScene(scene, MainScene);
             }
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(MainScene, true) };
+        }
+
+        static void EnsureLayers()
+        {
+            var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+            if (assets == null || assets.Length == 0) return;
+            var tm = new SerializedObject(assets[0]);
+            var layers = tm.FindProperty("layers");
+            string[] names = { "Terrain", "Water", "Receiver", "Props", "Cloud", "FX" };
+            for (int i = 0; i < names.Length; i++) layers.GetArrayElementAtIndex(6 + i).stringValue = names[i];
+            tm.ApplyModifiedProperties();
+        }
+
+        static bool EnsureMaterials()
+        {
+            Directory.CreateDirectory(MaterialDir);
+            bool ok = true;
+            foreach (var (name, shaderName) in Templates)
+            {
+                var shader = Shader.Find(shaderName);
+                if (shader == null)
+                {
+                    Debug.LogError($"[PW] missing shader {shaderName}");
+                    ok = false;
+                    continue;
+                }
+                var path = $"{MaterialDir}/{name}.mat";
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (mat == null)
+                {
+                    mat = new Material(shader) { name = name };
+                    AssetDatabase.CreateAsset(mat, path);
+                }
+                else mat.shader = shader;
+                if (name == "PW_Fx") mat.enableInstancing = true;
+                EditorUtility.SetDirty(mat);
+            }
+            return ok;
         }
 
         static void ConfigureUrp()
@@ -54,6 +109,34 @@ namespace PocketWeather.EditorTools
                 so.ApplyModifiedProperties();
                 EditorUtility.SetDirty(asset);
             }
+        }
+    }
+
+    /// <summary>Import settings for the Blender-generated FBX files under Resources/Models.</summary>
+    public class ModelImportSettings : AssetPostprocessor
+    {
+        void OnPreprocessModel()
+        {
+            if (!assetPath.Contains("/Resources/Models/")) return;
+            var importer = (ModelImporter)assetImporter;
+            importer.globalScale = 1f;
+            importer.useFileScale = true;
+            importer.bakeAxisConversion = false;
+            importer.importAnimation = false;
+            importer.animationType = ModelImporterAnimationType.None;
+            importer.importCameras = false;
+            importer.importLights = false;
+            importer.importBlendShapes = false;
+            importer.importVisibility = false;
+            importer.addCollider = false;
+            importer.materialImportMode = ModelImporterMaterialImportMode.None;
+            importer.isReadable = assetPath.Contains("/Terrain/");
+            importer.importNormals = ModelImporterNormals.Import;
+            importer.importTangents = ModelImporterTangents.None;
+            importer.meshCompression = ModelImporterMeshCompression.Off;
+            importer.optimizeMeshPolygons = true;
+            importer.optimizeMeshVertices = true;
+            importer.weldVertices = true;
         }
     }
 }
