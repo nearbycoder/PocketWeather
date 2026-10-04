@@ -1,0 +1,304 @@
+{
+ "id": "level12",
+ "title": "The Wedding",
+ "story": "Rosa and Tom are getting married by the lake! Make it perfect.",
+ "icon": "cake",
+ "music": "wedding",
+ "ambience": "village",
+ "dayLength": 200,
+ "startHour": 13.0,
+ "endHour": 20.0,
+ "par": 18.0,
+ "startWater": 60,
+ "cloudX": -1.0,
+ "cloudZ": -2.6,
+ "teach": "",
+ "island": {
+  "w": 14,
+  "d": 9,
+  "corner": 1.7,
+  "depth": 1.3,
+  "grass": "8CCB5E",
+  "dryness": 0.2,
+  "dryRate": 0.0,
+  "bumps": [
+   {
+    "x": -4.6,
+    "z": 2.0,
+    "r": 2.2,
+    "h": 0.35
+   }
+  ],
+  "water": [],
+  "paths": [
+   {
+    "pts": [
+     [
+      0.2,
+      -4.5
+     ],
+     [
+      0.2,
+      -2.2
+     ],
+     [
+      0.2,
+      0.9
+     ]
+    ],
+    "w": 0.8,
+    "color": "F2E6D8"
+   }
+  ],
+  "sand": [],
+  "fields": [],
+  "scatter": 1.0,
+  "sea": {
+   "side": "north",
+   "width": 2.4,
+   "level": -0.12,
+   "depth": 0.7,
+   "beach": 0.9
+  }
+ },
+ "props": [
+  {
+   "m": "chapel",
+   "x": -4.7,
+   "z": 1.6,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "dock",
+   "x": 4.2,
+   "z": 2.9,
+   "ry": 0,
+   "s": 0.9,
+   "y": -0.05
+  },
+  {
+   "m": "person_musician",
+   "x": 4.6,
+   "z": 1.9,
+   "ry": 200,
+   "s": 1.73
+  },
+  {
+   "m": "chair",
+   "x": -2.2,
+   "z": -1.6,
+   "ry": 180,
+   "s": 1.3
+  },
+  {
+   "m": "chair",
+   "x": -1.3,
+   "z": -2.0,
+   "ry": 180,
+   "s": 1.3
+  },
+  {
+   "m": "chair",
+   "x": 1.7,
+   "z": -1.6,
+   "ry": 180,
+   "s": 1.3
+  },
+  {
+   "m": "chair",
+   "x": 2.6,
+   "z": -2.0,
+   "ry": 180,
+   "s": 1.3
+  },
+  {
+   "m": "chair",
+   "x": -2.4,
+   "z": -2.6,
+   "ry": 180,
+   "s": 1.3
+  },
+  {
+   "m": "chair",
+   "x": 2.8,
+   "z": -2.8,
+   "ry": 180,
+   "s": 1.3
+  },
+  {
+   "m": "person_guest_d",
+   "x": 2.6,
+   "z": -2.0,
+   "ry": 190,
+   "s": 1.73
+  },
+  {
+   "m": "person_kid_b",
+   "x": -2.4,
+   "z": -2.6,
+   "ry": 160,
+   "s": 1.54
+  },
+  {
+   "m": "tree_fruit",
+   "x": -6.1,
+   "z": -2.6,
+   "ry": 137,
+   "s": 1.33
+  },
+  {
+   "m": "tree_fruit",
+   "x": 6.1,
+   "z": -2.4,
+   "ry": 73,
+   "s": 1.23
+  },
+  {
+   "m": "tree_fruit",
+   "x": 6.2,
+   "z": 0.4,
+   "ry": 247,
+   "s": 1.2
+  },
+  {
+   "m": "hedge",
+   "x": -3.6,
+   "z": -3.7,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "hedge",
+   "x": 3.6,
+   "z": -3.7,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "flower_pot",
+   "x": -1.0,
+   "z": 1.0,
+   "ry": 0,
+   "s": 1.1
+  },
+  {
+   "m": "flower_pot",
+   "x": 1.4,
+   "z": 1.0,
+   "ry": 0,
+   "s": 1.1
+  },
+  {
+   "m": "lamp_post",
+   "x": -2.4,
+   "z": 0.6,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "lamp_post",
+   "x": 2.8,
+   "z": 0.6,
+   "ry": 0,
+   "s": 1.2
+  }
+ ],
+ "needs": [
+  {
+   "type": "bed",
+   "id": "arch",
+   "x": 0.2,
+   "z": 1.05,
+   "plant": "pink",
+   "w": 1.4,
+   "d": 0.4,
+   "target": [
+    18,
+    30
+   ],
+   "max": 46,
+   "model": "wedding_arch"
+  },
+  {
+   "type": "rainbow",
+   "id": "couple",
+   "x": 0.05,
+   "z": 0.45,
+   "model": "person_bride",
+   "ry": 180,
+   "s": 1.79,
+   "links": [
+    "person_groom"
+   ],
+   "dormant": true
+  },
+  {
+   "type": "shade",
+   "id": "guest1",
+   "x": -2.2,
+   "z": -1.6,
+   "model": "person_guest_a",
+   "ry": 180,
+   "time": 3.5,
+   "s": 1.8,
+   "dislike": "umbrella"
+  },
+  {
+   "type": "shade",
+   "id": "guest2",
+   "x": -1.3,
+   "z": -2.0,
+   "model": "person_guest_b",
+   "ry": 180,
+   "time": 3.5,
+   "s": 1.8,
+   "dislike": "umbrella"
+  },
+  {
+   "type": "shade",
+   "id": "guest3",
+   "x": 1.7,
+   "z": -1.6,
+   "model": "person_guest_c",
+   "ry": 180,
+   "time": 3.5,
+   "s": 1.8,
+   "dislike": "umbrella"
+  },
+  {
+   "type": "keepdry",
+   "id": "cake",
+   "x": 4.6,
+   "z": -0.6,
+   "model": "cake_table",
+   "ry": 0,
+   "s": 1.3,
+   "time": 8
+  },
+  {
+   "type": "boat",
+   "id": "boat",
+   "model": "sailboat",
+   "x": -3.2,
+   "z": 3.7,
+   "ry": 90,
+   "s": 1.2,
+   "water": "sea",
+   "goal": [
+    3.5,
+    3.6
+   ],
+   "goalR": 0.7
+  }
+ ],
+ "sources": [],
+ "delight": {
+  "type": "catch",
+  "target": "bouquet",
+  "title": "Caught the bouquet!",
+  "hint": "When the bride throws her flowers, be there."
+ },
+ "events": [],
+ "thanks": "Married under a rainbow!"
+}

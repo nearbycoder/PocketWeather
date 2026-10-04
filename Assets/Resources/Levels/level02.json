@@ -1,0 +1,339 @@
+{
+ "id": "level02",
+ "title": "Just Right",
+ "story": "The allotment needs a careful hand: enough rain, but not a drop too much.",
+ "icon": "carrot",
+ "music": "morning",
+ "ambience": "meadow",
+ "dayLength": 130,
+ "startHour": 6.5,
+ "endHour": 19.5,
+ "par": 12.0,
+ "startWater": 40,
+ "cloudX": 4.0,
+ "cloudZ": -2.4,
+ "teach": "band",
+ "island": {
+  "w": 14,
+  "d": 9,
+  "corner": 1.7,
+  "depth": 1.3,
+  "grass": "8CCB5E",
+  "dryness": 0.3,
+  "dryRate": 0.0,
+  "bumps": [
+   {
+    "x": -4.8,
+    "z": 2.8,
+    "r": 2.6,
+    "h": 0.4
+   }
+  ],
+  "water": [
+   {
+    "id": "trough",
+    "shape": "ellipse",
+    "x": 4.9,
+    "z": 1.7,
+    "rx": 1.45,
+    "rz": 1.05,
+    "depth": 0.45,
+    "level": -0.1
+   }
+  ],
+  "paths": [
+   {
+    "pts": [
+     [
+      -6.8,
+      0.6
+     ],
+     [
+      0.0,
+      0.5
+     ],
+     [
+      4.0,
+      0.2
+     ],
+     [
+      6.8,
+      -0.2
+     ]
+    ],
+    "w": 0.6,
+    "color": "DDBE8C"
+   }
+  ],
+  "sand": [],
+  "fields": [
+   {
+    "shape": "rect",
+    "x": -0.7,
+    "z": -1.25,
+    "w": 8.8,
+    "d": 2.1,
+    "r": 0.5,
+    "color": "9A6B48"
+   }
+  ],
+  "scatter": 1.0
+ },
+ "props": [
+  {
+   "m": "cottage_yellow",
+   "x": -5.3,
+   "z": 2.7,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "scarecrow",
+   "x": 0.6,
+   "z": 2.4,
+   "ry": 190,
+   "s": 1.3
+  },
+  {
+   "m": "rain_barrel",
+   "x": 3.3,
+   "z": 2.6,
+   "ry": 0,
+   "s": 1.3
+  },
+  {
+   "m": "hay_bale",
+   "x": 6.0,
+   "z": -2.6,
+   "ry": 30,
+   "s": 1.2
+  },
+  {
+   "m": "hay_bale",
+   "x": 5.5,
+   "z": -3.3,
+   "ry": 70,
+   "s": 1.1
+  },
+  {
+   "m": "signpost",
+   "x": -6.2,
+   "z": -0.4,
+   "ry": 20,
+   "s": 1.2
+  },
+  {
+   "m": "fence",
+   "x": -4.883,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": -3.85,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": -2.817,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": -1.783,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": -0.75,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": 0.283,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": 1.317,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": 2.35,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": 3.383,
+   "z": -2.9,
+   "ry": 0.0,
+   "s": 1.0333333333333334
+  },
+  {
+   "m": "fence",
+   "x": -5.4,
+   "z": -0.358,
+   "ry": 90.0,
+   "s": 1.0166666666666666
+  },
+  {
+   "m": "fence",
+   "x": -5.4,
+   "z": -1.375,
+   "ry": 90.0,
+   "s": 1.0166666666666666
+  },
+  {
+   "m": "fence",
+   "x": -5.4,
+   "z": -2.392,
+   "ry": 90.0,
+   "s": 1.0166666666666666
+  },
+  {
+   "m": "tree_round",
+   "x": 6.0,
+   "z": 3.4,
+   "ry": 46,
+   "s": 1.13
+  },
+  {
+   "m": "tree_round",
+   "x": -2.8,
+   "z": 3.6,
+   "ry": 342,
+   "s": 1.4
+  },
+  {
+   "m": "bush_a",
+   "x": -6.3,
+   "z": -3.4,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "bush_b",
+   "x": 2.0,
+   "z": 3.6,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "reeds_grass",
+   "x": 6.2,
+   "z": 1.0,
+   "ry": 0,
+   "s": 1.1,
+   "noCollide": true
+  },
+  {
+   "m": "rock_b",
+   "x": 3.6,
+   "z": 1.0,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "person_baker",
+   "x": -4.0,
+   "z": 1.3,
+   "ry": 160,
+   "s": 1.73
+  }
+ ],
+ "needs": [
+  {
+   "type": "bed",
+   "id": "carrots",
+   "x": -3.6,
+   "z": -1.25,
+   "plant": "carrot",
+   "w": 1.8,
+   "d": 1.1,
+   "target": [
+    16,
+    26
+   ],
+   "max": 50
+  },
+  {
+   "type": "bed",
+   "id": "cabbages",
+   "x": -0.7,
+   "z": -1.25,
+   "plant": "cabbage",
+   "w": 1.8,
+   "d": 1.1,
+   "target": [
+    20,
+    30
+   ],
+   "max": 50
+  },
+  {
+   "type": "bed",
+   "id": "tomatoes",
+   "x": 2.2,
+   "z": -1.25,
+   "plant": "tomato",
+   "w": 1.8,
+   "d": 1.1,
+   "target": [
+    14,
+    24
+   ],
+   "max": 50
+  },
+  {
+   "type": "bed",
+   "id": "pumpkin",
+   "x": -4.7,
+   "z": 1.0,
+   "plant": "pumpkin",
+   "w": 1.2,
+   "d": 1.0,
+   "target": [
+    55,
+    80
+   ],
+   "max": 90,
+   "anim": "single",
+   "s": 1.3,
+   "hidden": true
+  }
+ ],
+ "sources": [
+  {
+   "type": "dew",
+   "x": -1.0,
+   "z": 1.9,
+   "count": 6,
+   "spread": 2.2,
+   "until": 9.0
+  }
+ ],
+ "delight": {
+  "type": "fill",
+  "target": "pumpkin",
+  "title": "Grew a prize pumpkin",
+  "hint": "Pocketvale's biggest vegetable is very, very thirsty."
+ },
+ "events": [],
+ "thanks": "The allotment is just right."
+}

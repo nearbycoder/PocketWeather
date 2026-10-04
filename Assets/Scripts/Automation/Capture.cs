@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace PocketWeather
@@ -35,6 +36,7 @@ namespace PocketWeather
                 case "proto": yield return Proto(); break;
                 case "closeup": yield return Closeup(); break;
                 case "shadetest": yield return ShadeTest(); break;
+                case "tour": yield return Tour(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -165,6 +167,27 @@ namespace PocketWeather
                     Log($"spot {spot} hour {h} shade={Shader.GetGlobalVector("_PW_Shade")} cloud={C.transform.position}");
                     yield return Shot($"s_{spot.x}_{spot.y}_{h}");
                 }
+            }
+        }
+
+        IEnumerator Tour()
+        {
+            var flow = GameFlow.I;
+            yield return new WaitForSeconds(1.5f);
+            yield return Shot("t00_title");
+            flow.DebugShowMap();
+            yield return new WaitForSeconds(1.2f);
+            yield return Shot("t01_map");
+            string only = GameRoot.Arg("-pwOnly");
+            for (int i = 0; i < LevelLibrary.Campaign.Length; i++)
+            {
+                if (only != null && !only.Split(',').Contains((i + 1).ToString())) continue;
+                flow.DebugStart(i, false);
+                yield return new WaitForSeconds(0.9f);
+                if (i == 0) yield return Shot("t02_postcard");
+                flow.DebugStart(i, true);
+                yield return new WaitForSeconds(1.6f);
+                yield return Shot($"L{i + 1:00}_start");
             }
         }
 

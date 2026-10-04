@@ -95,6 +95,10 @@ namespace PocketWeather
         public float LookPointTimer;
         public Expr? Override;
         float flash;
+        float trailTimer;
+        bool wasDrinking;
+        float fanFlash;
+        Vector3 fanDir;
 
         public void Init(Cloud c)
         {
@@ -154,9 +158,9 @@ namespace PocketWeather
 
             puffScale.value = 1;
             for (int i = 0; i < puffs.Length; i++) puffSprings[i].value = puffs[i].position;
-            c.OnGust += (d, strong) => { puffScale.velocity -= strong ? 9f : 3f; };
-            c.OnFull += () => Emote(Full, 1.1f);
-            c.OnEmptyTry += () => Emote(Empty, 1.0f);
+            c.OnGust += (d, strong) => { puffScale.velocity -= strong ? 9f : 3f; fanFlash = strong ? 1f : 0.4f; fanDir = d; };
+            c.OnFull += () => { Emote(Full, 1.1f); Sfx.Play("full", transform.position); Fx.Sparkles(transform.position + Vector3.up * 0.5f, 12, Color.white, 0.8f, 1.6f, 0.2f); };
+            c.OnEmptyTry += () => { Emote(Empty, 1.0f); Sfx.Play("pip_hmm", transform.position); };
         }
 
         public void Emote(Expr e, float seconds)
@@ -291,6 +295,9 @@ namespace PocketWeather
             faceMat.SetFloat("_Sparkle", cur.sparkle * (0.75f + 0.25f * Mathf.Sin(t * 12f)));
             faceMat.SetFloat("_Brow", cur.brow);
 
+            if (cloud.Drinking && !wasDrinking) Sfx.Play("pip_slurp", transform.position, 0.7f);
+            wasDrinking = cloud.Drinking;
+
             // ---- vapour column while drinking
             var em = vapor.emission;
             em.rateOverTime = cloud.Drinking ? 55f : 0f;
@@ -302,6 +309,15 @@ namespace PocketWeather
                 shape.radius = r * 0.75f;
                 var main = vapor.main;
                 main.startSpeed = new ParticleSystem.MinMaxCurve(2.2f, 3.0f);
+            }
+
+            // ---- wisps trail behind a fast cloud
+            trailTimer -= dt;
+            if (speed > 4.5f && trailTimer <= 0)
+            {
+                trailTimer = 0.06f;
+                var back = transform.position - vel.normalized * r * 0.9f + Random.insideUnitSphere * r * 0.3f;
+                Fx.Steam(back, 1, 0.05f, new Color(1, 1, 1, 0.45f));
             }
 
             // ---- rain curtain under the cloud
@@ -330,7 +346,14 @@ namespace PocketWeather
                 reticleMat.SetColor("_Color", new Color(1, 1, 1, cloud.Raining ? 0.12f : 0.2f));
             }
             bool aiming = cloud.Input.Aiming;
-            aimFan.enabled = aiming;
+            fanFlash = Mathf.MoveTowards(fanFlash, 0, dt * 2.5f);
+            aimFan.enabled = aiming || fanFlash > 0.01f;
+            if (!aiming && fanFlash > 0.01f)
+            {
+                aimFan.transform.position = cloud.GroundPoint + Vector3.up * 0.06f;
+                aimFan.transform.rotation = Quaternion.LookRotation(fanDir, Vector3.up);
+                aimMat.SetColor("_Color", new Color(1, 1, 1, 0.35f * fanFlash));
+            }
             if (aiming)
             {
                 var ad = cloud.Input.AimDir;

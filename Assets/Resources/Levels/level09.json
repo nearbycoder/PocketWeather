@@ -1,0 +1,216 @@
+{
+ "id": "level09",
+ "title": "Campfire Night",
+ "story": "A spark has jumped into the hay! Put out the fire, but keep the campfire going.",
+ "icon": "campfire",
+ "music": "night",
+ "ambience": "night",
+ "dayLength": 160,
+ "startHour": 17.5,
+ "endHour": 22.0,
+ "par": 19.5,
+ "startWater": 60,
+ "cloudX": -1.0,
+ "cloudZ": -1.5,
+ "teach": "fire",
+ "island": {
+  "w": 14,
+  "d": 9,
+  "corner": 1.7,
+  "depth": 1.3,
+  "grass": "7FBF5A",
+  "dryness": 0.3,
+  "dryRate": 0.0,
+  "bumps": [
+   {
+    "x": -4.6,
+    "z": -2.6,
+    "r": 2.2,
+    "h": 0.35
+   }
+  ],
+  "water": [],
+  "paths": [],
+  "sand": [],
+  "fields": [],
+  "scatter": 1.0,
+  "sea": {
+   "side": "north",
+   "width": 2.6,
+   "level": -0.12,
+   "depth": 0.7,
+   "beach": 1.0
+  }
+ },
+ "props": [
+  {
+   "m": "tent",
+   "x": -1.4,
+   "z": 0.9,
+   "ry": 20,
+   "s": 1.3
+  },
+  {
+   "m": "tent",
+   "x": 1.6,
+   "z": 1.1,
+   "ry": -25,
+   "s": 1.1
+  },
+  {
+   "m": "person_camper_a",
+   "x": -0.2,
+   "z": -0.3,
+   "ry": 120,
+   "s": 1.73
+  },
+  {
+   "m": "person_camper_b",
+   "x": 1.0,
+   "z": -0.4,
+   "ry": 230,
+   "s": 1.73
+  },
+  {
+   "m": "hay_bale",
+   "x": 4.9,
+   "z": -2.8,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "tree_pine_small",
+   "x": -6.0,
+   "z": 1.0,
+   "ry": 313,
+   "s": 1.23
+  },
+  {
+   "m": "tree_pine",
+   "x": -5.6,
+   "z": -3.4,
+   "ry": 95,
+   "s": 1.4
+  },
+  {
+   "m": "tree_pine",
+   "x": 6.1,
+   "z": 0.4,
+   "ry": 173,
+   "s": 1.28
+  },
+  {
+   "m": "tree_pine",
+   "x": 2.4,
+   "z": -3.6,
+   "ry": 171,
+   "s": 1.29
+  },
+  {
+   "m": "tree_pine",
+   "x": -3.2,
+   "z": -3.7,
+   "ry": 194,
+   "s": 1.16
+  },
+  {
+   "m": "rowboat",
+   "x": -3.8,
+   "z": 2.6,
+   "ry": 80,
+   "s": 1.2,
+   "y": -0.1
+  },
+  {
+   "m": "rock_a",
+   "x": 5.8,
+   "z": -1.0,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "lamp_post",
+   "x": -2.8,
+   "z": -0.2,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "reeds_grass",
+   "x": 3.4,
+   "z": 1.9,
+   "ry": 0,
+   "s": 1.0,
+   "noCollide": true
+  }
+ ],
+ "needs": [
+  {
+   "type": "fire",
+   "id": "hay1",
+   "x": 4.2,
+   "z": -1.2,
+   "model": "haystack",
+   "s": 1.2,
+   "start": 1,
+   "links": [
+    "bush1"
+   ]
+  },
+  {
+   "type": "fire",
+   "id": "bush1",
+   "x": 5.6,
+   "z": 0.9,
+   "model": "bush_b",
+   "s": 1.5,
+   "start": 0,
+   "links": []
+  },
+  {
+   "type": "fire",
+   "id": "hay2",
+   "x": -4.2,
+   "z": -1.8,
+   "model": "haystack",
+   "s": 1.1,
+   "start": 0,
+   "links": []
+  },
+  {
+   "type": "campfire",
+   "id": "campfire",
+   "x": 0.4,
+   "z": -1.1
+  },
+  {
+   "type": "bed",
+   "id": "herbs",
+   "x": -3.6,
+   "z": 1.0,
+   "plant": "tomato",
+   "w": 1.6,
+   "d": 1.0,
+   "target": [
+    16,
+    28
+   ],
+   "max": 46
+  }
+ ],
+ "sources": [],
+ "delight": {
+  "type": "gust_on",
+  "target": "campfire",
+  "title": "A roaring campfire",
+  "hint": "The campers would love a bigger blaze."
+ },
+ "events": [
+  {
+   "type": "ignite",
+   "hour": 18.6,
+   "target": "hay2"
+  }
+ ],
+ "thanks": "The fires are out and the campfire crackles."
+}

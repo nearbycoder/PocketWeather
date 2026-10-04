@@ -15,7 +15,16 @@ namespace PocketWeather
         public bool Met { get; private set; }
         public float Progress { get; protected set; }
         public bool Problem { get; protected set; }      // soggy / grumpy / broken: bubble turns warning
-        public virtual bool Required => !Def.hidden;
+        public virtual bool Required => !Def.hidden && !Dormant;
+        public bool Dormant { get; private set; }
+
+        /// <summary>Makes a dormant need required (and visible) mid-level.</summary>
+        public void Wake()
+        {
+            if (!Dormant) return;
+            Dormant = false;
+            Level.NotifyNeedsChanged();
+        }
         public abstract string Icon { get; }
         public virtual string ProblemIcon => "oops";
         public virtual Vector3 BubbleAnchor => transform.position + Vector3.up * 0.9f;
@@ -28,12 +37,14 @@ namespace PocketWeather
         {
             Level = level;
             Def = def;
+            Dormant = def.dormant;
             name = $"{def.type}:{def.id}";
             Build();
         }
 
         protected abstract void Build();
         public abstract void Tick(float dt);
+        public virtual void OnRainbow(Rainbow rb) { }
 
         protected void SetMet(bool met)
         {
@@ -63,6 +74,7 @@ namespace PocketWeather
             c.Visual.Emote(CloudVisual.Oops, 1.0f);
             c.Visual.LookAtPoint(at, 1.0f);
             Sfx.Play("oops", at);
+            Sfx.Play("pip_eep", c.transform.position, 0.8f);
             Level.NoteOops(this);
         }
 

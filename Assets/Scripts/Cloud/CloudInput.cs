@@ -35,6 +35,7 @@ namespace PocketWeather
         Cloud cloud;
         Camera cam;
         Vector2 lastMousePos;
+        bool mouseSeeded;
         bool mouseRainArmed;
         Vector3 aimAnchor;
         // touch state
@@ -58,6 +59,8 @@ namespace PocketWeather
             cloud = c;
             Target = c.transform.position;
             keyTarget = Target;
+            if (Mouse.current != null) lastMousePos = Mouse.current.position.ReadValue();
+            mouseSeeded = true;
         }
 
         public void Virtual(Vector3 target, bool rain)

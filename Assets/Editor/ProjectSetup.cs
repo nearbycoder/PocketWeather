@@ -140,3 +140,41 @@ namespace PocketWeather.EditorTools
         }
     }
 }
+
+namespace PocketWeather.EditorTools
+{
+    /// <summary>UI icons rendered by Blender import as sprites.</summary>
+    public class IconImportSettings : UnityEditor.AssetPostprocessor
+    {
+        void OnPreprocessTexture()
+        {
+            if (!assetPath.Contains("/Resources/Icons/")) return;
+            var ti = (UnityEditor.TextureImporter)assetImporter;
+            ti.textureType = UnityEditor.TextureImporterType.Sprite;
+            ti.spriteImportMode = UnityEditor.SpriteImportMode.Single;
+            ti.mipmapEnabled = true;
+            ti.alphaIsTransparency = true;
+            ti.filterMode = UnityEngine.FilterMode.Trilinear;
+            ti.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
+            ti.maxTextureSize = 256;
+            ti.wrapMode = UnityEngine.TextureWrapMode.Clamp;
+        }
+    }
+
+    /// <summary>Music and ambience stream; short effects decompress on load.</summary>
+    public class AudioImportSettings : UnityEditor.AssetPostprocessor
+    {
+        void OnPreprocessAudio()
+        {
+            if (!assetPath.Contains("/Resources/Audio/")) return;
+            var ai = (UnityEditor.AudioImporter)assetImporter;
+            var s = ai.defaultSampleSettings;
+            bool longFile = (assetPath.Contains("/Music/music_") || assetPath.Contains("/Amb/"));
+            s.loadType = longFile ? UnityEngine.AudioClipLoadType.Streaming : UnityEngine.AudioClipLoadType.DecompressOnLoad;
+            s.compressionFormat = UnityEngine.AudioCompressionFormat.Vorbis;
+            s.quality = longFile ? 0.7f : 0.85f;
+            ai.defaultSampleSettings = s;
+            ai.loadInBackground = longFile;
+        }
+    }
+}

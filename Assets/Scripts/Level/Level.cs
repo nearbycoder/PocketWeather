@@ -25,6 +25,7 @@ namespace PocketWeather
         public readonly List<Transform> Trees = new();
         public readonly List<GameObject> Props = new();
         public bool Running { get; set; }
+        public int HoldCompletion;
         public float Hour { get; private set; }
         public float Elapsed { get; private set; }
         public float TimeScale = 1f;               // the day clock speed (timelapse at the end)
@@ -35,6 +36,23 @@ namespace PocketWeather
         public event Action<Need> OnOops;
         public event Action<Vector3, float, Surface, IRainReceiver> RainImpact;
         public event Action<Vector3, Vector3, float> GustApplied;
+        public event Action<string> OnDelight;
+        public event Action NeedsChanged;
+        public Motes Motes { get; private set; }
+        public void NotifyNeedsChanged() => NeedsChanged?.Invoke();
+        public void SpawnMotes(Vector3 p, int n) => Motes?.Spawn(p, n);
+        bool delightFound;
+
+        /// <summary>A need/critter reports it was delighted; if it's this level's secret, celebrate once.</summary>
+        public void ReportDelight(string id, string kind)
+        {
+            var d = Def.delight;
+            if (delightFound || d == null || string.IsNullOrEmpty(d.type)) return;
+            if (d.target != id) return;
+            if (!string.IsNullOrEmpty(kind) && !string.IsNullOrEmpty(d.type) && d.type != kind && d.type != "any") return;
+            delightFound = true;
+            OnDelight?.Invoke(string.IsNullOrEmpty(d.title) ? "Delight!" : d.title);
+        }
 
         Transform terrain;
         bool sunsetFired;
@@ -97,6 +115,11 @@ namespace PocketWeather
             WetMap.Init(Def.island.w, Def.island.d);
             Rainbows = gameObject.AddComponent<Rainbows>();
             Rainbows.Init(this);
+            Rainbows.OnRainbow += rb =>
+            {
+                foreach (var n in Needs)
+                    if (rb.Covers(n.transform.position)) { n.OnRainbow(rb); ReportDelight(n.Id, "rainbow_on"); }
+            };
 
             // props
             foreach (var p in Def.props)
@@ -115,6 +138,10 @@ namespace PocketWeather
                 if (need != null) Needs.Add(need);
             }
             Physics.SyncTransforms();
+            Motes = gameObject.AddComponent<Motes>();
+            Motes.Init(this);
+            gameObject.AddComponent<LevelScript>().Init(this);
+            gameObject.AddComponent<AmbientLife>().Init(this);
             var dressing = new GameObject("Scatter").transform;
             dressing.SetParent(transform, false);
             Scatter.Dress(this, dressing);
@@ -128,13 +155,22 @@ namespace PocketWeather
         {
             var go = new GameObject(nd.id);
             go.transform.SetParent(transform, false);
-            float y = GroundHeight(nd.x, nd.z);
+            float y = float.IsNaN(nd.y) ? GroundHeight(nd.x, nd.z) + nd.yOff : nd.y;
             go.transform.position = new Vector3(nd.x, y, nd.z);
             Need need = nd.type switch
             {
                 "bed" => go.AddComponent<BedNeed>(),
+                "sunny" => go.AddComponent<SunnyNeed>(),
                 "shade" => go.AddComponent<ShadeNeed>(),
                 "boat" => go.AddComponent<BoatNeed>(),
+                "laundry" => go.AddComponent<LaundryNeed>(),
+                "windmill" => go.AddComponent<WindmillNeed>(),
+                "rainbow" => go.AddComponent<RainbowWishNeed>(),
+                "fire" => go.AddComponent<FireNeed>(),
+                "campfire" => go.AddComponent<CampfireNeed>(),
+                "keepdry" => go.AddComponent<KeepDryNeed>(),
+                "pondline" => go.AddComponent<PondLineNeed>(),
+                "react" => go.AddComponent<ReactNeed>(),
                 _ => null,
             };
             if (need == null)
@@ -143,7 +179,7 @@ namespace PocketWeather
                 Destroy(go);
                 return null;
             }
-            if (nd.type == "bed") go.transform.rotation = Quaternion.Euler(0, nd.ry, 0);
+            if (nd.type == "bed" || nd.type == "sunny") go.transform.rotation = Quaternion.Euler(0, nd.ry, 0);
             need.Setup(this, nd);
             if (need is IGustReceiver g) GustReceivers.Add(g);
             return need;
@@ -274,7 +310,7 @@ namespace PocketWeather
             {
                 bool all = Needs.Count > 0;
                 foreach (var n in Needs) if (n.Required && !n.Met) { all = false; break; }
-                if (all && !AllMet)
+                if (all && !AllMet && HoldCompletion <= 0)
                 {
                     AllMet = true;
                     OnAllMet?.Invoke();

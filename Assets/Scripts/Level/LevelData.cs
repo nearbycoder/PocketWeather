@@ -13,6 +13,7 @@ namespace PocketWeather
         public string title = "";
         public string subtitle = "";
         public string story = "";
+        public string thanks = "";
         public string music = "morning";
         public string ambience = "meadow";
         public float dayLength = 150;
@@ -59,7 +60,7 @@ namespace PocketWeather
     public class SeaDef
     {
         public string side = "south";
-        public float width = 3, level = -0.12f, depth = 0.7f;
+        public float width = 0, level = -0.12f, depth = 0.7f;   // width 0 = no sea (JsonUtility always instantiates this)
     }
 
     [Serializable]
@@ -94,6 +95,13 @@ namespace PocketWeather
         public float radius = 0.6f;
         public string dislike = "";      // what the creature does when rained on: grumpy, hiss, umbrella, none
         public bool hidden;              // delight-only target, no bubble
+        public bool dormant;             // not required until woken by a script (the wedding's rainbow)
+        public string trigger = "";      // react: rain, gust, shade, rainbow
+        public string react = "";        // react: hop, kite, snail, bell, splash, cheer
+        public string sound = "";
+        public float amount = 1f;
+        public float yOff = 0f;          // height above the ground
+        public float y = float.NaN;      // absolute height (floating things)
         public string[] links = new string[0];
         public string anim = "";
     }

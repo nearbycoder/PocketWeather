@@ -1,0 +1,269 @@
+{
+ "id": "level08",
+ "title": "Duck Pond Park",
+ "story": "The park's flowers need water, but the ducks need their pond. Share carefully.",
+ "icon": "duck",
+ "music": "afternoon",
+ "ambience": "village",
+ "dayLength": 170,
+ "startHour": 8.0,
+ "endHour": 19.5,
+ "par": 15.0,
+ "startWater": 40,
+ "cloudX": -4.0,
+ "cloudZ": -2.0,
+ "teach": "pond",
+ "island": {
+  "w": 14,
+  "d": 9,
+  "corner": 1.7,
+  "depth": 1.3,
+  "grass": "8CCB5E",
+  "dryness": 0.35,
+  "dryRate": 0.0,
+  "bumps": [],
+  "water": [
+   {
+    "id": "duckpond",
+    "shape": "ellipse",
+    "x": 0.6,
+    "z": 0.3,
+    "rx": 2.4,
+    "rz": 1.55,
+    "depth": 0.55,
+    "level": -0.1,
+    "finite": true,
+    "capacity": 140
+   }
+  ],
+  "paths": [
+   {
+    "pts": [
+     [
+      -6.8,
+      -0.6
+     ],
+     [
+      -2.7,
+      -1.0
+     ],
+     [
+      -2.4,
+      2.6
+     ],
+     [
+      3.4,
+      2.6
+     ],
+     [
+      3.6,
+      -1.9
+     ],
+     [
+      -2.6,
+      -1.9
+     ]
+    ],
+    "w": 0.6,
+    "color": "E2CDA6"
+   }
+  ],
+  "sand": [],
+  "fields": [],
+  "scatter": 1.0
+ },
+ "props": [
+  {
+   "m": "fountain",
+   "x": -4.7,
+   "z": -2.3,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "bench",
+   "x": 4.5,
+   "z": 2.95,
+   "ry": 180,
+   "s": 1.4
+  },
+  {
+   "m": "lamp_post",
+   "x": -3.2,
+   "z": 2.0,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "lamp_post",
+   "x": 4.4,
+   "z": -2.6,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "hedge_long",
+   "x": -0.5,
+   "z": 3.9,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "hedge_long",
+   "x": 3.0,
+   "z": 3.9,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "tree_round",
+   "x": -6.0,
+   "z": 2.9,
+   "ry": 189,
+   "s": 1.44
+  },
+  {
+   "m": "tree_round",
+   "x": 6.1,
+   "z": 3.0,
+   "ry": 98,
+   "s": 1.35
+  },
+  {
+   "m": "tree_round",
+   "x": 6.2,
+   "z": -0.4,
+   "ry": 70,
+   "s": 1.19
+  },
+  {
+   "m": "tree_round",
+   "x": -6.2,
+   "z": 0.5,
+   "ry": 205,
+   "s": 1.32
+  },
+  {
+   "m": "birdbath",
+   "x": -2.1,
+   "z": -3.0,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "flower_pot",
+   "x": 3.2,
+   "z": 3.3,
+   "ry": 0,
+   "s": 1.1
+  },
+  {
+   "m": "flower_pot",
+   "x": 5.7,
+   "z": 2.6,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "reeds_grass",
+   "x": 2.7,
+   "z": -0.9,
+   "ry": 0,
+   "s": 1.0,
+   "noCollide": true
+  },
+  {
+   "m": "lily_pads",
+   "x": -0.6,
+   "z": 0.8,
+   "ry": 0,
+   "s": 1.3,
+   "y": -0.09,
+   "noCollide": true
+  }
+ ],
+ "needs": [
+  {
+   "type": "bed",
+   "id": "bedA",
+   "x": -4.6,
+   "z": 1.5,
+   "plant": "pink",
+   "w": 2.0,
+   "d": 1.1,
+   "target": [
+    24,
+    38
+   ],
+   "max": 56
+  },
+  {
+   "type": "bed",
+   "id": "bedB",
+   "x": 4.7,
+   "z": -1.0,
+   "plant": "white",
+   "w": 1.8,
+   "d": 1.1,
+   "target": [
+    24,
+    38
+   ],
+   "max": 56
+  },
+  {
+   "type": "shade",
+   "id": "oldman",
+   "x": 4.5,
+   "z": 2.7,
+   "model": "person_old",
+   "ry": 180,
+   "time": 4.5,
+   "s": 1.8
+  },
+  {
+   "type": "pondline",
+   "id": "ducks",
+   "x": 0.6,
+   "z": 0.3,
+   "water": "duckpond",
+   "target": [
+    0.42
+   ],
+   "time": 3
+  },
+  {
+   "type": "react",
+   "id": "robin",
+   "x": -2.1,
+   "z": -3.0,
+   "model": "robin",
+   "ry": 180,
+   "s": 2.82,
+   "yOff": 0.5,
+   "trigger": "rain",
+   "amount": 1.5,
+   "react": "splash",
+   "sound": "robin",
+   "hidden": true
+  }
+ ],
+ "sources": [
+  {
+   "type": "fountain",
+   "x": -4.7,
+   "z": -2.3,
+   "y": 1.1,
+   "rate": 0.7,
+   "spread": 0.6
+  }
+ ],
+ "delight": {
+  "type": "rain_on",
+  "target": "robin",
+  "title": "Bath time for the robin",
+  "hint": "The birdbath is bone dry."
+ },
+ "events": [],
+ "thanks": "Flowers, ducks and a happy old friend."
+}

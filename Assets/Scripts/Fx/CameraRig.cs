@@ -59,16 +59,17 @@ namespace PocketWeather
         {
             Cam.fieldOfView = Fov;
             float aspect = Mathf.Max(0.5f, Cam.aspect);
-            look = new Vector3(0, 0.55f, -0.15f);
-            // sample points: island top corners + edges at cloud altitude, island bottom
-            var pts = new System.Collections.Generic.List<Vector3>();
+            look = new Vector3(0, 0.4f, 0.25f);
+            // sample points: island top corners (kept clear of the HUD), island bottom, and Pip's
+            // flight height near the edges (only has to stay on screen)
+            var pts = new System.Collections.Generic.List<(Vector3 p, float top)>();
             float hw = islandW / 2f, hd = islandD / 2f;
             foreach (var sx in new[] { -1f, 1f })
             foreach (var sz in new[] { -1f, 1f })
             {
-                pts.Add(new Vector3(sx * hw, 0.3f, sz * hd));
-                pts.Add(new Vector3(sx * hw, -1.3f, sz * hd));
-                pts.Add(new Vector3(sx * (hw - 0.4f), Cloud.Altitude + 0.9f, sz * (hd - 0.3f)));
+                pts.Add((new Vector3(sx * hw, 0.3f, sz * hd), 0.8f));
+                pts.Add((new Vector3(sx * hw, -1.3f, sz * hd), 0.8f));
+                pts.Add((new Vector3(sx * (hw - 0.6f), Cloud.Altitude + 0.7f, sz * (hd - 0.5f)), 0.97f));
             }
             var rot = Quaternion.Euler(Pitch, Yaw, 0);
             float lo = 5f, hi = 80f;
@@ -80,19 +81,20 @@ namespace PocketWeather
             distance = hi;
         }
 
-        bool Fits(System.Collections.Generic.List<Vector3> pts, Quaternion rot, float dist, float aspect)
+        bool Fits(System.Collections.Generic.List<(Vector3 p, float top)> pts, Quaternion rot, float dist, float aspect)
         {
             var pos = look - rot * Vector3.forward * dist;
             var inv = Quaternion.Inverse(rot);
             float tanV = Mathf.Tan(Fov * 0.5f * Mathf.Deg2Rad);
             float tanH = tanV * aspect;
-            float mx = 0.96f, my = 0.93f;
-            foreach (var p in pts)
+            float mx = 0.97f, bottom = 0.92f;
+            foreach (var (p, top) in pts)
             {
                 var l = inv * (p - pos);
                 if (l.z <= 0.1f) return false;
                 if (Mathf.Abs(l.x / l.z) > tanH * mx) return false;
-                if (Mathf.Abs(l.y / l.z) > tanV * my) return false;
+                float v = l.y / l.z;
+                if (v > tanV * top || v < -tanV * bottom) return false;
             }
             return true;
         }

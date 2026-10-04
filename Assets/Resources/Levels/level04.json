@@ -1,0 +1,253 @@
+{
+ "id": "level04",
+ "title": "Becalmed",
+ "story": "Not a breath of wind in the harbour, and Tom's boat is stuck out at sea.",
+ "icon": "boat",
+ "music": "morning",
+ "ambience": "sea",
+ "dayLength": 140,
+ "startHour": 7.0,
+ "endHour": 19.5,
+ "par": 13.0,
+ "startWater": 50,
+ "cloudX": -3.0,
+ "cloudZ": 0.5,
+ "teach": "gust",
+ "island": {
+  "w": 14,
+  "d": 9,
+  "corner": 1.7,
+  "depth": 1.3,
+  "grass": "8CCB5E",
+  "dryness": 0.2,
+  "dryRate": 0.0,
+  "bumps": [
+   {
+    "x": -4.0,
+    "z": 3.0,
+    "r": 2.6,
+    "h": 0.5
+   },
+   {
+    "x": 3.5,
+    "z": 3.4,
+    "r": 2.2,
+    "h": 0.4
+   }
+  ],
+  "water": [],
+  "paths": [
+   {
+    "pts": [
+     [
+      -6.8,
+      1.0
+     ],
+     [
+      -2.0,
+      1.0
+     ],
+     [
+      2.5,
+      0.9
+     ],
+     [
+      3.6,
+      -0.6
+     ]
+    ],
+    "w": 0.6,
+    "color": "D9C49A"
+   }
+  ],
+  "sand": [],
+  "fields": [],
+  "scatter": 1.0,
+  "sea": {
+   "side": "south",
+   "width": 3.7,
+   "level": -0.12,
+   "depth": 0.75,
+   "beach": 1.4
+  }
+ },
+ "props": [
+  {
+   "m": "cottage_blue",
+   "x": -3.6,
+   "z": 2.7,
+   "ry": 0,
+   "s": 1.1
+  },
+  {
+   "m": "cottage_yellow",
+   "x": 0.9,
+   "z": 3.1,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "dock",
+   "x": 3.7,
+   "z": -2.1,
+   "ry": 0,
+   "s": 1.0,
+   "y": -0.05
+  },
+  {
+   "m": "lamp_post",
+   "x": 2.9,
+   "z": -0.3,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "lamp_post",
+   "x": -1.0,
+   "z": 0.4,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "rowboat",
+   "x": -5.5,
+   "z": -0.9,
+   "ry": 60,
+   "s": 1.2
+  },
+  {
+   "m": "person_tom",
+   "x": 3.5,
+   "z": -0.4,
+   "ry": 180,
+   "s": 1.79
+  },
+  {
+   "m": "gull",
+   "x": 4.2,
+   "z": -0.9,
+   "ry": 220,
+   "s": 2.05
+  },
+  {
+   "m": "gull",
+   "x": -6.2,
+   "z": -0.4,
+   "ry": 120,
+   "s": 1.92
+  },
+  {
+   "m": "tree_pine",
+   "x": -6.0,
+   "z": 3.0,
+   "ry": 155,
+   "s": 1.14
+  },
+  {
+   "m": "tree_round",
+   "x": 5.9,
+   "z": 3.0,
+   "ry": 245,
+   "s": 1.15
+  },
+  {
+   "m": "bush_a",
+   "x": -1.6,
+   "z": 3.6,
+   "ry": 0,
+   "s": 1.1
+  },
+  {
+   "m": "rock_big",
+   "x": 6.1,
+   "z": -1.0,
+   "ry": 30,
+   "s": 1.0
+  },
+  {
+   "m": "crab",
+   "x": -3.6,
+   "z": -0.8,
+   "ry": 30,
+   "s": 2.56
+  },
+  {
+   "m": "signpost",
+   "x": -6.3,
+   "z": 1.5,
+   "ry": 0,
+   "s": 1.1
+  }
+ ],
+ "needs": [
+  {
+   "type": "boat",
+   "id": "boat",
+   "model": "sailboat",
+   "x": -4.2,
+   "z": -3.3,
+   "ry": 90,
+   "s": 1.3,
+   "water": "sea",
+   "goal": [
+    2.85,
+    -3.25
+   ],
+   "goalR": 0.7
+  },
+  {
+   "type": "bed",
+   "id": "box1",
+   "x": -3.6,
+   "z": 1.8,
+   "plant": "pink",
+   "w": 0.9,
+   "d": 0.3,
+   "target": [
+    8,
+    16
+   ],
+   "max": 26,
+   "model": "window_box"
+  },
+  {
+   "type": "bed",
+   "id": "box2",
+   "x": 0.9,
+   "z": 2.3,
+   "plant": "butter",
+   "w": 0.9,
+   "d": 0.3,
+   "target": [
+    8,
+    16
+   ],
+   "max": 26,
+   "model": "window_box"
+  },
+  {
+   "type": "react",
+   "id": "buoy",
+   "x": -0.4,
+   "z": -3.75,
+   "model": "buoy",
+   "ry": 0,
+   "s": 1.3,
+   "trigger": "gust",
+   "amount": 0.6,
+   "react": "bell",
+   "sound": "bell",
+   "hidden": true,
+   "y": -0.12
+  }
+ ],
+ "sources": [],
+ "delight": {
+  "type": "gust_on",
+  "target": "buoy",
+  "title": "Rang the buoy bell",
+  "hint": "Something out at sea would love to make a little music."
+ },
+ "events": [],
+ "thanks": "Tom's boat is safely home."
+}

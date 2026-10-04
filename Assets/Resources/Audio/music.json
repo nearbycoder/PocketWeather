@@ -1,0 +1,540 @@
+{
+ "tracks": [
+  {
+   "name": "afternoon",
+   "bpm": 100,
+   "beatsPerBar": 4,
+   "lengthBeats": 64,
+   "chords": [
+    {
+     "start": 0,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      50,
+      54,
+      57,
+      62
+     ]
+    },
+    {
+     "start": 8,
+     "beats": 8,
+     "name": "Bm",
+     "notes": [
+      47,
+      50,
+      54,
+      59
+     ]
+    },
+    {
+     "start": 16,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      43,
+      50,
+      55,
+      59
+     ]
+    },
+    {
+     "start": 24,
+     "beats": 8,
+     "name": "A",
+     "notes": [
+      45,
+      52,
+      57,
+      61
+     ]
+    },
+    {
+     "start": 32,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      50,
+      54,
+      57,
+      62
+     ]
+    },
+    {
+     "start": 40,
+     "beats": 8,
+     "name": "F#m",
+     "notes": [
+      42,
+      49,
+      54,
+      57
+     ]
+    },
+    {
+     "start": 48,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      43,
+      50,
+      55,
+      59
+     ]
+    },
+    {
+     "start": 56,
+     "beats": 8,
+     "name": "A",
+     "notes": [
+      45,
+      52,
+      57,
+      61
+     ]
+    }
+   ]
+  },
+  {
+   "name": "evening",
+   "bpm": 84,
+   "beatsPerBar": 4,
+   "lengthBeats": 64,
+   "chords": [
+    {
+     "start": 0,
+     "beats": 8,
+     "name": "Am",
+     "notes": [
+      57,
+      60,
+      64
+     ]
+    },
+    {
+     "start": 8,
+     "beats": 8,
+     "name": "F",
+     "notes": [
+      53,
+      57,
+      60
+     ]
+    },
+    {
+     "start": 16,
+     "beats": 8,
+     "name": "C",
+     "notes": [
+      55,
+      60,
+      64
+     ]
+    },
+    {
+     "start": 24,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "start": 32,
+     "beats": 8,
+     "name": "Am",
+     "notes": [
+      57,
+      60,
+      64
+     ]
+    },
+    {
+     "start": 40,
+     "beats": 8,
+     "name": "F",
+     "notes": [
+      53,
+      57,
+      60
+     ]
+    },
+    {
+     "start": 48,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "start": 56,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    }
+   ]
+  },
+  {
+   "name": "morning",
+   "bpm": 92,
+   "beatsPerBar": 4,
+   "lengthBeats": 64,
+   "chords": [
+    {
+     "start": 0,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "start": 8,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      50,
+      54,
+      57
+     ]
+    },
+    {
+     "start": 16,
+     "beats": 8,
+     "name": "Em",
+     "notes": [
+      52,
+      55,
+      59
+     ]
+    },
+    {
+     "start": 24,
+     "beats": 8,
+     "name": "C",
+     "notes": [
+      48,
+      52,
+      55
+     ]
+    },
+    {
+     "start": 32,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "start": 40,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      50,
+      54,
+      57
+     ]
+    },
+    {
+     "start": 48,
+     "beats": 8,
+     "name": "C",
+     "notes": [
+      48,
+      52,
+      55
+     ]
+    },
+    {
+     "start": 56,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      50,
+      54,
+      57
+     ]
+    }
+   ]
+  },
+  {
+   "name": "night",
+   "bpm": 70,
+   "beatsPerBar": 4,
+   "lengthBeats": 64,
+   "chords": [
+    {
+     "start": 0,
+     "beats": 8,
+     "name": "Em",
+     "notes": [
+      52,
+      55,
+      59
+     ]
+    },
+    {
+     "start": 8,
+     "beats": 8,
+     "name": "C",
+     "notes": [
+      48,
+      52,
+      55
+     ]
+    },
+    {
+     "start": 16,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "start": 24,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      50,
+      54,
+      57
+     ]
+    },
+    {
+     "start": 32,
+     "beats": 8,
+     "name": "Em",
+     "notes": [
+      52,
+      55,
+      59
+     ]
+    },
+    {
+     "start": 40,
+     "beats": 8,
+     "name": "C",
+     "notes": [
+      48,
+      52,
+      55
+     ]
+    },
+    {
+     "start": 48,
+     "beats": 8,
+     "name": "G",
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "start": 56,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      50,
+      54,
+      57
+     ]
+    }
+   ]
+  },
+  {
+   "name": "title",
+   "bpm": 72,
+   "beatsPerBar": 4,
+   "lengthBeats": 64,
+   "chords": [
+    {
+     "start": 0,
+     "beats": 8,
+     "name": "F",
+     "notes": [
+      53,
+      57,
+      60
+     ]
+    },
+    {
+     "start": 8,
+     "beats": 8,
+     "name": "Am",
+     "notes": [
+      57,
+      60,
+      64
+     ]
+    },
+    {
+     "start": 16,
+     "beats": 8,
+     "name": "Bb",
+     "notes": [
+      58,
+      62,
+      65
+     ]
+    },
+    {
+     "start": 24,
+     "beats": 8,
+     "name": "C",
+     "notes": [
+      55,
+      60,
+      64
+     ]
+    },
+    {
+     "start": 32,
+     "beats": 8,
+     "name": "F",
+     "notes": [
+      53,
+      57,
+      60
+     ]
+    },
+    {
+     "start": 40,
+     "beats": 8,
+     "name": "Dm",
+     "notes": [
+      50,
+      53,
+      57
+     ]
+    },
+    {
+     "start": 48,
+     "beats": 8,
+     "name": "Bb",
+     "notes": [
+      58,
+      62,
+      65
+     ]
+    },
+    {
+     "start": 56,
+     "beats": 8,
+     "name": "C",
+     "notes": [
+      55,
+      60,
+      64
+     ]
+    }
+   ]
+  },
+  {
+   "name": "wedding",
+   "bpm": 108,
+   "beatsPerBar": 3,
+   "lengthBeats": 48,
+   "chords": [
+    {
+     "start": 0,
+     "beats": 6,
+     "name": "F",
+     "notes": [
+      53,
+      57,
+      60
+     ]
+    },
+    {
+     "start": 6,
+     "beats": 6,
+     "name": "C",
+     "notes": [
+      52,
+      55,
+      60
+     ]
+    },
+    {
+     "start": 12,
+     "beats": 6,
+     "name": "Dm",
+     "notes": [
+      50,
+      53,
+      57
+     ]
+    },
+    {
+     "start": 18,
+     "beats": 6,
+     "name": "Bb",
+     "notes": [
+      50,
+      53,
+      58
+     ]
+    },
+    {
+     "start": 24,
+     "beats": 6,
+     "name": "F",
+     "notes": [
+      53,
+      57,
+      60
+     ]
+    },
+    {
+     "start": 30,
+     "beats": 6,
+     "name": "C",
+     "notes": [
+      52,
+      55,
+      60
+     ]
+    },
+    {
+     "start": 36,
+     "beats": 6,
+     "name": "Bb",
+     "notes": [
+      50,
+      53,
+      58
+     ]
+    },
+    {
+     "start": 42,
+     "beats": 6,
+     "name": "C",
+     "notes": [
+      52,
+      55,
+      60
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,221 @@
+{
+ "id": "level06",
+ "title": "Rainbow Picnic",
+ "story": "Rosa and Tom are having a picnic, and a little one dearly wants to see a rainbow.",
+ "icon": "rainbow",
+ "music": "afternoon",
+ "ambience": "meadow",
+ "dayLength": 150,
+ "startHour": 9.0,
+ "endHour": 19.5,
+ "par": 14.0,
+ "startWater": 50,
+ "cloudX": -4.5,
+ "cloudZ": -2.5,
+ "teach": "rainbow",
+ "island": {
+  "w": 14,
+  "d": 9,
+  "corner": 1.7,
+  "depth": 1.3,
+  "grass": "8CCB5E",
+  "dryness": 0.25,
+  "dryRate": 0.0,
+  "bumps": [
+   {
+    "x": 2.4,
+    "z": 1.2,
+    "r": 3.2,
+    "h": 0.65
+   }
+  ],
+  "water": [
+   {
+    "id": "brook",
+    "shape": "ellipse",
+    "x": 4.9,
+    "z": -2.5,
+    "rx": 1.5,
+    "rz": 1.0,
+    "depth": 0.45,
+    "level": -0.1
+   }
+  ],
+  "paths": [
+   {
+    "pts": [
+     [
+      -6.8,
+      -1.6
+     ],
+     [
+      -3.5,
+      -0.4
+     ],
+     [
+      -0.6,
+      0.0
+     ],
+     [
+      2.0,
+      -0.2
+     ]
+    ],
+    "w": 0.55,
+    "color": "DDBE8C"
+   }
+  ],
+  "sand": [],
+  "fields": [],
+  "scatter": 1.0
+ },
+ "props": [
+  {
+   "m": "picnic",
+   "x": 2.4,
+   "z": 1.3,
+   "ry": 15,
+   "s": 1.3
+  },
+  {
+   "m": "person_tom",
+   "x": 2.85,
+   "z": 1.55,
+   "ry": 200,
+   "s": 1.73
+  },
+  {
+   "m": "picnic",
+   "x": -0.2,
+   "z": 2.5,
+   "ry": -10,
+   "s": 1.2
+  },
+  {
+   "m": "tree_fruit",
+   "x": -5.8,
+   "z": 2.9,
+   "ry": 41,
+   "s": 1.27
+  },
+  {
+   "m": "tree_round_b",
+   "x": 5.9,
+   "z": 3.1,
+   "ry": 18,
+   "s": 1.1
+  },
+  {
+   "m": "tree_fruit",
+   "x": -2.6,
+   "z": 3.7,
+   "ry": 300,
+   "s": 1.26
+  },
+  {
+   "m": "tree_fruit",
+   "x": 6.1,
+   "z": 0.6,
+   "ry": 191,
+   "s": 1.21
+  },
+  {
+   "m": "bush_c",
+   "x": -6.2,
+   "z": 0.4,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "bush_a",
+   "x": 0.4,
+   "z": -3.6,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "rock_a",
+   "x": 3.5,
+   "z": -3.4,
+   "ry": 0,
+   "s": 1.1
+  },
+  {
+   "m": "reeds_grass",
+   "x": 6.2,
+   "z": -1.6,
+   "ry": 0,
+   "s": 1.0,
+   "noCollide": true
+  }
+ ],
+ "needs": [
+  {
+   "type": "rainbow",
+   "id": "kid",
+   "x": -2.3,
+   "z": -1.1,
+   "model": "person_kid",
+   "ry": 200,
+   "s": 1.79
+  },
+  {
+   "type": "shade",
+   "id": "mum",
+   "x": -0.6,
+   "z": 2.2,
+   "model": "person_guest_c",
+   "ry": 190,
+   "time": 3.5,
+   "s": 1.8,
+   "dislike": "umbrella"
+  },
+  {
+   "type": "shade",
+   "id": "grandad",
+   "x": 0.3,
+   "z": 2.3,
+   "model": "person_old",
+   "ry": 170,
+   "time": 3.5,
+   "s": 1.8,
+   "dislike": "umbrella"
+  },
+  {
+   "type": "bed",
+   "id": "wildflowers",
+   "x": -4.6,
+   "z": 1.4,
+   "plant": "lilac",
+   "w": 1.8,
+   "d": 1.1,
+   "target": [
+    18,
+    32
+   ],
+   "max": 50
+  },
+  {
+   "type": "react",
+   "id": "rosa",
+   "x": 2.15,
+   "z": 1.35,
+   "model": "person_rosa",
+   "ry": 160,
+   "s": 1.73,
+   "trigger": "rainbow",
+   "react": "cheer",
+   "sound": "person_happy",
+   "hidden": true
+  }
+ ],
+ "sources": [],
+ "delight": {
+  "type": "rainbow_on",
+  "target": "rosa",
+  "title": "A rainbow for Rosa and Tom",
+  "hint": "Two sweethearts on the hill would love one too."
+ },
+ "events": [],
+ "thanks": "A rainbow for a little one."
+}

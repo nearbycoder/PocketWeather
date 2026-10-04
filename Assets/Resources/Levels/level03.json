@@ -1,0 +1,312 @@
+{
+ "id": "level03",
+ "title": "Sunny Pasture",
+ "story": "It's hot on the hill. The sheep would love a little shade.",
+ "icon": "sheep",
+ "music": "morning",
+ "ambience": "meadow",
+ "dayLength": 130,
+ "startHour": 7.0,
+ "endHour": 19.5,
+ "par": 12.0,
+ "startWater": 60,
+ "cloudX": -3.5,
+ "cloudZ": -2.4,
+ "teach": "shade",
+ "island": {
+  "w": 14,
+  "d": 9,
+  "corner": 1.7,
+  "depth": 1.3,
+  "grass": "9CCB5A",
+  "dryness": 0.45,
+  "dryRate": 0.0,
+  "bumps": [
+   {
+    "x": 2.5,
+    "z": 1.8,
+    "r": 3.5,
+    "h": 0.6
+   },
+   {
+    "x": -5.2,
+    "z": 3.0,
+    "r": 2.0,
+    "h": 0.3
+   }
+  ],
+  "water": [
+   {
+    "id": "stream",
+    "shape": "ellipse",
+    "x": -4.6,
+    "z": -2.1,
+    "rx": 1.7,
+    "rz": 1.05,
+    "depth": 0.45,
+    "level": -0.1
+   }
+  ],
+  "paths": [
+   {
+    "pts": [
+     [
+      -1.4,
+      -4.5
+     ],
+     [
+      -0.6,
+      -1.5
+     ],
+     [
+      -1.8,
+      1.2
+     ],
+     [
+      -1.2,
+      4.5
+     ]
+    ],
+    "w": 0.55,
+    "color": "D9BC8A"
+   }
+  ],
+  "sand": [],
+  "fields": [],
+  "scatter": 1.0
+ },
+ "props": [
+  {
+   "m": "barn",
+   "x": 5.3,
+   "z": 3.1,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "fence",
+   "x": 0.271,
+   "z": -1.2,
+   "ry": 0.0,
+   "s": 0.942857142857143
+  },
+  {
+   "m": "fence",
+   "x": 1.214,
+   "z": -1.2,
+   "ry": 0.0,
+   "s": 0.942857142857143
+  },
+  {
+   "m": "fence",
+   "x": 2.157,
+   "z": -1.2,
+   "ry": 0.0,
+   "s": 0.942857142857143
+  },
+  {
+   "m": "fence",
+   "x": 3.1,
+   "z": -1.2,
+   "ry": 0.0,
+   "s": 0.942857142857143
+  },
+  {
+   "m": "fence",
+   "x": 4.043,
+   "z": -1.2,
+   "ry": 0.0,
+   "s": 0.942857142857143
+  },
+  {
+   "m": "fence",
+   "x": 4.986,
+   "z": -1.2,
+   "ry": 0.0,
+   "s": 0.942857142857143
+  },
+  {
+   "m": "fence",
+   "x": 5.929,
+   "z": -1.2,
+   "ry": 0.0,
+   "s": 0.942857142857143
+  },
+  {
+   "m": "fence",
+   "x": -0.2,
+   "z": -0.7,
+   "ry": -90.0,
+   "s": 1.0
+  },
+  {
+   "m": "fence",
+   "x": -0.2,
+   "z": 0.3,
+   "ry": -90.0,
+   "s": 1.0
+  },
+  {
+   "m": "fence",
+   "x": -0.2,
+   "z": 1.3,
+   "ry": -90.0,
+   "s": 1.0
+  },
+  {
+   "m": "fence",
+   "x": -0.2,
+   "z": 2.3,
+   "ry": -90.0,
+   "s": 1.0
+  },
+  {
+   "m": "fence",
+   "x": -0.2,
+   "z": 3.3,
+   "ry": -90.0,
+   "s": 1.0
+  },
+  {
+   "m": "hay_bale",
+   "x": 6.1,
+   "z": 0.3,
+   "ry": 20,
+   "s": 1.2
+  },
+  {
+   "m": "hay_bale",
+   "x": 6.2,
+   "z": -0.5,
+   "ry": 80,
+   "s": 1.1
+  },
+  {
+   "m": "tree_round",
+   "x": -5.9,
+   "z": 1.2,
+   "ry": 303,
+   "s": 1.29
+  },
+  {
+   "m": "tree_round_b",
+   "x": -3.4,
+   "z": 3.7,
+   "ry": 309,
+   "s": 1.27
+  },
+  {
+   "m": "tree_fruit",
+   "x": 6.0,
+   "z": -3.2,
+   "ry": 33,
+   "s": 1.31
+  },
+  {
+   "m": "bush_b",
+   "x": -6.2,
+   "z": -3.6,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "bush_a",
+   "x": 1.6,
+   "z": -3.6,
+   "ry": 0,
+   "s": 1.1
+  },
+  {
+   "m": "rock_a",
+   "x": -2.9,
+   "z": -2.9,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "reeds_grass",
+   "x": -3.0,
+   "z": -1.5,
+   "ry": 0,
+   "s": 1.0,
+   "noCollide": true
+  },
+  {
+   "m": "rock_c",
+   "x": 3.4,
+   "z": -3.3,
+   "ry": 30,
+   "s": 1.2
+  }
+ ],
+ "needs": [
+  {
+   "type": "shade",
+   "id": "sheep1",
+   "x": 1.0,
+   "z": 1.0,
+   "model": "sheep",
+   "ry": 200,
+   "time": 4.0,
+   "s": 1.8
+  },
+  {
+   "type": "shade",
+   "id": "sheep2",
+   "x": 2.9,
+   "z": 0.1,
+   "model": "sheep",
+   "ry": 150,
+   "time": 4.0,
+   "s": 1.8
+  },
+  {
+   "type": "shade",
+   "id": "sheep3",
+   "x": 3.9,
+   "z": 2.0,
+   "model": "sheep",
+   "ry": 230,
+   "time": 4.0,
+   "s": 1.8
+  },
+  {
+   "type": "bed",
+   "id": "sapling",
+   "x": -2.6,
+   "z": 2.2,
+   "plant": "sapling",
+   "w": 1.0,
+   "d": 1.0,
+   "target": [
+    24,
+    40
+   ],
+   "max": 60,
+   "s": 1.3
+  },
+  {
+   "type": "react",
+   "id": "lamb",
+   "x": 4.6,
+   "z": -2.6,
+   "model": "lamb",
+   "ry": 160,
+   "s": 2.05,
+   "trigger": "rain",
+   "amount": 2.0,
+   "react": "splash",
+   "sound": "sheep",
+   "hidden": true
+  }
+ ],
+ "sources": [],
+ "delight": {
+  "type": "rain_on",
+  "target": "lamb",
+  "title": "A puddle for the lamb",
+  "hint": "The littlest one has never splashed in a puddle."
+ },
+ "events": [],
+ "thanks": "The sheep are cool and comfy."
+}

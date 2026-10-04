@@ -1,0 +1,247 @@
+{
+ "id": "level10",
+ "title": "Regatta",
+ "story": "Race day at the beach! Blow the boats to their buoys, but mind the sandcastle.",
+ "icon": "castle",
+ "music": "afternoon",
+ "ambience": "sea",
+ "dayLength": 170,
+ "startHour": 9.0,
+ "endHour": 19.5,
+ "par": 15.0,
+ "startWater": 60,
+ "cloudX": 0.0,
+ "cloudZ": -0.5,
+ "teach": "",
+ "island": {
+  "w": 14,
+  "d": 9,
+  "corner": 1.7,
+  "depth": 1.3,
+  "grass": "8CCB5E",
+  "dryness": 0.2,
+  "dryRate": 0.0,
+  "bumps": [
+   {
+    "x": -3.6,
+    "z": 3.4,
+    "r": 2.6,
+    "h": 0.4
+   }
+  ],
+  "water": [],
+  "paths": [],
+  "sand": [],
+  "fields": [],
+  "scatter": 1.0,
+  "sea": {
+   "side": "south",
+   "width": 4.2,
+   "level": -0.12,
+   "depth": 0.8,
+   "beach": 2.2
+  }
+ },
+ "props": [
+  {
+   "m": "beach_umbrella",
+   "x": 2.1,
+   "z": 0.5,
+   "ry": 0,
+   "s": 1.3
+  },
+  {
+   "m": "beach_umbrella_b",
+   "x": 4.4,
+   "z": 1.0,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "towel",
+   "x": 2.5,
+   "z": 0.0,
+   "ry": 10,
+   "s": 1.3
+  },
+  {
+   "m": "towel_b",
+   "x": 4.0,
+   "z": 0.5,
+   "ry": -15,
+   "s": 1.3
+  },
+  {
+   "m": "icecream_cart",
+   "x": -4.8,
+   "z": 1.0,
+   "ry": 20,
+   "s": 1.2
+  },
+  {
+   "m": "person_kid",
+   "x": -1.1,
+   "z": -0.6,
+   "ry": 200,
+   "s": 1.73
+  },
+  {
+   "m": "cottage_blue",
+   "x": -3.2,
+   "z": 3.2,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "cottage_red",
+   "x": 2.6,
+   "z": 3.4,
+   "ry": 0,
+   "s": 0.95
+  },
+  {
+   "m": "crab",
+   "x": 0.9,
+   "z": -1.4,
+   "ry": 40,
+   "s": 2.56
+  },
+  {
+   "m": "gull",
+   "x": -5.6,
+   "z": -1.0,
+   "ry": 90,
+   "s": 1.92
+  },
+  {
+   "m": "rock_big",
+   "x": 6.0,
+   "z": -0.9,
+   "ry": 0,
+   "s": 1.0
+  },
+  {
+   "m": "tree_pine",
+   "x": -6.2,
+   "z": 3.0,
+   "ry": 219,
+   "s": 1.27
+  },
+  {
+   "m": "tree_pine",
+   "x": 6.0,
+   "z": 3.1,
+   "ry": 105,
+   "s": 1.26
+  },
+  {
+   "m": "lamp_post",
+   "x": 0.2,
+   "z": 2.2,
+   "ry": 0,
+   "s": 1.2
+  },
+  {
+   "m": "buoy",
+   "x": -1.3,
+   "z": -3.7,
+   "ry": 0,
+   "s": 1.2,
+   "y": -0.12,
+   "noCollide": true
+  },
+  {
+   "m": "buoy",
+   "x": 1.9,
+   "z": -3.75,
+   "ry": 0,
+   "s": 1.2,
+   "y": -0.12,
+   "noCollide": true
+  }
+ ],
+ "needs": [
+  {
+   "type": "boat",
+   "id": "boatA",
+   "model": "sailboat",
+   "x": -5.3,
+   "z": -3.3,
+   "ry": 90,
+   "s": 1.25,
+   "water": "sea",
+   "goal": [
+    -1.9,
+    -3.4
+   ],
+   "goalR": 0.65
+  },
+  {
+   "type": "boat",
+   "id": "boatB",
+   "model": "sailboat",
+   "x": 5.3,
+   "z": -3.2,
+   "ry": 270,
+   "s": 1.25,
+   "water": "sea",
+   "goal": [
+    2.5,
+    -3.4
+   ],
+   "goalR": 0.65
+  },
+  {
+   "type": "keepdry",
+   "id": "castle",
+   "x": -1.9,
+   "z": -0.9,
+   "model": "sandcastle",
+   "s": 1.4,
+   "time": 7
+  },
+  {
+   "type": "shade",
+   "id": "bather1",
+   "x": 2.5,
+   "z": 0.0,
+   "model": "person_sunbather_a",
+   "ry": 0,
+   "time": 4.0,
+   "s": 1.8
+  },
+  {
+   "type": "shade",
+   "id": "bather2",
+   "x": 4.0,
+   "z": 0.5,
+   "model": "person_sunbather_b",
+   "ry": 0,
+   "time": 4.0,
+   "s": 1.8
+  },
+  {
+   "type": "react",
+   "id": "seal",
+   "x": 5.2,
+   "z": -1.6,
+   "model": "seal",
+   "ry": 200,
+   "s": 2.18,
+   "trigger": "rain",
+   "amount": 2.0,
+   "react": "cheer",
+   "sound": "seal",
+   "hidden": true
+  }
+ ],
+ "sources": [],
+ "delight": {
+  "type": "rain_on",
+  "target": "seal",
+  "title": "A shower for the seal",
+  "hint": "A sunbather on the rocks is feeling dry."
+ },
+ "events": [],
+ "thanks": "Every boat home, every castle standing."
+}

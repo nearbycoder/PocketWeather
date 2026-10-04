@@ -49,8 +49,8 @@ namespace PocketWeather
 
             color = profile.Add<ColorAdjustments>(true);
             color.postExposure.Override(BaseExposure);
-            color.saturation.Override(14f);
-            color.contrast.Override(8f);
+            color.saturation.Override(18f);
+            color.contrast.Override(13f);
 
             white = profile.Add<WhiteBalance>(true);
             white.temperature.Override(0f);
@@ -78,7 +78,7 @@ namespace PocketWeather
         {
             if (color == null) return;
             color.postExposure.Override(BaseExposure + exposure);
-            color.saturation.Override(14f + saturationBoost);
+            color.saturation.Override(18f + saturationBoost);
             white.temperature.Override(temperature);
         }
 

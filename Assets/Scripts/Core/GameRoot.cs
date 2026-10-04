@@ -27,30 +27,28 @@ namespace PocketWeather
             return i >= 0 && i + 1 < args.Length ? args[i + 1] : fallback;
         }
 
+        public static bool HasArg(string name) => Array.IndexOf(Environment.GetCommandLineArgs(), name) >= 0;
+
         void Awake()
         {
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 1;
             Fx.Init();
             PostFx.Create();
+            AudioHub.Create();
             Rig = CameraRig.Create();
             DontDestroyOnLoad(Rig.gameObject);
             Day = DayCycle.Create();
             DontDestroyOnLoad(Day.gameObject);
             Debug.Log("[PW] GameRoot booted");
-            LoadLevel(Arg("-pwLevel", "proto"));
         }
 
-        public Level LoadLevel(string id)
+        void Start()
         {
-            if (Level != null) Destroy(Level.gameObject);
-            var def = LevelLibrary.Load(id);
-            if (def == null) return null;
-            Level = Level.Load(def, Day);
-            Rig.Frame(def.island.w, def.island.d);
-            Level.Running = true;
-            return Level;
+            GameFlow.Create(this).Boot();
         }
+
+        public void SetLevel(Level lvl) { Level = lvl; }
 
         void Update()
         {
