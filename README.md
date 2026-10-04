@@ -208,6 +208,8 @@ What has been verified (on the Linux build unless noted):
   development machine's integrated Radeon 8060S (shared with other busy projects); 99% of frames
   were under 17 ms; on Vulkan the GPU itself took about 1.6 ms a frame. The only spike is building
   a level (about 50 ms of work), hidden behind the cloud-wipe transition.
+- The Linux player runs on OpenGL Core by default. A full campaign on Vulkan (`-force-vulkan`)
+  also passed 12/12 with every delight, with the GPU at 1.5 to 2.0 ms a frame on every level.
 
 What hasn't been, or is known to be rough:
 
@@ -227,5 +229,3 @@ What hasn't been, or is known to be rough:
 - **Depth of field was invisible until late in development:** URP had been stripping its shaders
   from builds, so earlier screenshots and the first gameplay video had no tilt-shift blur. It now
   renders and was tuned in a build, but only against screenshots.
-- The Linux player uses OpenGL Core by default; Vulkan also works (`-force-vulkan`) and reports GPU
-  timings, but hasn't had a full test pass.
