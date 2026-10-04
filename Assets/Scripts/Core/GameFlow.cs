@@ -299,7 +299,7 @@ namespace PocketWeather
             lvl.Cloud.Visual.Hop(1.4f);
             // hit-stop
             Time.timeScale = 0.08f;
-            yield return new WaitForSecondsRealtime(0.12f);
+            for (float h = 0; h < 0.12f; h += Clock.UnscaledDelta) yield return null;
             Time.timeScale = 1f;
             foreach (var n in lvl.Needs)
                 if (n.Required) Fx.Sparkles(n.BubbleAnchor, 14, new Color(1f, 0.92f, 0.6f), 0.6f, 2.2f, 0.2f);

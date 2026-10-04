@@ -78,7 +78,7 @@ namespace PocketWeather
             {
                 var h = active[i];
                 if (h.killed) { active.RemoveAt(i); continue; }
-                float dt = h.unscaled ? Time.unscaledDeltaTime : Time.deltaTime;
+                float dt = h.unscaled ? Clock.UnscaledDelta : Time.deltaTime;
                 if (h.delay > 0) { h.delay -= dt; continue; }
                 h.t += dt;
                 float k = Mathf.Clamp01(h.t / h.duration);

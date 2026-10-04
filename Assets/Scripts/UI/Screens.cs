@@ -113,7 +113,7 @@ namespace PocketWeather
         void Update()
         {
             if (!IsOpen || JustOpened) return;
-            float t = Time.unscaledTime;
+            float t = Clock.UnscaledTime;
             tap.color = new Color(1, 1, 1, 0.65f + 0.35f * Mathf.Sin(t * 3f));
             tap.rectTransform.localScale = Vector3.one * (1 + 0.04f * Mathf.Sin(t * 3f));
             var kb = UnityEngine.InputSystem.Keyboard.current;

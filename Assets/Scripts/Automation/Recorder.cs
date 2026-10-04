@@ -6,7 +6,7 @@ using UnityEngine;
 namespace PocketWeather
 {
     /// <summary>
-    /// Offline video capture, active with <c>-pwVideo &lt;dir&gt; [-pwVideoFps 30]</c>. Locks the game
+    /// Offline video capture, active with <c>-pwVideo &lt;dir&gt; [-pwVideoFps 30] [-pwVideoQuality 92]</c>. Locks the game
     /// clock to the capture rate (so the result is smooth however slow the machine is), writes one
     /// JPEG per frame and the mixed audio output as raw stereo float32 (<c>audio.f32</c>), ready
     /// for ffmpeg. Usually combined with <c>-pwAutopilot</c> to have the bot play.
@@ -15,6 +15,7 @@ namespace PocketWeather
     {
         string dir;
         int fps;
+        int quality;
         int frame;
         public static int Frame { get; private set; } = -1;
         public static void Mark(string what) { if (Frame >= 0) Debug.Log($"[PW] mark {Frame} {what}"); }
@@ -31,6 +32,7 @@ namespace PocketWeather
             var r = new GameObject("Recorder").AddComponent<Recorder>();
             r.dir = args[i + 1];
             r.fps = int.Parse(GameRoot.Arg("-pwVideoFps", "30"));
+            r.quality = int.Parse(GameRoot.Arg("-pwVideoQuality", "92"));
             DontDestroyOnLoad(r.gameObject);
         }
 
@@ -51,7 +53,7 @@ namespace PocketWeather
         {
             yield return new WaitForEndOfFrame();
             var tex = ScreenCapture.CaptureScreenshotAsTexture();
-            File.WriteAllBytes(Path.Combine(dir, $"f{frame:00000}.jpg"), tex.EncodeToJPG(92));
+            File.WriteAllBytes(Path.Combine(dir, $"f{frame:00000}.jpg"), tex.EncodeToJPG(quality));
             Destroy(tex);
             frame++;
             Frame = frame;

@@ -67,7 +67,7 @@ namespace PocketWeather
             // Auto: judge only while a level is being played in a focused window, after it has settled in
             if ((Mode)GameSettings.Graphics != Mode.Auto || AutoDowngraded) return;
             var flow = GameFlow.I;
-            if (flow == null || flow.Current != GameFlow.State.Playing || (!Application.isFocused && !fakeSlow) || GameRoot.HasArg("-pwAutopilot"))
+            if (flow == null || flow.Current != GameFlow.State.Playing || (!Application.isFocused && !fakeSlow) || GameRoot.HasArg("-pwAutopilot") || GameRoot.HasArg("-pwVideo"))
             {
                 judged = 0; slowTime = 0; return;
             }

@@ -149,6 +149,16 @@ namespace PocketWeather
         }
 
         public bool TouchButtonsVisible => touchRoot != null && touchRoot.gameObject.activeInHierarchy;
+        /// <summary>Trailer capture: show the on-screen touch buttons without touching the saved setting.</summary>
+        public static bool ForceTouchButtons;
+
+        /// <summary>Shows or hides the corner panels (gauge, sun track, tray, pause) but keeps thought
+        /// bubbles, hints and toasts, for cinematic trailer shots.</summary>
+        public void SetChrome(bool visible)
+        {
+            foreach (Transform c in safe)
+                if (c != toast && c != hintRoot && c != touchRoot) c.gameObject.SetActive(visible);
+        }
 
         public void Bind(Level lvl)
         {
@@ -315,8 +325,8 @@ namespace PocketWeather
 
         void Update()
         {
-            float dt = Time.unscaledDeltaTime;
-            float t = Time.unscaledTime;
+            float dt = Clock.UnscaledDelta;
+            float t = Clock.UnscaledTime;
             var cloud = Cloud.Instance;
             if (trayItems.Count > 0) FitTray();
 
@@ -403,7 +413,7 @@ namespace PocketWeather
             }
 
             // ---- touch buttons
-            bool wantTouch = GameSettings.TouchButtons == 1 || (GameSettings.TouchButtons == 0 && cloud != null && cloud.Input.LastDevice == CloudInput.Device.Touch);
+            bool wantTouch = ForceTouchButtons || GameSettings.TouchButtons == 1 || (GameSettings.TouchButtons == 0 && cloud != null && cloud.Input.LastDevice == CloudInput.Device.Touch);
             if (touchRoot.gameObject.activeSelf != (wantTouch && running)) touchRoot.gameObject.SetActive(wantTouch && running);
             if (cloud != null) cloud.Input.ButtonRain = rainBtn != null && rainBtn.Held && running;
 

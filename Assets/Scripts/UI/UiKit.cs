@@ -375,7 +375,7 @@ namespace PocketWeather
             if (face == null) return;
             bool pressed = IsPressed();
             bool hovered = IsHighlighted() || currentSelectionState == SelectionState.Selected;
-            float dt = Time.unscaledDeltaTime;
+            float dt = Clock.UnscaledDelta;
             press = Mathf.MoveTowards(press, pressed ? 1 : 0, dt * (pressed ? 14 : 6));
             hover = Mathf.MoveTowards(hover, hovered ? 1 : 0, dt * 8);
             face.anchoredPosition = new Vector2(0, -press * 6f + hover * 2f);
@@ -435,7 +435,7 @@ namespace PocketWeather
         void Update()
         {
             if (rt == null) return;
-            float t = Time.unscaledTime * speed + phase;
+            float t = Clock.UnscaledTime * speed + phase;
             rt.anchoredPosition = basePos + new Vector2(0, Mathf.Sin(t) * amplitude);
             if (pulse > 0) rt.localScale = Vector3.one * (1 + Mathf.Sin(t * 1.3f) * pulse);
         }

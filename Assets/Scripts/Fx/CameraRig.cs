@@ -56,6 +56,9 @@ namespace PocketWeather
 
         public void Shake(float amount) { shake = Mathf.Max(shake, amount); }
 
+        /// <summary>Jumps to <see cref="Zoom"/> instead of easing there (for cuts).</summary>
+        public void SnapZoom() { zoomCurrent = Zoom; }
+
         void Solve()
         {
             Cam.fieldOfView = Fov;
@@ -110,9 +113,9 @@ namespace PocketWeather
                 lastAspect = Cam.aspect;
                 Solve();
             }
-            float dt = Time.unscaledDeltaTime;
+            float dt = Clock.UnscaledDelta;
             zoomCurrent = Ease.Damp(zoomCurrent, Zoom, 2.5f, dt);
-            float t = Time.unscaledTime;
+            float t = Clock.UnscaledTime;
             float driftYaw = Mathf.Sin(t * 0.11f) * 0.8f;
             float driftPitch = Mathf.Sin(t * 0.07f + 1f) * 0.4f;
             var rot = Quaternion.Euler(Pitch + driftPitch, Yaw + driftYaw, 0);
@@ -127,7 +130,7 @@ namespace PocketWeather
             Cam.transform.SetPositionAndRotation(pos, rot);
             // focus a little above the ground, between the island and Pip's flying height
             FocusDistance = Vector3.Distance(pos, target) - Cloud.Altitude * 0.4f * Mathf.Sin(Pitch * Mathf.Deg2Rad);
-            PostFx.SetFocus(FocusDistance);
+            PostFx.SetFocus(FocusDistance, zoomCurrent);
         }
     }
 }

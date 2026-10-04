@@ -31,7 +31,7 @@ namespace PocketWeather
 
         /// <summary>A bot, self-test or capture is driving the game (its window is rarely focused).</summary>
         public static bool Automated => HasArg("-pwAutopilot") || HasArg("-pwCapture") || HasArg("-pwTouchTest") ||
-                                        HasArg("-pwPadTest") || HasArg("-pwVideo") || HasArg("-pwPerf") || HasArg("-pwUiAudit") || HasArg("-pwKeyTest");
+                                        HasArg("-pwPadTest") || HasArg("-pwVideo") || HasArg("-pwPerf") || HasArg("-pwUiAudit") || HasArg("-pwKeyTest") || HasArg("-pwTrailer");
 
         void Awake()
         {

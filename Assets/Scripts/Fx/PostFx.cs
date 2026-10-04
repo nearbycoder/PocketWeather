@@ -18,6 +18,7 @@ namespace PocketWeather
         static Vignette vignette;
         static WhiteBalance white;
         public static float BaseExposure = 0.1f;
+        static float zoomScale = 1f;
 
         public static void Create()
         {
@@ -69,17 +70,26 @@ namespace PocketWeather
         {
             if (dof == null) return;
             dof.active = GameSettings.TiltShift > 0.01f;
-            dof.aperture.Override(Mathf.Lerp(16f, 1.6f, GameSettings.TiltShift));
+            dof.aperture.Override(Mathf.Lerp(16f, 1.6f, GameSettings.TiltShift) * zoomScale);
             // Low quality: gaussian blur of the far/near bands instead of the costlier bokeh
             dof.mode.Override(Quality.Low ? DepthOfFieldMode.Gaussian : DepthOfFieldMode.Bokeh);
             if (Quality.Low) dof.highQualitySampling.Override(false);
             if (bloom != null) bloom.highQualityFiltering.Override(!Quality.Low);
         }
 
-        public static void SetFocus(float distance)
+        /// <param name="zoom">The camera's push-in (CameraRig.Zoom). Closer cameras defocus faster
+        /// (roughly with 1/distance squared), so the aperture is stopped down to match and a push-in
+        /// keeps the same miniature blur instead of smearing everything but Pip.</param>
+        public static void SetFocus(float distance, float zoom = 1f)
         {
             if (dof == null) return;
             dof.focusDistance.Override(distance);
+            float scale = zoom < 1f ? 1f / Mathf.Max(0.09f, zoom * zoom) : 1f;
+            if (Mathf.Abs(scale - zoomScale) > 0.01f)
+            {
+                zoomScale = scale;
+                dof.aperture.Override(Mathf.Lerp(16f, 1.6f, GameSettings.TiltShift) * zoomScale);
+            }
             // gaussian (Low quality) blurs a far band only: the sea of clouds and the island's far edge
             dof.gaussianStart.Override(distance + 3f);
             dof.gaussianEnd.Override(distance + 14f);

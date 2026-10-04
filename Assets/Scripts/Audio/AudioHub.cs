@@ -30,6 +30,8 @@ namespace PocketWeather
         float lastRainNoteTime;
         string currentMusic = "", currentAmb = "";
         public float FireLevel;      // set by fire needs (0..1)
+        /// <summary>Trailer capture: silence the music but keep it playing, so rain notes still follow its chords.</summary>
+        public static bool MuteMusic;
 
         static readonly Dictionary<string, float> Volumes = new()
         {
@@ -250,14 +252,14 @@ namespace PocketWeather
 
         void Update()
         {
-            float dt = Time.unscaledDeltaTime;
+            float dt = Clock.UnscaledDelta;
             noteBudget = Mathf.Min(3f, noteBudget + dt * 9f);
             // ducking
             if (duckTimer > 0) duckTimer -= dt; else duckTarget = 1f;
             duck = Mathf.MoveTowards(duck, duckTarget, dt * (duck > duckTarget ? 3f : 0.8f));
             // music crossfade
             musicFade = Mathf.MoveTowards(musicFade, 1f, dt / fadeDuration);
-            float mv = GameSettings.Music * 0.55f * duck;
+            float mv = (MuteMusic ? 0f : GameSettings.Music) * 0.55f * duck;
             foreach (var src in new[] { musicA, musicB })
             {
                 bool isActive = src == activeMusic;

@@ -26,7 +26,7 @@ namespace PocketWeather
         }
 
         static SaveFile data;
-        static string Key => GameRoot.HasArg("-pwAutopilot") || GameRoot.HasArg("-pwCapture") || GameRoot.HasArg("-pwTouchTest") || GameRoot.HasArg("-pwPadTest") || GameRoot.HasArg("-pwUiAudit") || GameRoot.HasArg("-pwKeyTest") ? "pw.save.test" : "pw.save.v1";
+        static string Key => GameRoot.HasArg("-pwAutopilot") || GameRoot.HasArg("-pwCapture") || GameRoot.HasArg("-pwTouchTest") || GameRoot.HasArg("-pwPadTest") || GameRoot.HasArg("-pwUiAudit") || GameRoot.HasArg("-pwKeyTest") || GameRoot.HasArg("-pwTrailer") ? "pw.save.test" : "pw.save.v1";
 
         static SaveFile Data
         {
