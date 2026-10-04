@@ -36,7 +36,7 @@ case "${1:-open}" in
     exec "$UNITY" -projectPath "$PROJECT"
     ;;
   build)
-    batch "$LOGDIR/build.log" -executeMethod PocketWeather.EditorTools.BuildScript.BuildLinux
+    batch "$LOGDIR/build.log" -buildTarget Linux64 -executeMethod PocketWeather.EditorTools.BuildScript.BuildLinux
     ;;
   webgl)
     batch "$LOGDIR/build-webgl.log" -buildTarget WebGL -executeMethod PocketWeather.EditorTools.BuildScript.BuildWebGL
