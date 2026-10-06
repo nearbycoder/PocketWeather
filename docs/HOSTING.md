@@ -14,7 +14,7 @@ Nothing here has been deployed. Where it goes is the owner's call.
 ```sh
 Tools/unity.sh webgl          # Builds/WebGL (switches the editor's platform; slow the first time)
 Tools/package_web.sh          # Builds/PocketWeather-<version>-web.zip, index.html at the root
-node Tools/web_smoke.mjs      # boots it in headless Chrome and plays a little (add --phone, --throttle 20)
+node Tools/web_smoke.mjs      # boots and plays it in headless Chrome (--phone, --throttle 20)
 ```
 
 To try it locally, run `Tools/serve_web.sh` (it also prints LAN addresses for a phone on the same
@@ -22,8 +22,10 @@ Wi-Fi).
 
 ## What a first-time visitor downloads
 
-See the "Web build" table in `docs/IMPROVEMENTS.md` for the measured sizes and load times. Browsers
-cache the files (`dataCaching` is on), so later visits start almost at once.
+About 28 MB on the first visit. On an emulated connection, the game boots in about 13 s at
+20 Mbps and about 30 s at 8 Mbps, with a loading card showing progress meanwhile. The measurements
+are in `docs/IMPROVEMENTS.md` under "Round 1 results". Browsers cache the files (`dataCaching` is
+on), so later visits start almost at once.
 
 ## Where it could go
 

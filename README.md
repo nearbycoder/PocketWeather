@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="Unity 6000.6.2f1 (URP)" src="https://img.shields.io/badge/Unity-6000.6.2f1%20URP-222c37?logo=unity&logoColor=white">
-  <img alt="Platforms: Linux and Web" src="https://img.shields.io/badge/platforms-Linux%20%7C%20Web-5FB8E6">
+  <img alt="Platforms: Linux and Web (macOS untested)" src="https://img.shields.io/badge/platforms-Linux%20%7C%20Web%20%7C%20macOS%20(untested)-5FB8E6">
   <img alt="Input: mouse, touch, keyboard, gamepad" src="https://img.shields.io/badge/input-mouse%20%7C%20touch%20%7C%20keys%20%7C%20gamepad-6CCB8A">
   <img alt="Models: Blender 4.5" src="https://img.shields.io/badge/models-Blender%204.5-E87D0D?logo=blender&logoColor=white">
   <img alt="Audio: synthesised with numpy" src="https://img.shields.io/badge/audio-synthesised%20with%20numpy-4D77CF?logo=numpy&logoColor=white">
@@ -59,10 +59,12 @@ The camera looks down at an angle, so Pip floats above your cursor or finger and
 | Drink | Hover over open water without raining | | | |
 | Pause | Esc / P | | Start | ⏸ button |
 
-M toggles the music. Every menu works with mouse, touch, keyboard and gamepad (d-pad or stick to
-move, A to choose, B to go back). **Settings → Tap to rain** turns rain into a toggle for anyone
-who finds holding a button tiring. The game pauses itself when the window loses focus or a phone
-sends it to the background.
+M mutes the music and brings it back at your own volume. The pause menu shows a one-line reminder of
+the controls for whatever you're playing with. Every menu works with mouse, touch, keyboard and
+gamepad (d-pad or stick to move, A to choose, B to go back). **Settings → Tap to rain** turns rain
+into a toggle for anyone who finds holding a button tiring, and **Settings → Touch buttons** can be
+Auto (shown once you touch the screen), On or Off. The game pauses itself when the window loses
+focus or a phone sends it to the background.
 
 ## Features
 
@@ -94,10 +96,13 @@ catching vapour motes: morning dew, chimney steam, the steam off a doused fire.
 <td>
 
 ### A world of competing wants
-Everything that needs you shows a thought bubble with a progress ring:
+Everything that needs you shows a thought bubble with a progress ring, and a small badge for
+what helps: a drop for rain, Pip for shade, a gust of wind, the sun, or a crossed-out drop for
+"keep the rain off". The same badges sit on the needs tray.
 
 - **Beds** (flowers, vegetables, wheat, a pig's wallow) want moisture inside a green band, and
-  go soggy above it until the sun dries them.
+  go soggy above it until the sun dries them. Their ring shows the band and a notch at its top,
+  and stays up while you rain on them, so you can stop just in time.
 - **Shade-seekers** (sheep, cows, a donkey, picnickers, sunbathers) cool down under Pip, and
   sulk if you rain on them.
 - **Boats** are gusted into their dock or buoy. **Laundry** is dried by gusts and soaked by rain.
@@ -144,11 +149,12 @@ hinted at by a riddle in the pause menu.
 </tr>
 </table>
 
-Also included: a title screen over a live diorama, a map of Pocketvale with your stamps, a
-postcard before each day, pause and settings (music, sound and ambience volume, graphics
-Auto/High/Low, fullscreen, screen shake, tilt-shift blur, hints, touch buttons, tap-to-rain,
-reset progress), a sunset card with a tip for whatever was left undone, an ending, wordless
-device-aware onboarding hints, and saved progress.
+Also included: a title screen over the diorama of the day you're up to, a map of Pocketvale with
+your stamps, a postcard before each day, pause and settings (music, sound and ambience volume,
+graphics Auto/High/Low, fullscreen, screen shake, tilt-shift blur, hints, touch buttons,
+tap-to-rain, reset progress), your best finishing time on each postcard and results card, a sunset
+card with a tip for whatever was left undone, an ending, wordless device-aware onboarding hints, and
+saved progress.
 
 ## Content
 
@@ -198,19 +204,27 @@ Download the latest build from [**Releases**](https://github.com/nearbycoder/Poc
   `http://localhost:8080`. It's made for desktop and phone browsers alike, with touch controls
   (see the known issues for what has and hasn't been tested).
 
+The current source builds a web version that's ready for a static host: the game fills the
+window, loads behind its own loading card and needs no server configuration (see
+[docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet, and the v0.1.0 downloads above
+predate it and the other changes listed in [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md).
+
 ## Build from source
 
-You'll need **Unity 6000.6.2f1** with the Linux Build Support (and, for the web build, WebGL
-Build Support) modules. The project uses URP, the Input System and runtime-built uGUI; the only
-scene is a bootstrap and everything else is constructed from code and level data.
+You'll need **Unity 6000.6.2f1** with the Linux Build Support module (plus WebGL Build Support
+for the web build and Mac Build Support (Mono) for macOS). The project uses URP, the Input System
+and runtime-built uGUI; the only scene is a bootstrap and everything else is constructed from code
+and level data.
 
 ```sh
 Tools/unity.sh compile        # import + compile, print any errors
 Tools/unity.sh build          # Builds/Linux/PocketWeather.x86_64
 Tools/unity.sh webgl          # Builds/WebGL (switches the editor's platform; slow the first time)
+Tools/unity.sh mac            # Builds/macOS/PocketWeather.app (universal, unsigned, untested)
 Tools/unity.sh                # open the editor
 Tools/play.sh                 # run the Linux build windowed at 1600x900
 Tools/serve_web.sh            # serve the web build on :8080, with LAN addresses for a phone
+Tools/package_web.sh          # zip Builds/WebGL for a static host (docs/HOSTING.md)
 ```
 
 `Tools/unity.sh` expects the editor at `~/Unity/Hub/Editor/6000.6.2f1/Editor/Unity`; set `UNITY=`
@@ -235,6 +249,9 @@ blender -b -P ArtSource/icons.py
 blender -b -P ArtSource/build_all.py -- --preview /tmp/prev --no-export
 python3 ArtSource/contact_sheet.py /tmp/prev /tmp/prev/sheet.png
 
+# The web page's images (logo, favicon, link preview), cut from the logo, Pip's icon and the poster
+python3 Tools/make_web_template.py
+
 # Music, ambience, sound effects and the chord timeline (needs numpy + scipy)
 python3 -m venv Tools/.venv && Tools/.venv/bin/pip install numpy scipy
 Tools/.venv/bin/python Tools/audio/synth.py
@@ -251,16 +268,21 @@ verdict for each (`--quick` skips the full campaign):
 - **Audio loop seams** (`Tools/.venv/bin/python Tools/audio/check_loops.py`): no click or level
   jump where any looping clip wraps.
 - **Keyboard, gamepad and touch self-tests** (`-pwKeyTest`, `-pwPadTest`, `-pwTouchTest`): virtual
-  devices drive the real Input System from the title screen through menus and play (19, 24 and
-  18 checks).
+  devices drive the real Input System from the title screen through menus and play (29, 25 and
+  20 checks), including the pause menu's controls line, hints hiding behind pause, the Touch
+  buttons Off setting, best times and the hint on each day that brings in a new idea.
 - **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen must receive a tap
-  at its centre and sit fully on screen, at 16:9, 20:9, 4:3 and portrait.
+  at its centre and sit fully on screen, at 16:9, 20:9, 4:3 and portrait. It also loads all
+  twelve days and fails if any need is missing its "what helps" badge.
 - **AutoPilot** (`Tools/play.sh -pwAutopilot /tmp/auto`): a bot plays every level through the same
   input API as the player and reports PASS/FAIL, finishing hour against par, oopses and water
-  used. `-pwDelights` also chases each secret, `-pwNewcomer` plays like a hesitant first-timer,
-  and `-pwPerf` logs frame-time statistics.
+  used. `-pwDelights` also chases each secret (with a second try for most of them),
+  `-pwNewcomer` plays like a hesitant first-timer, and `-pwPerf` logs frame-time statistics.
 - **Web smoke test** (`node Tools/web_smoke.mjs`, `--phone` for an emulated phone): boots the
-  WebGL build in headless Chrome and plays it with real browser touch events.
+  WebGL build in headless Chrome and plays it with real browser touch events, then reloads to
+  check that a downgraded Auto graphics setting is remembered. `--throttle 20` emulates a 20 Mbps
+  connection and screenshots the loading card; `--dir` points it at another build, for
+  comparisons. It isn't part of `selftest.sh`, which tests the Linux build.
 
 ### Rebuilding the trailer and README media
 
@@ -294,13 +316,16 @@ Assets/
     Automation/  AutoPilot, Capture, KeyTest / PadTest / TouchTest, UiAudit, PerfProbe,
                  Recorder (fixed-clock video), Trailer (the trailer's shot list)
   Editor/        BuildScript (batch builds), ProjectSetup (URP asset, renderer, volume)
+  WebGLTemplates/PocketWeather/  the web page: full-window canvas, loading card, link previews
   Shaders/       Toon, Ground, Water, CloudPuff, CloudFace, Rainbow, Sky, Fx, WetMapUpdate
   Resources/     Levels/*.json, Models/*.fbx, Audio/, Icons/, Fonts/
 ArtSource/       Blender generators: pw_lib (the kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
-Tools/           unity.sh, play.sh, selftest.sh, serve_web.sh, web_smoke.mjs, make_levels.py,
-                 validate_levels.py, make_video.py, make_trailer.py, audio/ (synth, sfx, music)
-docs/            PLAN.md (design and technical plan), BRIEF.md (the original brief), media/
+Tools/           unity.sh, play.sh, selftest.sh, serve_web.sh, package_web.sh, web_smoke.mjs,
+                 make_levels.py, validate_levels.py, make_video.py, make_trailer.py,
+                 make_web_template.py, audio/ (synth, sfx, music)
+docs/            PLAN.md (design and technical plan), BRIEF.md (the original brief),
+                 IMPROVEMENTS.md (the improvement round), HOSTING.md (web hosting), media/
 ```
 
 ## Tech highlights
@@ -370,17 +395,35 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. What has been verified (on the Linux build unless noted):
+every input method. Since then, an improvement round on the `improvements` branch (see
+[docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
+
+- a web page that's ready to host
+- the "just right" band and "what helps" badges on the bubbles
+- hints for every new idea, and a controls card in the pause menu
+- best times, a three-way touch-buttons setting, and longer music loops
+- an unsigned macOS build
+
+None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
 - All twelve levels pass the static validator. The expert AutoPilot finishes every day before
-  par and finds all twelve delights, with no exceptions or missing-asset warnings. The newcomer
-  bot also finishes all twelve, with the trickiest days landing 2.5 to 3 game-hours inside par.
-- Keyboard, gamepad, touch and UI-reachability self-tests pass through the real Input System.
-  One check is flaky: "rain waters the bed" in the keyboard and gamepad tests fails roughly one
-  run in six (about 2 moisture lands in its 1.2 s window against a threshold of 3, depending on
-  exactly where Pip stopped). It's a marginal test, not a gameplay bug, and passes on re-runs.
-- The WebGL build boots in headless Chrome in about 2 s and plays with real browser touch events
-  and a clean console.
+  par with no exceptions or missing-asset warnings, and usually finds 11 or 12 of the delights.
+  Two of them depend on timing:
+  - Day 6's rainbow depends on where the mist builds up. The bot gets a second try and found it
+    in 7 of 8 runs.
+  - Catching the wedding bouquet: the bot is clumsy at it, though the bouquet now always flies.
+- The newcomer bot also saves all twelve days before par; its closest margins are Day 9 (1.2
+  game-hours inside par) and Day 5 (1.5).
+- Keyboard (29 checks), gamepad (25), touch (20) and UI-reachability self-tests pass through the
+  real Input System. The once-flaky "rain waters the bed" check now lines Pip up first; both
+  keyboard and gamepad tests passed 10 runs out of 10.
+- **Web, in headless Chrome:**
+  - The build plays with real browser touch events and a clean console on desktop and phone
+    emulation.
+  - The download is about 28 MB, down from 32.6 MB.
+  - Booting on an emulated 20 Mbps link takes about 13 s (14.4 s for v0.1.0), and on 8 Mbps
+    about 30 s (33.4 s).
+  - Auto graphics remembers dropping to Low on the next visit.
 - Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
   off, 99% of frames under 17 ms, on both OpenGL Core (the default) and Vulkan
   (`-force-vulkan`).
@@ -389,15 +432,25 @@ every input method. What has been verified (on the Linux build unless noted):
 Rough edges, honestly:
 
 - **No human playtesting yet.** The newcomer bot is a heuristic stand-in; par times and the
-  difficulty curve still need real players.
+  difficulty curve still need real players. The bots don't read the bubbles, so whether the new
+  band and badges help can only be judged by people.
 - **No real touchscreen or controller testing.** Touch and gamepad have only been exercised
   through virtual devices and emulated browser touch. There's no native Android or iOS build, and
   phone-browser performance is untested.
+- **In portrait on a phone, the whole HUD is small,** the new badges included. Landscape is
+  the intended way to play.
 - **The audio has never been heard by a person.** It was balanced by measurement (loudness,
   peaks, spectra), so tone and repetitiveness may need adjusting by ear. The same goes for the
-  trailer's mix.
+  trailer's mix and the new generated B sections of the afternoon and wedding music.
 - **Weak GPUs are untested.** Auto graphics drops to Low when frame times stay high, but no real
   low-end GPU has been tried; under a pure software renderer the game ran at about 5 fps.
-- **Linux and web only** for now; there are no Windows or macOS builds.
+- **The Linux player can crash at startup under Wayland.** Once in about 45 automated launches,
+  it crashed inside Unity's Wayland window backend (`Tools/play.sh` forces Wayland because the
+  XWayland path hangs on this machine). Relaunching works.
+- **Platforms:** Linux and web are tested. `Tools/unity.sh mac` builds a universal macOS app,
+  but it has **never been run on a Mac**. It isn't signed with a Developer ID or notarised, so
+  Gatekeeper warns on first launch. There's no Windows build: the entry point exists, but this
+  machine lacks Unity's Windows Build Support module.
+- **The web build isn't hosted anywhere yet.** See [docs/HOSTING.md](docs/HOSTING.md).
 - **No license has been chosen yet.** Until a `LICENSE` file is added, the default copyright
   rules apply to the code and assets (the fonts remain under the OFL).

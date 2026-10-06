@@ -1,7 +1,8 @@
 # Pocket Weather: improvements, round 1
 
-Written 2026-10-06 on the `improvements` branch, starting from `41a6f09` (v0.1.0). This is the
-plan for the round. Nothing in it is implemented yet.
+Written 2026-10-06 on the `improvements` branch, starting from `41a6f09` (v0.1.0). The plan for
+the round comes first, as written before any work began. What was actually done, and how it was
+verified, is under [Round 1 results](#round-1-results) at the end.
 
 ## Baseline (measured today)
 
@@ -245,3 +246,144 @@ Acceptance:
   page should change.
 - Human ears and hands are still needed for audio, feel and difficulty. This round doesn't
   change that, and the README will keep saying so.
+
+## Round 1 results
+
+Implemented on `improvements`, one commit per item. Screenshots are in
+[`docs/media/improvements/`](media/improvements/).
+
+### 1. Hosted-ready web build: done; the size and speed targets were not met
+
+- **Page:** the game fills the window on desktop and phone, with a loading card in its own
+  colours, link-preview tags and a favicon. It shows a plain message if WebGL 2 is missing, and
+  the render resolution is capped at 1.5x on phones and 2x on desktops. There's no Unity footer
+  or "Unity Web Player" title, and the "Made with Unity" splash is off for every build (Unity 6
+  allows this on every licence).
+  ![loading card](media/improvements/1-web-loading-card.jpg)
+- **Auto graphics** remembers dropping to Low, so phones and slow browsers start there on the
+  next visit. web_smoke's reload check verifies it in headless Chrome.
+- **Packaging:** `Tools/package_web.sh` produces a zip that any static host serves as-is, and
+  [HOSTING.md](HOSTING.md) covers GitHub Pages, itch.io and the blog's own host. Nothing has been
+  deployed.
+- **Size and load time:**
+
+  | Web build | Download | Boot at 20 Mbps | Boot at 8 Mbps |
+  | --- | --- | --- | --- |
+  | v0.1.0 (gzip, default page, splash) | 32.6 MB | 14.4 s | 33.6 s |
+  | Item 1 alone (Brotli, size-optimised wasm, no splash) | 25.8 MB | 12.2 s | 28.4 s |
+  | End of round (plus item 6's longer music) | 27.9 MB | 13.2 s | 30.2 s |
+
+  Boot is the time from navigation to the game's first log line. Each figure is the median of 3
+  runs in headless Chrome with DevTools network throttling (60 ms latency) and a fresh profile,
+  alternating with v0.1.0 (which was re-measured alongside each build). The machine's load
+  average was 6 to 12 at the time. Under heavier load (30 to 80) the same runs were noisier and
+  slower for both builds.
+
+  **Why not 22 MB / 10 s:**
+  - The remaining 26 MB is mostly things the build settings can't shrink. Audio is 9.7 MB:
+    Unity's WebGL path re-encodes every clip to 160 kbps AAC whatever the quality setting (I
+    tried overrides: no change). URP's film-grain and blue-noise textures (about 3 MB of
+    incompressible noise) live in its global settings and can't be stripped safely.
+  - "Optimize mesh data" saved 1.9 MB but stripped the vertex colours, which turned the world
+    beige, so it stays off.
+  - Gzip was measured too: no faster than Brotli at 20 Mbps and about 5 s slower at 8 Mbps,
+    because its download is 5 MB larger.
+  - Shrinking further would mean cutting audio quality or lengths for the web, which nobody can
+    judge by ear here.
+- **Verified:** `web_smoke` passes on desktop and phone emulation, 0 console errors.
+
+### 2. Moisture band on bed bubbles: done
+
+- Bed rings show moisture on a fixed scale: a green band, a notch at its top, blue while thirsty,
+  mint in the band and coral when soggy.
+- The bubble now stays up while rain lands on a bed. Before, it vanished the moment the bed was
+  happy, so nothing warned before it went soggy.
+- The notch throbs in the top quarter of the band.
+
+Verified with `-pwScript band` screenshots at each state (Day 2), plus the selftest. The bots
+don't read bubbles, so no bot metric can show the benefit. It needs a human.
+
+![band](media/improvements/2-moisture-band-thirsty-soggy-neartop.jpg)
+
+### 3. "Wants" badges: done
+
+Every bubble and tray icon carries a badge for the verb that helps. For shade, the white Pip icon
+sits on a sky disc, because the first version was invisible on white. The UI audit fails on any
+need without a decided badge, and passes for all 12 days.
+
+![badges](media/improvements/3-want-badges-tray-day10.jpg)
+
+At 720x1280 portrait the badges are as small as the rest of the HUD. That was already true
+before this round and is noted under known issues.
+
+### 4. Onboarding gaps and controls card: done
+
+Days 5, 7, 9 and 10 now show their new idea within 3 s (checked in KeyTest), and Day 9 follows
+up with "Keep the campfire lit". The pause menu shows a one-line controls reminder for the device
+in use, checked in the keyboard, gamepad and touch tests.
+
+![hints](media/improvements/4-new-idea-hints-and-pause-controls.jpg)
+
+### 5. Fixes bundle: done
+
+- Touch buttons cycle Auto / On / Off.
+- Hints hide while paused.
+- M restores the player's own volume, and the slider refreshes to match.
+- Best times appear on the postcard and results.
+- `FormatHour` can no longer print 9:60.
+- The title and map show the day you're up to.
+
+The "rain waters the bed" check now lines Pip up first. Keyboard and gamepad tests each passed
+**10 runs out of 10**; before, the check failed about one run in six.
+
+### 6. Music variety (stretch): done, scaled down
+
+- The "evening" track was generated but never used. It now plays on Day 7 and Day 11, so
+  "afternoon" covers four days instead of six.
+- "afternoon" gains a B section (38 s → 77 s loop) and "wedding" a B and C section (27 s → 80 s).
+  Each new section is a generated melody (chord tones on strong beats, mostly stepwise, in key)
+  over the same chords.
+- The other four tracks decode identically to before.
+- Loop seams pass. RMS level is within 0.5 dB of before.
+- Not done: no track playing on more than 3 days. There are only three daytime tracks for ten
+  daytime days. Lengthening morning and evening too would add about 1.7 MB to the web download.
+- **Nobody has heard the new sections**; they were checked only by measurement.
+
+### macOS build (orchestrator-approved extra): built, untested
+
+`Tools/unity.sh mac` produces `Builds/macOS/PocketWeather.app`:
+- a universal binary (x86_64 + arm64, checked with `file`)
+- Mono scripting
+- bundle id `com.nearbycoder.pocketweather`
+- 146 MB, or 60 MB zipped
+
+Unity gives it an ad-hoc `_CodeSignature`, but it isn't signed with a Developer ID or notarised.
+Gatekeeper will warn on first launch (right-click → Open, or clear the quarantine attribute). **It
+has never been run on a Mac.** A zip is in `Builds/` (gitignored) and nothing is published.
+
+`Tools/unity.sh windows` and `BuildScript.BuildWindows` exist but have never run: Windows Build
+Support isn't installed.
+
+### Also changed
+
+- **AutoPilot:** a missed delight gets a second try, except the wedding's bouquet catch, which
+  happens whenever the bouquet flies. Day 6's rainbow delight was timing-dependent: the v0.1.0
+  build found it in 1 of 4 runs, and this build in 7 of 8 with the retry.
+- **The wedding's bouquet always flies now.** It's thrown once the couple's rainbow wish is met,
+  but only while the day is running. Reading the code, if that rainbow was the last need met, the
+  day was saved in the same frame and the bouquet (the trailer moment, and Day 12's delight)
+  never flew. Day 12 now holds completion from its start until the bouquet lands.
+  - In 6 bot runs, the bouquet was thrown every time and the day was saved afterwards.
+  - The bot caught it only once, so the selftest's delight count for Day 12 still varies. That's
+    the bot's catching, not the game.
+  - The last-need case itself wasn't reproduced.
+- **web_smoke:** uses free ports. A fixed port once served another project's build during a run.
+
+### Found along the way, not fixed
+
+- **A native crash in Unity's Wayland backend:** one SIGSEGV inside
+  `wl_display_dispatch_queue_pending` at startup, in about 45 automated launches. It isn't in the
+  game's code. The XWayland path hangs instead, so `-force-wayland` stays.
+- **On a shared machine,** the shared `/tmp` filled up (55 GB tmpfs) during the round, so this
+  round's scratch files live in the gitignored `Recordings/scratch`. `selftest.sh` still writes
+  its logs to `/tmp/pw-selftest`.
