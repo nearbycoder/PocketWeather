@@ -32,8 +32,8 @@ def stats(x):
     return f"peak {20 * np.log10(peak):6.1f} dBFS  rms {20 * np.log10(rms):6.1f} dBFS  len {x.shape[-1] / dsp.SR:5.2f}s"
 
 
-def write(sub, name, x):
-    d = os.path.join(OUT, sub)
+def write(sub, name, x, base=None):
+    d = os.path.join(base or OUT, sub)
     os.makedirs(d, exist_ok=True)
     wav = os.path.join(d, name + ".wav")
     dsp.write_wav(wav, x)
@@ -91,7 +91,9 @@ def main():
                 continue
             song = fn()
             x = song.render()
-            write("Music", "music_" + name, x)
+            # the tracks live outside Resources: the build packs each into its own asset bundle,
+            # so the web build can fetch them after it has started (BuildScript.BuildMusicBundles)
+            write("Music", "music_" + name, x, base=os.path.join(ROOT, "Assets"))
             by_name[name] = song.meta()
         meta["tracks"] = [by_name[k] for k in sorted(by_name)]
         os.makedirs(OUT, exist_ok=True)

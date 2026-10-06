@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
@@ -81,9 +82,59 @@ namespace PocketWeather.EditorTools
                 options = BuildOptions.None,
             });
             var s = report.summary;
+            bool ok = s.result == BuildResult.Succeeded;
             Debug.Log($"[PW] {target} build {s.result}: {s.totalSize / (1024 * 1024)} MB, {s.totalErrors} errors, {s.totalTime.TotalSeconds:0}s -> {path}");
+            if (ok) ok = AddMusic(target, path);
             if (Application.isBatchMode)
-                EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
+                EditorApplication.Exit(ok ? 0 : 1);
+        }
+
+        const string MusicDir = "Assets/Music";
+
+        /// <summary>
+        /// The music tracks live outside Resources (Assets/Music), each built into its own asset
+        /// bundle for the target and copied to the player's StreamingAssets/Music. Desktop players
+        /// open a track from disk when it's first played; the web player fetches the title's track
+        /// first and the rest in the background (AudioHub), so the first download doesn't wait for
+        /// a quarter of its size in music. The ".bundle" name lets the web loader cache them.
+        /// </summary>
+        static bool AddMusic(BuildTarget target, string playerPath)
+        {
+            var builds = new List<AssetBundleBuild>();
+            foreach (var file in Directory.GetFiles(MusicDir, "music_*.ogg"))
+            {
+                string name = Path.GetFileNameWithoutExtension(file);
+                builds.Add(new AssetBundleBuild
+                {
+                    assetBundleName = name + ".bundle",
+                    assetNames = new[] { file.Replace('\\', '/') },
+                    addressableNames = new[] { name },
+                });
+            }
+            string outDir = Path.Combine("Builds", "Bundles", target.ToString());
+            Directory.CreateDirectory(outDir);
+            // uncompressed: the audio inside is already compressed, and desktop players stream it
+            // straight out of the file
+            var manifest = BuildPipeline.BuildAssetBundles(outDir, builds.ToArray(),
+                BuildAssetBundleOptions.UncompressedAssetBundle | BuildAssetBundleOptions.StrictMode, target);
+            if (manifest == null) { Debug.LogError("[PW] music bundles failed to build"); return false; }
+            string streaming = target switch
+            {
+                BuildTarget.WebGL => Path.Combine(playerPath, "StreamingAssets"),
+                BuildTarget.StandaloneOSX => Path.Combine(playerPath, "Contents", "Resources", "Data", "StreamingAssets"),
+                _ => Path.Combine(Path.GetDirectoryName(playerPath), Path.GetFileNameWithoutExtension(playerPath) + "_Data", "StreamingAssets"),
+            };
+            string dst = Path.Combine(streaming, "Music");
+            if (Directory.Exists(dst)) Directory.Delete(dst, true);
+            Directory.CreateDirectory(dst);
+            long bytes = 0;
+            foreach (var b in builds)
+            {
+                File.Copy(Path.Combine(outDir, b.assetBundleName), Path.Combine(dst, b.assetBundleName));
+                bytes += new FileInfo(Path.Combine(dst, b.assetBundleName)).Length;
+            }
+            Debug.Log($"[PW] music: {builds.Count} track bundles, {bytes / 1048576f:0.0} MB -> {dst}");
+            return true;
         }
     }
 }

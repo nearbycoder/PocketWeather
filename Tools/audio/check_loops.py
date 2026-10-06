@@ -32,12 +32,12 @@ def level_db(x):
 
 
 def main():
-    files = sorted(glob.glob(os.path.join(AUDIO, "Music", "music_*.ogg")) + glob.glob(os.path.join(AUDIO, "Amb", "*.ogg")) +
+    files = sorted(glob.glob(os.path.join(ROOT, "Assets", "Music", "music_*.ogg")) + glob.glob(os.path.join(AUDIO, "Amb", "*.ogg")) +
                    glob.glob(os.path.join(AUDIO, "Sfx", "*_loop.wav")))
     bad = 0
     for f in files:
         a = decode(f)
-        name = os.path.relpath(f, AUDIO)
+        name = os.path.relpath(f, os.path.join(ROOT, "Assets"))
         if len(a) < SR:
             print(f"  FAIL {name}: could not decode"); bad += 1; continue
         typical = np.abs(np.diff(a[:SR], axis=0)).mean(axis=0).max() + 1e-9

@@ -22,11 +22,17 @@ Wi-Fi).
 
 ## What a first-time visitor downloads
 
-About 29 MB on the first visit. On an emulated connection, the game boots in about 13–17 s at
-20 Mbps and 30–33 s at 8 Mbps (depending on how busy the test machine was), with a loading card
-showing progress meanwhile. The measurements
-are in `docs/IMPROVEMENTS.md` under "Round 1 results". Browsers cache the files (`dataCaching` is
-on), so later visits start almost at once.
+About 21 MB before the title screen. On an emulated connection the game boots in about 14 s at
+20 Mbps and 23–24 s at 8 Mbps, with a loading card showing progress meanwhile (round 2's build
+took 17–18 s and 32–33 s on the same runs). The music (7.9 MB, one file per track in
+`StreamingAssets/Music/`) isn't part of that wait: the game fetches it in the background once it's
+running, the title's track first, which plays a second or two after the title appears. The
+measurements are in `docs/IMPROVEMENTS.md` under "Round 3 results". Browsers cache every file,
+the music included (`dataCaching` is on, and the loader caches `.bundle` files), so later visits
+start almost at once.
+
+Upload the whole folder, `StreamingAssets/` included; without it the game runs silent.
+`Tools/package_web.sh` zips all of it.
 
 ## Where it could go
 

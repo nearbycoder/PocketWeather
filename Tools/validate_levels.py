@@ -198,7 +198,7 @@ MAX_DAYS_PER_TRACK = 3   # a 40-80 s loop under more than ~3 days of a 30-minute
 
 def check_music():
     """Every level's track exists, and no track carries more than three days."""
-    music = os.path.join(ROOT, "Assets", "Resources", "Audio", "Music")
+    music = os.path.join(ROOT, "Assets", "Music")
     uses = {}
     bad = 0
     for path in sorted(glob.glob(os.path.join(LEVELS, "level*.json"))):

@@ -36,7 +36,7 @@ RES = os.path.join(ROOT, "Assets", "Resources")
 FONT_HEAD = os.path.join(RES, "Fonts", "Fredoka-SemiBold.ttf")
 FONT_BODY = os.path.join(RES, "Fonts", "Nunito-Bold.ttf")
 ICONS = os.path.join(RES, "Icons")
-MUSIC = os.path.join(RES, "Audio", "Music")
+MUSIC = os.path.join(ROOT, "Assets", "Music")
 
 W, H, FPS, SR = 1920, 1080, 30, 48000
 SPF = SR // FPS                       # recorded audio samples per video frame

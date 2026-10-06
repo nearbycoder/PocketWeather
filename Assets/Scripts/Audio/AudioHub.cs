@@ -1,6 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace PocketWeather
 {
@@ -75,6 +78,8 @@ namespace PocketWeather
             }
             Sfx.Handler = (n, p, v, pi) => Play(n, p, v, pi);
             RainNotes.Handler = RainNote;
+            // the web player starts fetching every track now, the title's first, one at a time
+            if (FetchesMusic) foreach (var t in FetchOrder) Fetch(t, false);
         }
 
         AudioSource NewSource(string n, bool loop)
@@ -135,14 +140,126 @@ namespace PocketWeather
             duckTimer = Mathf.Max(duckTimer, seconds);
         }
 
+        // ------------------------------------------------------------------ music tracks
+        // The tracks aren't in Resources: each is an asset bundle in StreamingAssets/Music
+        // (BuildScript.AddMusic). Desktop players open a track's bundle from disk the moment it's
+        // first played. The web player downloads them in the background after it starts, so its
+        // first download doesn't wait for the music. Browsers hold decoded audio as raw samples
+        // (15-20 MB a track), so on the web a track is decoded only when it's about to play and
+        // released once it has faded out; a track that isn't ready yet fades in when it is.
+        readonly Dictionary<string, AudioClip> music = new();
+        readonly Dictionary<string, AssetBundle> bundles = new();
+        readonly List<string> fetchQueue = new();
+        readonly Dictionary<string, int> fetchFailures = new();
+        readonly HashSet<string> failedTracks = new();
+        string fetching, preparing;
+        static readonly string[] FetchOrder = { "title", "morning", "seaside", "afternoon", "evening", "night", "wedding" };
+        static bool FetchesMusic => Application.platform == RuntimePlatform.WebGLPlayer;
+        static string MusicPath(string track) => Application.streamingAssetsPath + "/Music/music_" + track + ".bundle";
+
+        /// <summary>Desktop and editor: the track's clip, loaded on the spot (null if it doesn't exist).</summary>
+        AudioClip MusicClipNow(string track)
+        {
+            if (music.TryGetValue(track, out var c)) return c;
+#if UNITY_EDITOR
+            c = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Music/music_{track}.ogg");
+#else
+            var path = MusicPath(track);
+            var bundle = File.Exists(path) ? AssetBundle.LoadFromFile(path) : null;
+            c = bundle != null ? bundle.LoadAsset<AudioClip>("music_" + track) : null;
+#endif
+            music[track] = c;
+            return c;
+        }
+
+        /// <summary>Queues a track's bundle to download (web only); urgent ones jump the queue.</summary>
+        void Fetch(string track, bool urgent)
+        {
+            if (bundles.ContainsKey(track) || failedTracks.Contains(track) || fetching == track) return;
+            fetchQueue.Remove(track);
+            if (urgent) fetchQueue.Insert(0, track); else fetchQueue.Add(track);
+            if (fetching == null) StartCoroutine(FetchLoop());
+        }
+
+        IEnumerator FetchLoop()
+        {
+            while (fetchQueue.Count > 0)
+            {
+                string track = fetching = fetchQueue[0];
+                fetchQueue.RemoveAt(0);
+                float t0 = Time.realtimeSinceStartup;
+                AssetBundle bundle = null;
+                string error = null;
+                using (var req = UnityWebRequestAssetBundle.GetAssetBundle(MusicPath(track)))
+                {
+                    yield return req.SendWebRequest();
+                    if (req.result != UnityWebRequest.Result.Success) error = req.error;
+                    else if ((bundle = DownloadHandlerAssetBundle.GetContent(req)) == null) error = "not an asset bundle";
+                }
+                fetching = null;
+                if (error != null)
+                {
+                    int n = fetchFailures.TryGetValue(track, out var f) ? f + 1 : 1;
+                    fetchFailures[track] = n;
+                    Debug.LogWarning($"[PW] music {track} didn't arrive ({error}){(n < 3 ? ", trying again later" : ", giving up")}");
+                    if (n < 3) fetchQueue.Add(track); else failedTracks.Add(track);
+                    continue;
+                }
+                bundles[track] = bundle;
+                Debug.Log($"[PW] fetched music {track} in {Time.realtimeSinceStartup - t0:0.0} s");
+            }
+        }
+
+        /// <summary>Web: waits for the track's bundle, decodes it, and fades it in if it's still
+        /// the one that should be playing.</summary>
+        IEnumerator PrepareAndPlay(string track)
+        {
+            preparing = track;
+            Fetch(track, true);
+            while (!bundles.ContainsKey(track) && !failedTracks.Contains(track) && currentMusic == track) yield return null;
+            if (!bundles.TryGetValue(track, out var bundle) || currentMusic != track) { if (preparing == track) preparing = null; yield break; }
+            if (!music.TryGetValue(track, out var clip) || clip == null)
+            {
+                var load = bundle.LoadAssetAsync<AudioClip>("music_" + track);
+                yield return load;
+                music[track] = clip = load.asset as AudioClip;
+            }
+            if (clip != null && clip.loadState != AudioDataLoadState.Loaded)
+            {
+                clip.LoadAudioData();
+                for (float w = 0; clip.loadState != AudioDataLoadState.Loaded && clip.loadState != AudioDataLoadState.Failed && w < 20f; w += Time.unscaledDeltaTime) yield return null;
+            }
+            if (preparing == track) preparing = null;
+            if (clip == null || clip.loadState != AudioDataLoadState.Loaded) { Debug.LogWarning($"[PW] music {track} couldn't be decoded"); yield break; }
+            if (currentMusic == track && activeMusic == null) StartTrack(track, clip, 2f);
+        }
+
         // ------------------------------------------------------------------ music
         public void PlayMusic(string track, float fadeTime = 1.5f)
         {
             if (track == currentMusic) return;
             currentMusic = track;
-            var clip = Resources.Load<AudioClip>("Audio/Music/music_" + track);
+            if (FetchesMusic)
+            {
+                music.TryGetValue(track, out var ready);
+                if (ready != null && ready.loadState == AudioDataLoadState.Loaded) { StartTrack(track, ready, fadeTime); return; }
+                // not downloaded or decoded yet: the old track fades out, and this one fades in when it's ready
+                Debug.Log($"[PW] music {track}: waiting for it to be ready");
+                activeMusic = null;
+                activeTrack = null;
+                fadeDuration = Mathf.Max(0.05f, fadeTime);
+                if (preparing != track) StartCoroutine(PrepareAndPlay(track));
+                return;
+            }
+            StartTrack(track, MusicClipNow(track), fadeTime);
+        }
+
+        void StartTrack(string track, AudioClip clip, float fadeTime)
+        {
             Debug.Log($"[PW] music {track}: {(clip != null ? clip.length.ToString("0.0") + " s loop" : "MISSING")}");
-            var incoming = activeMusic == musicA ? musicB : musicA;
+            // after a wait both sources may be fading out: take over the quieter one
+            var incoming = activeMusic == musicA ? musicB : activeMusic == musicB ? musicA : musicA.volume <= musicB.volume ? musicA : musicB;
+            if (FetchesMusic && incoming.clip != null && incoming.clip != clip) incoming.clip.UnloadAudioData();   // the web frees what it replaces
             incoming.clip = clip;
             incoming.volume = 0;
             incoming.time = 0;
@@ -266,7 +383,12 @@ namespace PocketWeather
                 bool isActive = src == activeMusic;
                 float target = isActive ? mv * musicFade : 0f;
                 src.volume = isActive ? target : Mathf.MoveTowards(src.volume, 0f, dt / fadeDuration * mv + dt * 0.1f);
-                if (!isActive && src.volume <= 0.001f && src.isPlaying) src.Stop();
+                if (!isActive && src.volume <= 0.001f && src.isPlaying)
+                {
+                    src.Stop();
+                    // web: let the browser free the faded-out track's decoded samples
+                    if (FetchesMusic && src.clip != null && (activeMusic == null || activeMusic.clip != src.clip)) src.clip.UnloadAudioData();
+                }
             }
             amb.volume = Mathf.MoveTowards(amb.volume, GameSettings.Ambience * 0.6f, dt * 0.5f);
 
