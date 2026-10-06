@@ -488,3 +488,99 @@ the existing check that a returning player reaches the map.
   (`PlayerSettings.WebGL.progressiveAssetLoading`) could start the game before every file has
   arrived. But the game loads all its content through `Resources` at runtime, so it would need
   restructuring. That's left as a lead.
+
+## Round 2 results
+
+Implemented on `improvements-2`, one commit per item. Screenshots are in
+[`docs/media/improvements/round2/`](media/improvements/round2/). At the end, the full self-test
+passed on HEAD:
+- validator and loop seams
+- keyboard 33, gamepad 25 and touch 20 checks
+- the UI audit at five sizes, 14 checks each
+- the AutoPilot campaign 12/12, with no exceptions
+
+### R2-1. Phones held upright: done
+
+- In portrait, the canvases use a 1200-wide design, so a 720-wide screen draws the UI at 0.6×
+  (it was 0.375×) and a 390-wide phone at 0.325×.
+- The HUD's sun track drops to a second row, the map shows four cards a row, the pause controls
+  line narrows, and the cloud wipe covers a tall screen.
+- Landscape is unchanged: 1600x900 before/after screenshots of eight screens differ only by
+  animation (at most 2.4% of pixels, with a 2% tolerance).
+- The UI audit now also runs at 390x844, and a new check fails on overlapping HUD pieces or a
+  below-scale UI. It passes at all five sizes, on Day 1 and on Day 12's seven needs.
+- In the browser, phones held upright get a "Turn your phone sideways" card with "Play anyway".
+  `web_smoke --portrait` checks that it shows and that the button dismisses it.
+
+![portrait](media/improvements/round2/1-portrait-before-after-map-hud.jpg)
+![web](media/improvements/round2/1-web-portrait-rotate-card.jpg)
+
+What's left: the island itself is small in portrait, because its width sets the camera. Hence
+the nudge to turn sideways.
+
+### R2-2. No track on more than three days: done
+
+- "seaside" (A major, 88 bpm, 43.6 s) plays on Becalmed and the Regatta. It's made with the
+  existing synth: off-beat plucked strums, a generated marimba tune and a glockenspiel answer.
+- Peak -1.0 dBFS and RMS -15.8 dB; the other daytime tracks sit at -15.5 to -16.1. The loop seam
+  passes.
+- Morning now plays on Days 1–3, afternoon on 5, 6 and 8, evening on 7 and 11, and seaside on 4
+  and 10. The validator enforces at most three days per track.
+- The player logs "music seaside" on Days 4 and 10.
+- The web download grew by 0.9 MB.
+- **Not heard by a person.**
+
+### R2-3. Encore days: done
+
+- A saved day's postcard offers its Encore, a scorcher: a 25% shorter day, Pip starting half as
+  full, and beds drying at 0.35/s. Saving it earns a new fourth stamp (rendered by `icons.py`).
+  The map shows Encore stamps on each card and in an x/12 pill.
+- **Expert AutoPilot (`-pwEncore`):** 12/12 saved before sundown, using 19–71 s of 90–150 s days.
+- **Newcomer bot:** 12/12. Its tightest were Becalmed (66 of 105 s) and the Heatwave (78 of 135 s).
+- The validator's Encore pass is OK for all 12. KeyTest opens an Encore from its postcard and
+  checks its rules, and the UI audit covers the Encore postcard and map.
+- **Balance caveat:** both bots finish with time to spare, so for a skilled player the Encores
+  may be a gentle step up rather than a real challenge. Tuning the three numbers needs human
+  playtesting; they live in `LevelLibrary.MakeEncore` and are mirrored in the validator.
+- Save compatibility is by design and wasn't run against a real old save: the Encore stamp is a
+  new bit in the existing stamps field, and no fields were added.
+
+![encore](media/improvements/round2/3-encore-map-postcards-play.jpg)
+
+### R2-4. The first minute: done
+
+On a fresh save, tapping the title opens Day 1's postcard; returning players get the map.
+KeyTest checks both. A fresh browser profile in `web_smoke` lands on the postcard (screenshot
+`w02_after_title`).
+
+![first tap](media/improvements/round2/4-first-tap-goes-to-day1.jpg)
+
+### Also changed
+
+- **Tools stay out of the shared `/tmp`:** `selftest.sh` now writes to `Recordings/selftest/`, and
+  `web_smoke.mjs` writes to `Recordings/web-smoke/`. Its throwaway Chrome profile lives in
+  `Recordings/` and is removed when the run ends (it used to be left behind).
+
+### Web build at the end of round 2
+
+- The download is 28.8 MB: up 1.0 MB on round 1, for the seaside track and the new stamp, and
+  still down from v0.1.0's 32.6 MB.
+- Desktop, landscape-phone and portrait-phone smoke runs all boot with 0 console errors, and
+  remember Low on reload.
+- Boot times, median of 3 alternating with v0.1.0, with the machine's load average at 20 to 30:
+
+  | Web build | Boot at 20 Mbps | Boot at 8 Mbps |
+  | --- | --- | --- |
+  | v0.1.0 | 17.0 s | 34.8 s |
+  | end of round 2 | 17.2 s | 33.0 s |
+
+  At this load, the 20 Mbps advantage measured in round 1 (at load 6 to 12) disappears into the
+  noise.
+
+### Found along the way, not fixed
+
+- On a phone, the first hint reads "Point to fly" until the first touch. Before any input, the
+  WebGL player under Chrome's phone emulation doesn't report itself as a mobile platform. Not
+  checked on a real phone.
+- The bot still catches the wedding bouquet only some of the time (11/12 delights in the final
+  campaign). That's its catching, not the game, as round 1 found.

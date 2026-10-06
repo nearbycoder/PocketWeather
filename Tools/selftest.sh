@@ -5,10 +5,11 @@
 #                                five window shapes (two portrait), and the expert AutoPilot over all 12 levels
 #   Tools/selftest.sh --quick    skips the AutoPilot campaign
 #
-# Exit code is non-zero if anything failed. Logs go to /tmp/pw-selftest/.
+# Exit code is non-zero if anything failed. Logs go to Recordings/selftest/ (gitignored; /tmp is a
+# shared RAM disk on the machine this was built on).
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUT=/tmp/pw-selftest
+OUT="$ROOT/Recordings/selftest"
 rm -rf "$OUT"; mkdir -p "$OUT"
 PLAY="$ROOT/Tools/play.sh"
 fail=0

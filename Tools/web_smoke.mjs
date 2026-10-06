@@ -2,7 +2,7 @@
 // Smoke test for the WebGL build in headless Chrome, driven over the DevTools protocol (no npm
 // packages needed; Node >= 22 for the global WebSocket).
 //
-//   node Tools/web_smoke.mjs [outDir] [--phone] [--throttle <Mbps>] [--dir <build folder>]  (default /tmp/pw-web)
+//   node Tools/web_smoke.mjs [outDir] [--phone] [--throttle <Mbps>] [--dir <build folder>]  (default Recordings/web-smoke)
 //
 // --phone emulates an Android phone held landscape (844x390 CSS px, 2x); --portrait holds it
 // upright (390x844) and checks the page's "turn sideways" card and its "Play anyway" button.
@@ -17,7 +17,6 @@
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { tmpdir } from "node:os";
 import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
 
@@ -28,7 +27,7 @@ const PHONE = args.includes("--phone") || PORTRAIT;
 const ti = args.indexOf("--throttle"), di = args.indexOf("--dir");
 const MBPS = ti >= 0 ? parseFloat(args[ti + 1]) : 0;
 const WEBDIR = di >= 0 ? args[di + 1] : join(ROOT, "Builds/WebGL");
-const OUT = args.find((a, i) => !a.startsWith("--") && !(ti >= 0 && i === ti + 1) && !(di >= 0 && i === di + 1)) || "/tmp/pw-web";
+const OUT = args.find((a, i) => !a.startsWith("--") && !(ti >= 0 && i === ti + 1) && !(di >= 0 && i === di + 1)) || join(ROOT, "Recordings", "web-smoke");
 const W = PORTRAIT ? 390 : PHONE ? 844 : 1280, H = PORTRAIT ? 844 : PHONE ? 390 : 720;
 // free ports each run: other projects on this machine run the same kind of smoke test, and a fixed
 // port can silently serve (and "test") somebody else's build
@@ -40,7 +39,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = [];
 
 const server = spawn("python3", ["-m", "http.server", String(PORT), "--bind", "127.0.0.1"], { cwd: WEBDIR, stdio: "ignore" });
-const profile = join(tmpdir(), `pw-chrome-profile-${PORT}`);
+// a throwaway browser profile inside the repo's gitignored Recordings/ (not the shared /tmp)
+const profile = join(ROOT, "Recordings", `chrome-profile-${PORT}`);
 rmSync(profile, { recursive: true, force: true });
 const chrome = spawn(CHROME, [
   "--headless=new", `--remote-debugging-port=${CDP}`, `--user-data-dir=${profile}`, `--window-size=${W},${H}`,
@@ -48,7 +48,11 @@ const chrome = spawn(CHROME, [
   "--autoplay-policy=no-user-gesture-required", "about:blank",
 ], { stdio: "ignore" });
 
-function cleanup() { try { chrome.kill(); } catch {} try { server.kill(); } catch {} setTimeout(() => { try { rmSync(profile, { recursive: true, force: true }); } catch {} }, 500); }
+function cleanup() {
+  try { chrome.kill("SIGKILL"); } catch {}
+  try { server.kill(); } catch {}
+  try { rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch {}
+}
 process.on("exit", cleanup);
 
 async function json(url) { for (let i = 0; i < 50; i++) { try { return await (await fetch(url)).json(); } catch { await sleep(200); } } throw new Error("no CDP"); }

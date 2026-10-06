@@ -22,8 +22,9 @@ Wi-Fi).
 
 ## What a first-time visitor downloads
 
-About 28 MB on the first visit. On an emulated connection, the game boots in about 13 s at
-20 Mbps and about 30 s at 8 Mbps, with a loading card showing progress meanwhile. The measurements
+About 29 MB on the first visit. On an emulated connection, the game boots in about 13–17 s at
+20 Mbps and 30–33 s at 8 Mbps (depending on how busy the test machine was), with a loading card
+showing progress meanwhile. The measurements
 are in `docs/IMPROVEMENTS.md` under "Round 1 results". Browsers cache the files (`dataCaching` is
 on), so later visits start almost at once.
 

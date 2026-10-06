@@ -64,7 +64,8 @@ the controls for whatever you're playing with. Every menu works with mouse, touc
 gamepad (d-pad or stick to move, A to choose, B to go back). **Settings → Tap to rain** turns rain
 into a toggle for anyone who finds holding a button tiring, and **Settings → Touch buttons** can be
 Auto (shown once you touch the screen), On or Off. The game pauses itself when the window loses
-focus or a phone sends it to the background.
+focus or a phone sends it to the background. It's laid out for landscape, but a phone held upright
+gets a bigger, rearranged interface (and, in the browser, a nudge to turn sideways).
 
 ## Features
 
@@ -269,25 +270,32 @@ verdict for each (`--quick` skips the full campaign):
 
 - **Level validator** (`python3 Tools/validate_levels.py`): every referenced model and icon
   exists, needs sit inside Pip's reachable area and on land (boats on water), and a water budget
-  and lower-bound completion time are estimated against par and sundown.
+  and lower-bound completion time are estimated against par and sundown, for each day and its
+  Encore. It also fails if a day's music track is missing or any track plays on more than three
+  days.
 - **Audio loop seams** (`Tools/.venv/bin/python Tools/audio/check_loops.py`): no click or level
   jump where any looping clip wraps.
 - **Keyboard, gamepad and touch self-tests** (`-pwKeyTest`, `-pwPadTest`, `-pwTouchTest`): virtual
-  devices drive the real Input System from the title screen through menus and play (29, 25 and
-  20 checks), including the pause menu's controls line, hints hiding behind pause, the Touch
-  buttons Off setting, best times and the hint on each day that brings in a new idea.
-- **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen must receive a tap
-  at its centre and sit fully on screen, at 16:9, 20:9, 4:3 and portrait. It also loads all
+  devices drive the real Input System from the title screen through menus and play (33, 25 and
+  20 checks), including a new player's first tap going straight to Day 1, the pause menu's
+  controls line, hints hiding behind pause, the Touch buttons Off setting, best times, the hint on
+  each day that brings in a new idea, and opening an Encore from its postcard.
+- **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen (the Encore
+  postcard included) must receive a tap at its centre and sit fully on screen, at 16:9, 20:9, 4:3
+  and two portrait sizes (720x1280 and a 390x844 phone). The HUD's gauge, sun track, needs tray and
+  pause button must not overlap, and the UI must be drawn at its design scale. It also loads all
   twelve days and fails if any need is missing its "what helps" badge.
 - **AutoPilot** (`Tools/play.sh -pwAutopilot /tmp/auto`): a bot plays every level through the same
   input API as the player and reports PASS/FAIL, finishing hour against par, oopses and water
   used. `-pwDelights` also chases each secret (with a second try for most of them),
-  `-pwNewcomer` plays like a hesitant first-timer, and `-pwPerf` logs frame-time statistics.
+  `-pwNewcomer` plays like a hesitant first-timer, `-pwEncore` plays every day as its Encore, and
+  `-pwPerf` logs frame-time statistics.
 - **Web smoke test** (`node Tools/web_smoke.mjs`, `--phone` for an emulated phone): boots the
   WebGL build in headless Chrome and plays it with real browser touch events, then reloads to
   check that a downgraded Auto graphics setting is remembered. `--throttle 20` emulates a 20 Mbps
-  connection and screenshots the loading card; `--dir` points it at another build, for
-  comparisons. It isn't part of `selftest.sh`, which tests the Linux build.
+  connection and screenshots the loading card; `--portrait` holds the phone upright and checks the
+  "turn sideways" card; `--dir` points it at another build, for comparisons. It isn't part of
+  `selftest.sh`, which tests the Linux build.
 
 ### Rebuilding the trailer and README media
 
@@ -400,14 +408,18 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, an improvement round on the `improvements` branch (see
+every input method. Since then, two improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
 - the "just right" band and "what helps" badges on the bubbles
 - hints for every new idea, and a controls card in the pause menu
-- best times, a three-way touch-buttons setting, and longer music loops
+- best times and a three-way touch-buttons setting
+- longer music loops, and a fourth daytime track so no track plays on more than three days
 - an unsigned macOS build
+- a portrait layout for phones held upright
+- Encore days (a scorcher for a fourth stamp per day)
+- a first tap that takes a new player straight to Day 1
 
 None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
@@ -419,15 +431,20 @@ None of it is in a release yet. What has been verified (on the Linux build unles
   - Catching the wedding bouquet: the bot is clumsy at it, though the bouquet now always flies.
 - The newcomer bot also saves all twelve days before par; its closest margins are Day 9 (1.2
   game-hours inside par) and Day 5 (1.5).
-- Keyboard (29 checks), gamepad (25), touch (20) and UI-reachability self-tests pass through the
-  real Input System. The once-flaky "rain waters the bed" check now lines Pip up first; both
-  keyboard and gamepad tests passed 10 runs out of 10.
+- Both bots save all twelve Encores before sundown. The newcomer's tightest were Becalmed (66 of
+  105 s) and the Heatwave (78 of 135 s).
+- Keyboard (33 checks), gamepad (25), touch (20) and UI-reachability self-tests pass through the
+  real Input System. The UI audit runs at five window shapes, two of them portrait. The
+  once-flaky "rain waters the bed" check now lines Pip up first; both keyboard and gamepad tests
+  passed 10 runs out of 10.
 - **Web, in headless Chrome:**
   - The build plays with real browser touch events and a clean console on desktop and phone
     emulation.
-  - The download is about 28 MB, down from 32.6 MB.
-  - Booting on an emulated 20 Mbps link takes about 13 s (14.4 s for v0.1.0), and on 8 Mbps
-    about 30 s (33.4 s).
+  - The download is 28.8 MB, down from 32.6 MB.
+  - Booting on an emulated 8 Mbps link takes about 33 s (34.8 s for v0.1.0).
+  - At 20 Mbps the two were level (about 17 s) with the machine busy. Round 1's quieter
+    measurement was 13.2 s against 14.4 s.
+  - The page's "turn sideways" card for phones held upright works in phone emulation.
   - Auto graphics remembers dropping to Low on the next visit.
 - Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
   off, 99% of frames under 17 ms, on both OpenGL Core (the default) and Vulkan
@@ -442,11 +459,15 @@ Rough edges, honestly:
 - **No real touchscreen or controller testing.** Touch and gamepad have only been exercised
   through virtual devices and emulated browser touch. There's no native Android or iOS build, and
   phone-browser performance is untested.
-- **In portrait on a phone, the whole HUD is small,** the new badges included. Landscape is
-  the intended way to play.
+- **Portrait works, but landscape is better.** Held upright, the interface is bigger and
+  rearranged, but the island is still small, because its width sets the camera. The web page
+  suggests turning sideways.
+- **Encore balance is judged by bots only.** Both finish every Encore with time to spare, so
+  skilled players may find them gentle.
 - **The audio has never been heard by a person.** It was balanced by measurement (loudness,
   peaks, spectra), so tone and repetitiveness may need adjusting by ear. The same goes for the
-  trailer's mix and the new generated B sections of the afternoon and wedding music.
+  trailer's mix, the generated B sections of the afternoon and wedding music, and the new
+  "seaside" track.
 - **Weak GPUs are untested.** Auto graphics drops to Low when frame times stay high, but no real
   low-end GPU has been tried; under a pure software renderer the game ran at about 5 fps.
 - **The Linux player can crash at startup under Wayland.** Once in about 45 automated launches,
