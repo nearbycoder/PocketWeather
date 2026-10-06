@@ -211,7 +211,7 @@ LEVELS.append(level(
 # ============================================================================ 7. Windmill Hill
 LEVELS.append(level(
     "level07", "Windmill Hill", "The miller needs flour for the wedding cake, but the sails won't turn.",
-    "windmill", "afternoon", "meadow", 160, 8.0, 19.5, 14.0, 50, (-1.5, -2.5),
+    "windmill", "evening", "meadow", 160, 8.0, 19.5, 14.0, 50, (-1.5, -2.5),
     isl(14, 9, dryness=0.35, bumps=[{"x": 3.8, "z": 2.4, "r": 3.0, "h": 0.8}],
         water=[pond("pond", 5.0, -2.5, 1.4, 1.0, depth=0.45)],
         fields=[{"shape": "rect", "x": -2.6, "z": -0.9, "w": 3.6, "d": 2.1, "r": 0.4, "color": "A07448"}],
@@ -295,7 +295,7 @@ LEVELS.append(level(
 # ============================================================================ 11. Heatwave Farm
 LEVELS.append(level(
     "level11", "Heatwave", "The hottest day of the year. Everything dries out fast, so keep moving!",
-    "sunflower", "afternoon", "meadow", 180, 8.0, 19.5, 15.5, 50, (-0.5, -2.6),
+    "sunflower", "evening", "meadow", 180, 8.0, 19.5, 15.5, 50, (-0.5, -2.6),
     isl(14, 9, grass="B9C46A", dryness=0.8, dry_rate=0.55, bumps=[{"x": 4.2, "z": 2.8, "r": 2.6, "h": 0.4}],
         water=[pond("trough", -0.4, 2.6, 1.25, 0.8, depth=0.4)],
         fields=[{"shape": "rect", "x": -3.3, "z": -1.3, "w": 2.6, "d": 1.8, "r": 0.4, "color": "A07448"}],

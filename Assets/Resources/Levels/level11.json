@@ -3,7 +3,7 @@
  "title": "Heatwave",
  "story": "The hottest day of the year. Everything dries out fast, so keep moving!",
  "icon": "sunflower",
- "music": "afternoon",
+ "music": "evening",
  "ambience": "meadow",
  "dayLength": 180,
  "startHour": 8.0,

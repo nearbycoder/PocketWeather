@@ -60,6 +60,44 @@ def melody(song, notes, inst, gain=1.0, pan=0.0, rev=0.3, octave=0):
         song.add(inst(f, vel(0.8, 0.08), dur=dur) if inst not in (pad,) else inst([f], d * song.spb), b, pan, gain, rev)
 
 
+def phrase_melody(song, start, chords, scale, lo, hi, seed_, rest_last=True):
+    """A generated B-section melody: for each chord a rhythm cell, strong beats on chord tones and
+    weak beats on scale tones, moving mostly by step, every fourth chord ending on a long chord
+    tone, so it stays in key and inside the harmony the rain notes also use. Its own RNG, so the
+    rest of the arrangement's randomness is untouched."""
+    rng = np.random.default_rng(seed_)
+    bpc, bpb = song.beats_per_chord, song.bpb
+    cells = ([[2, 1, 1, 2, 2], [1, 1, 2, 1, 1, 2], [3, 1, 2, 2], [1.5, .5, 2, 1.5, .5, 2], [2, 2, 1, 1, 2]] if bpc == 8 else
+             [[2, 1, 3], [1, 1, 1, 3], [3, 2, 1], [2, 1, 2, 1], [1, 2, 3]])
+    pcs_scale = sorted({n % 12 for n in scale})
+    pool = lambda pcs: [m for m in range(lo, hi + 1) if m % 12 in pcs]
+    prev = int(np.mean([lo, hi]))
+    out = []
+    for i, (_, notes, _) in enumerate(chords):
+        b0 = start + i * bpc
+        tones = pool({n % 12 for n in notes})
+        end_of_phrase = i % 4 == 3
+        if end_of_phrase:
+            m = min(tones, key=lambda c: abs(c - prev))
+            out.append((b0, bpc - (2 if rest_last else 0), m))
+            prev = m
+            continue
+        t = 0.0
+        for d in cells[rng.integers(len(cells))]:
+            strong = (t % bpb) == 0
+            cand = tones if strong else pool(pcs_scale)
+            near = sorted(cand, key=lambda c: (abs(c - prev) + (2.5 if c == prev else 0), rng.random()))[:3]
+            k = int(rng.choice(3, p=[0.6, 0.3, 0.1]))   # mostly the nearest note: steps, not leaps
+            m = int(near[min(k, len(near) - 1)])
+            if rng.random() < 0.12 and not strong:
+                t += d
+                continue        # a breath
+            out.append((b0 + t, d, m))
+            prev = m
+            t += d
+    return out
+
+
 # ----------------------------------------------------------------------------- tracks
 
 def morning():
@@ -103,7 +141,8 @@ def afternoon():
     G = ("G", [43, 50, 55, 59], 43)
     A = ("A", [45, 52, 57, 61], 45)
     Fsm = ("F#m", [42, 49, 54, 57], 42)
-    s = Song("afternoon", 100, 4, [D, Bm, G, A, D, Fsm, G, A])
+    A_ = [D, Bm, G, A, D, Fsm, G, A]
+    s = Song("afternoon", 100, 4, A_ + A_)   # A: kalimba then glockenspiel; B: e-piano tune
     strum = [(0, "d", 0.9), (1, "d", 0.6), (1.5, "u", 0.5), (2.5, "u", 0.55), (3, "d", 0.7), (3.5, "u", 0.5)]
     for start, (name, notes, root) in s.each_chord():
         voicing = [n + 12 for n in notes]
@@ -132,6 +171,8 @@ def afternoon():
     counter = [(2, 1, 66), (3, 1, 69), (6, 2, 74), (10, 1, 71), (11, 1, 74), (14, 2, 78), (18, 1, 74), (19, 1, 71), (22, 2, 67),
                (26, 1, 69), (27, 1, 73), (30, 2, 76)]
     melody(s, counter, kalimba, gain=0.45, pan=0.3, rev=0.3)
+    D_MAJOR = [50, 52, 54, 55, 57, 59, 61]
+    melody(s, phrase_melody(s, 64, A_, D_MAJOR, 69, 83, 2202), lambda f, v, dur: epiano(f, v, dur=dur), gain=0.55, pan=0.2, rev=0.35)
     return s
 
 
@@ -203,7 +244,8 @@ def night():
 def wedding():
     seed(66)
     F, C, Dm, Bb = ("F", [53, 57, 60], 41), ("C", [52, 55, 60], 36), ("Dm", [50, 53, 57], 38), ("Bb", [50, 53, 58], 34)
-    s = Song("wedding", 108, 3, [F, C, Dm, Bb, F, C, Bb, C])
+    A = [F, C, Dm, Bb, F, C, Bb, C]
+    s = Song("wedding", 108, 3, A + A + A)   # A: glockenspiel tune; B: music box; C: the tune again on marimba
     for start, (name, notes, root) in s.each_chord():
         for bar in range(2):
             b = start + bar * 3
@@ -216,7 +258,10 @@ def wedding():
            (17, 1, 79), (18, 2, 77), (20, 1, 74), (21, 3, 70), (24, 2, 72), (26, 1, 77), (27, 2, 84), (29, 1, 81), (30, 2, 79),
            (32, 1, 76), (33, 3, 72), (36, 2, 74), (38, 1, 77), (39, 2, 82), (41, 1, 81), (42, 2, 79), (44, 1, 76), (45, 3, 79)]
     melody(s, mel, lambda f, v, dur: glock(f, v, dur=dur, bright=0.55), gain=0.65, pan=0.15, rev=0.4)
-    for b in (0, 24):
+    F_MAJOR = [53, 55, 57, 58, 60, 62, 64]
+    melody(s, phrase_melody(s, 48, A, F_MAJOR, 72, 86, 6606), musicbox, gain=0.6, pan=-0.15, rev=0.45)
+    melody(s, [(b + 96, d, m) for (b, d, m) in mel], marimba, gain=0.6, pan=0.15, rev=0.4)
+    for b in (0, 24, 48, 96, 120):
         s.add(bell(midi_hz(65), 0.6, 3.0), b, pan=0.4, gain=0.35, rev=0.5)
     return s
 

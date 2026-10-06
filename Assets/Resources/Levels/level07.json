@@ -3,7 +3,7 @@
  "title": "Windmill Hill",
  "story": "The miller needs flour for the wedding cake, but the sails won't turn.",
  "icon": "windmill",
- "music": "afternoon",
+ "music": "evening",
  "ambience": "meadow",
  "dayLength": 160,
  "startHour": 8.0,

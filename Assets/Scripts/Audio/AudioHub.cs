@@ -141,6 +141,7 @@ namespace PocketWeather
             if (track == currentMusic) return;
             currentMusic = track;
             var clip = Resources.Load<AudioClip>("Audio/Music/music_" + track);
+            Debug.Log($"[PW] music {track}: {(clip != null ? clip.length.ToString("0.0") + " s loop" : "MISSING")}");
             var incoming = activeMusic == musicA ? musicB : musicA;
             incoming.clip = clip;
             incoming.volume = 0;
