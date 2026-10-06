@@ -12,7 +12,7 @@
  "startWater": 60,
  "cloudX": -1.0,
  "cloudZ": -1.5,
- "teach": "fire",
+ "teach": "fire campfire",
  "island": {
   "w": 14,
   "d": 9,

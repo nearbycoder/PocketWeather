@@ -12,7 +12,7 @@
  "startWater": 60,
  "cloudX": 0.0,
  "cloudZ": -0.5,
- "teach": "",
+ "teach": "keepdry",
  "island": {
   "w": 14,
   "d": 9,

@@ -308,7 +308,22 @@ namespace PocketWeather
     public class PauseMenu : MenuScreen
     {
         public Action OnResume, OnRestart, OnMap, OnSettings;
-        Text delight;
+        Text delight, controls;
+
+        /// <summary>A one-line reminder of the controls for whatever the player is using.</summary>
+        public static string ControlsLine(CloudInput.Device d)
+        {
+            if (d == CloudInput.Device.None || d == CloudInput.Device.Virtual)
+                d = Application.isMobilePlatform ? CloudInput.Device.Touch : CloudInput.Device.Mouse;
+            bool tap = GameSettings.RainToggle;
+            return d switch
+            {
+                CloudInput.Device.Touch => tap ? "Drag: fly  ·  hold still: rain on/off  ·  flick: blow" : "Drag: fly  ·  hold still: rain  ·  flick: blow",
+                CloudInput.Device.Keys => tap ? "WASD / arrows: fly  ·  Space: rain on/off  ·  E: blow" : "WASD / arrows: fly  ·  hold Space: rain  ·  E: blow",
+                CloudInput.Device.Pad => tap ? "Left stick: fly  ·  A: rain on/off  ·  X: blow (right stick aims)" : "Left stick: fly  ·  hold A: rain  ·  X: blow (right stick aims)",
+                _ => tap ? "Point: fly  ·  click: rain on/off  ·  right-drag: blow" : "Point: fly  ·  hold left button: rain  ·  right-drag: blow",
+            } + "  ·  hover over water: drink";
+        }
 
         protected override void Build()
         {
@@ -320,8 +335,14 @@ namespace PocketWeather
             Ui.Button(p.transform, "Settings", Ui.Mint, new Vector2(420, 96), new Vector2(0, -76), () => OnSettings?.Invoke(), null, null, 42);
             Ui.Button(p.transform, "Map", Ui.Lilac, new Vector2(420, 96), new Vector2(0, -192), () => OnMap?.Invoke(), null, null, 42);
             delight = Ui.Label(p.transform, "", 30, Ui.InkSoft, new Vector2(560, 90), new Vector2(0, -300), false);
+            var strip = Ui.Panel(root, new Vector2(1500, 76), new Vector2(0, -425), new Color(1, 1, 1, 0.86f), null, 38f, false);
+            strip.raycastTarget = false;
+            controls = Ui.Label(strip.transform, "", 28, Ui.Ink, new Vector2(1460, 70), Vector2.zero, false, TextAnchor.MiddleCenter);
             firstSelected = r.gameObject;
         }
+
+        public void SetControls(CloudInput.Device device) => controls.text = ControlsLine(device);
+        public string ControlsText => controls.text;
 
         public void SetDelight(LevelDef def, bool found)
         {

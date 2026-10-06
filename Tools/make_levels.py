@@ -187,7 +187,7 @@ LEVELS.append(level(
       "react": "splash", "sound": "person_happy", "hidden": True}],
     sources=[{"type": "steam", "x": -3.82, "z": 2.88, "y": 2.0, "rate": 0.35, "spread": 0.2}],
     delight={"type": "rain_on", "target": "kid", "title": "Puddle jumping!", "hint": "Someone in yellow boots is hoping for puddles."},
-    teach=""))
+    teach="laundry"))
 
 # ============================================================================ 6. Rainbow Picnic
 LEVELS.append(level(
@@ -226,7 +226,7 @@ LEVELS.append(level(
       "react": "kite", "sound": "person_happy", "hidden": True}],
     sources=[{"type": "dew", "x": -1.0, "z": 2.4, "count": 6, "spread": 2.0, "until": 10.0}],
     delight={"type": "gust_on", "target": "kite", "title": "The kite flies!", "hint": "A kite is waiting for a puff of wind."},
-    teach=""))
+    teach="windmill"))
 
 # ============================================================================ 8. Duck Pond Park
 LEVELS.append(level(
@@ -268,7 +268,7 @@ LEVELS.append(level(
      bed("herbs", -3.6, 1.0, "tomato", 1.6, 1.0, (16, 28), 46)],
     events=[{"type": "ignite", "hour": 18.6, "target": "hay2"}],
     delight={"type": "gust_on", "target": "campfire", "title": "A roaring campfire", "hint": "The campers would love a bigger blaze."},
-    teach="fire"))
+    teach="fire campfire"))
 
 # ============================================================================ 10. Regatta
 LEVELS.append(level(
@@ -290,7 +290,7 @@ LEVELS.append(level(
      {"type": "react", "id": "seal", "x": 5.2, "z": -1.6, "model": "seal", "ry": 200, "s": 2.18, "trigger": "rain", "amount": 2.0,
       "react": "cheer", "sound": "seal", "hidden": True}],
     delight={"type": "rain_on", "target": "seal", "title": "A shower for the seal", "hint": "A sunbather on the rocks is feeling dry."},
-    teach=""))
+    teach="keepdry"))
 
 # ============================================================================ 11. Heatwave Farm
 LEVELS.append(level(

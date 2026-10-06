@@ -15,6 +15,7 @@ namespace PocketWeather
         float wait;
         float idle;
         bool lowWaterShown, bandShown;
+        float nextHintAt = -1f;   // a second hint queued for later in the same day (campfire night)
 
         public void Init(Level l, Hud h)
         {
@@ -36,11 +37,27 @@ namespace PocketWeather
             ? (Touch ? "Hold still to start rain" : Pad ? "Press A to rain" : Keys ? "Space to rain" : "Click to rain")
             : (Touch ? "Hold still to rain" : Pad ? "Hold A to rain" : Keys ? "Space to rain" : "Hold click to rain");
         string GustText => Touch ? "Flick to blow" : Pad ? "X to blow" : Keys ? "E to blow" : "Right-drag to blow";
+        string GustShort => Touch ? "flick" : Pad ? "press X" : Keys ? "press E" : "right-drag";
+
+        /// <summary>The flick hand, aimed across a gust-need from Pip's side.</summary>
+        void FlickHandAt(Vector3 target, float seconds)
+        {
+            var dir = target - level.Cloud.GroundPoint; dir.y = 0;
+            if (dir.sqrMagnitude < 0.01f) dir = Vector3.right;
+            dir.Normalize();
+            hud.Hand("flick", target - dir * 1.2f, target + dir * 0.6f, seconds);
+        }
 
         T FirstNeed<T>() where T : Need
         {
             foreach (var n in level.Needs) if (n is T t && n.Required && !n.Met) return t;
             return null;
+        }
+
+        bool HasNeed<T>() where T : Need
+        {
+            foreach (var n in level.Needs) if (n is T && n.Required) return true;
+            return false;
         }
 
         void Update()
@@ -114,6 +131,46 @@ namespace PocketWeather
                 }
             }
 
+            if (teach.Contains("laundry") && step < 20)
+            {
+                var l = FirstNeed<LaundryNeed>();
+                if (l != null)
+                {
+                    hud.ShowHint($"Blow the washing dry ({GustShort})", "wind", 8f);
+                    FlickHandAt(l.transform.position, 6f);
+                }
+                step = 20;
+            }
+
+            if (teach.Contains("windmill") && step < 20)
+            {
+                var w = FirstNeed<WindmillNeed>();
+                if (w != null)
+                {
+                    hud.ShowHint($"Keep blowing the sails ({GustShort})", "windmill", 8f);
+                    FlickHandAt(w.transform.position, 6f);
+                }
+                step = 20;
+            }
+
+            if (teach.Contains("keepdry") && step < 70)
+            {
+                foreach (var n in level.Needs)
+                    if (n is KeepDryNeed k && n.Required)
+                    {
+                        string what = k.Icon == "castle" ? "sandcastle" : k.Icon == "cake" ? "cake" : "washing";
+                        hud.ShowHint($"Keep the {what} dry", k.Icon, 6f);
+                        break;
+                    }
+                step = 70;
+            }
+
+            if (nextHintAt > 0 && level.Elapsed >= nextHintAt)
+            {
+                nextHintAt = -1f;
+                if (HasNeed<CampfireNeed>()) hud.ShowHint("Keep the campfire lit", "campfire", 6f);
+            }
+
             if (teach.Contains("gust") && step < 20)
             {
                 var b = FirstNeed<BoatNeed>();
@@ -138,6 +195,7 @@ namespace PocketWeather
             if (teach.Contains("fire") && step < 40)
             {
                 hud.ShowHint("Rain on the fire!", "fire", 6f);
+                if (teach.Contains("campfire")) nextHintAt = level.Elapsed + 6.5f;
                 step = 40;
             }
 

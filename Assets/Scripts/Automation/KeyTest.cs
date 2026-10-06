@@ -134,6 +134,8 @@ namespace PocketWeather
             yield return new WaitForSecondsRealtime(0.5f);
             Check("Esc pauses", Now == GameFlow.State.Paused, Now.ToString());
             Check("hints hide behind the pause menu", !hud.HintVisible);
+            var pauseText = GameObject.Find("PauseScreen")?.GetComponent<PauseMenu>()?.ControlsText ?? "";
+            Check("the pause menu lists the keyboard controls", pauseText.Contains("Space"), pauseText);
             yield return Press(Key.Escape);
             yield return new WaitForSecondsRealtime(0.5f);
             Check("Esc resumes", Now == GameFlow.State.Playing, Now.ToString());
@@ -203,6 +205,18 @@ namespace PocketWeather
             yield return WaitFor(() => Now == GameFlow.State.Intro, 6f);
             Check("Next day opens day 2's postcard", Now == GameFlow.State.Intro && L != null && L.Def.id == "level02", $"{Now}, {L?.Def.id}");
 
+            // --- days that bring in a new idea say so within a few seconds (fresh hints each start)
+            var dayHints = new (int day, string words)[] { (5, "washing"), (7, "sails"), (9, "fire"), (10, "sandcastle") };
+            foreach (var (day, words) in dayHints)
+            {
+                GameFlow.I.DebugStart(day - 1, true);
+                float waited = 0;
+                while (waited < 3f && !(hud.HintVisible && hud.HintText.Contains(words))) { waited += Time.unscaledDeltaTime; yield return null; }
+                Check($"day {day} hints at its new idea", hud.HintVisible && hud.HintText.Contains(words), $"'{hud.HintText}' after {waited:0.0}s");
+            }
+            GameFlow.I.DebugStart(8, true);
+            yield return new WaitForSeconds(9.5f);
+            Check("campfire night follows up with the campfire", hud.HintText.Contains("campfire"), hud.HintText);
 
             Debug.Log($"[KeyTest] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);

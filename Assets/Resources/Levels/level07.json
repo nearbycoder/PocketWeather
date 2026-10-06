@@ -12,7 +12,7 @@
  "startWater": 50,
  "cloudX": -1.5,
  "cloudZ": -2.5,
- "teach": "",
+ "teach": "windmill",
  "island": {
   "w": 14,
   "d": 9,

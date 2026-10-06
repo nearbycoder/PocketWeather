@@ -395,6 +395,7 @@ namespace PocketWeather
             pausedTimeScale = Time.timeScale;
             Time.timeScale = 0f;
             Level.Cloud.Input.Enabled = false;
+            pause.SetControls(Level.Cloud.Input.LastDevice);
             pause.SetDelight(Level.Def, SaveData.Has(Level.Def.id, SaveData.StampDelight) || DelightFoundThisRun);
             pause.Open();
             AudioHub.I?.Duck(0.5f, 9999f);

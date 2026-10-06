@@ -181,6 +181,8 @@ namespace PocketWeather
             yield return new WaitForSecondsRealtime(0.5f);
             Check("Start pauses", Now == GameFlow.State.Paused, Now.ToString());
             Check("pause menu has a selection", Selected != "none", Selected);
+            var pauseText = GameObject.Find("PauseScreen")?.GetComponent<PauseMenu>()?.ControlsText ?? "";
+            Check("the pause menu lists the gamepad controls", pauseText.Contains("hold A"), pauseText);
             yield return Press(GamepadButton.East);
             yield return new WaitForSecondsRealtime(0.5f);
             Check("B resumes", Now == GameFlow.State.Playing, Now.ToString());

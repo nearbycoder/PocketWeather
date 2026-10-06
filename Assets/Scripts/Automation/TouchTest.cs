@@ -143,6 +143,8 @@ namespace PocketWeather
             yield return Tap(UiCenter(GameFlow.I.Hud.PauseButton.transform));
             yield return new WaitForSecondsRealtime(0.5f);
             Check("tap pause button", GameFlow.I.Current == GameFlow.State.Paused, GameFlow.I.Current.ToString());
+            var pauseText = GameObject.Find("PauseScreen")?.GetComponent<PauseMenu>()?.ControlsText ?? "";
+            Check("the pause menu lists the touch controls", pauseText.Contains("flick"), pauseText);
             var resume = FindLabel("Resume");
             if (resume != null) yield return Tap(UiCenter(resume));
             yield return new WaitForSecondsRealtime(0.6f);
