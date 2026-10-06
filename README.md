@@ -65,7 +65,8 @@ gamepad (d-pad or stick to move, A to choose, B to go back). **Settings → Tap 
 into a toggle for anyone who finds holding a button tiring, and **Settings → Touch buttons** can be
 Auto (shown once you touch the screen), On or Off. The game pauses itself when the window loses
 focus or a phone sends it to the background. It's laid out for landscape, but a phone held upright
-gets a bigger, rearranged interface (and, in the browser, a nudge to turn sideways).
+gets a bigger, rearranged interface and a closer view that follows Pip from side to side (and, in
+the browser, a nudge to turn sideways).
 
 ## Features
 
@@ -211,8 +212,8 @@ Download the latest build from [**Releases**](https://github.com/nearbycoder/Poc
   (see the known issues for what has and hasn't been tested).
 
 The current source builds a web version that's ready for a static host: the game fills the
-window, loads behind its own loading card and needs no server configuration (see
-[docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet, and the v0.1.0 downloads above
+window, loads behind its own loading card (about 21 MB; the music follows in the background once
+the game is running) and needs no server configuration (see [docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet, and the v0.1.0 downloads above
 predate it and the other changes listed in [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md).
 
 ## Build from source
@@ -228,7 +229,8 @@ Tools/unity.sh build          # Builds/Linux/PocketWeather.x86_64
 Tools/unity.sh webgl          # Builds/WebGL (switches the editor's platform; slow the first time)
 Tools/unity.sh mac            # Builds/macOS/PocketWeather.app (universal, unsigned, untested)
 Tools/unity.sh                # open the editor
-Tools/play.sh                 # run the Linux build windowed at 1600x900
+Tools/play.sh                 # run the Linux build windowed at 1600x900 (bots, tests and captures
+                              # get throwaway prefs in Recordings/config, never your real ones)
 Tools/serve_web.sh            # serve the web build on :8080, with LAN addresses for a phone
 Tools/package_web.sh          # zip Builds/WebGL for a static host (docs/HOSTING.md)
 ```
@@ -266,7 +268,9 @@ Tools/.venv/bin/python Tools/audio/synth.py
 ### Tests and validators
 
 `Tools/selftest.sh` runs every unattended check against the Linux build and prints a one-line
-verdict for each (`--quick` skips the full campaign):
+verdict for each (`--quick` skips the full campaign). It plays with fresh prefs of its own in
+`Recordings/selftest/config`, so the settings it changes never reach anyone playing on the same
+machine:
 
 - **Level validator** (`python3 Tools/validate_levels.py`): every referenced model and icon
   exists, needs sit inside Pip's reachable area and on land (boats on water), and a water budget
@@ -283,9 +287,11 @@ verdict for each (`--quick` skips the full campaign):
 - **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen (the Encore
   postcard included) must receive a tap at its centre and sit fully on screen, at 16:9, 20:9, 4:3
   and two portrait sizes (720x1280 and a 390x844 phone). The HUD's gauge, sun track, needs tray and
-  pause button must not overlap, and the UI must be drawn at its design scale. It also loads all
-  twelve days and fails if any need is missing its "what helps" badge.
-- **AutoPilot** (`Tools/play.sh -pwAutopilot /tmp/auto`): a bot plays every level through the same
+  pause button must not overlap, and the UI must be drawn at its design scale. It checks the
+  camera too: landscape framing unchanged, portrait at least 1.5x closer on a phone, and Pip and
+  every thought bubble on screen with Pip at either end of the island. It also loads all twelve
+  days and fails if any need is missing its "what helps" badge.
+- **AutoPilot** (`Tools/play.sh -pwAutopilot $PWD/Recordings/auto`): a bot plays every level through the same
   input API as the player and reports PASS/FAIL, finishing hour against par, oopses and water
   used. `-pwDelights` also chases each secret (with a second try for most of them),
   `-pwNewcomer` plays like a hesitant first-timer, `-pwEncore` plays every day as its Encore, and
@@ -294,7 +300,9 @@ verdict for each (`--quick` skips the full campaign):
   WebGL build in headless Chrome and plays it with real browser touch events, then reloads to
   check that a downgraded Auto graphics setting is remembered. `--throttle 20` emulates a 20 Mbps
   connection and screenshots the loading card; `--portrait` holds the phone upright and checks the
-  "turn sideways" card; `--dir` points it at another build, for comparisons. It isn't part of
+  "turn sideways" card; `--mouse` is a desktop with no touchscreen; `--dir` points it at another
+  build, for comparisons. It fails unless a phone's first hint speaks touch ("Drag to fly") and a
+  mouse-only desktop's speaks mouse, before anything has been touched. It isn't part of
   `selftest.sh`, which tests the Linux build.
 
 ### Rebuilding the trailer and README media
@@ -332,6 +340,9 @@ Assets/
   WebGLTemplates/PocketWeather/  the web page: full-window canvas, loading card, link previews
   Shaders/       Toon, Ground, Water, CloudPuff, CloudFace, Rainbow, Sky, Fx, WetMapUpdate
   Resources/     Levels/*.json, Models/*.fbx, Audio/, Icons/, Fonts/
+  Music/         the music tracks, one asset bundle each (StreamingAssets/Music in a build), so the
+                 web build can fetch them after it starts
+  Plugins/WebGL/ a small jslib (asks the browser whether it's a touch device)
 ArtSource/       Blender generators: pw_lib (the kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
 Tools/           unity.sh, play.sh, selftest.sh, serve_web.sh, package_web.sh, web_smoke.mjs,
@@ -370,6 +381,10 @@ docs/            PLAN.md (design and technical plan), BRIEF.md (the original bri
 - **Tilt-shift that survives a push-in.** Bokeh depth of field focuses between the island and
   Pip's flying height; when the camera pushes in, the aperture stops down with the square of the
   zoom so the miniature blur stays the same instead of smearing the subject.
+- **Music that doesn't hold up the web build.** Each track is its own asset bundle in
+  `StreamingAssets`. Desktop players open one from disk when it's first played; the web build
+  starts without them, downloads them one at a time in the background, and decodes a track only
+  when it's about to play (browsers keep decoded audio as raw samples, 15–20 MB a track).
 - **Bots that play it.** The AutoPilot plays every level through the same input intents as a
   player, which is how par times, delights and regressions are checked without a human.
 
@@ -408,7 +423,7 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, two improvement rounds (see
+every input method. Since then, three improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
@@ -420,6 +435,10 @@ every input method. Since then, two improvement rounds (see
 - a portrait layout for phones held upright
 - Encore days (a scorcher for a fourth stamp per day)
 - a first tap that takes a new player straight to Day 1
+- a closer portrait camera that follows Pip, with bubbles of out-of-frame needs at the screen's edge
+- touch wording in the very first hint on phones and tablets
+- a web download that no longer waits for the music (21 MB up front instead of 28.8 MB)
+- self-tests and bots that keep their settings changes away from the real prefs
 
 None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
@@ -440,11 +459,14 @@ None of it is in a release yet. What has been verified (on the Linux build unles
 - **Web, in headless Chrome:**
   - The build plays with real browser touch events and a clean console on desktop and phone
     emulation.
-  - The download is 28.8 MB, down from 32.6 MB.
-  - Booting on an emulated 8 Mbps link takes about 33 s (34.8 s for v0.1.0).
-  - At 20 Mbps the two were level (about 17 s) with the machine busy. Round 1's quieter
-    measurement was 13.2 s against 14.4 s.
+  - The download before the title screen is 21.0 MB, down from 28.8 MB in round 2 and 32.6 MB
+    for v0.1.0. The music (7.9 MB) arrives afterwards; the title's track plays 1 to 2 s after the
+    title appears, even at 8 Mbps.
+  - Booting on an emulated 8 Mbps link takes about 23.5 s (32.0 s for round 2's build in the
+    same runs), and about 14 s at 20 Mbps (18.0 s), with the machine busy.
   - The page's "turn sideways" card for phones held upright works in phone emulation.
+  - The first hint says "Drag to fly" on an emulated phone, held either way, and "Point to fly"
+    in a browser without a touchscreen.
   - Auto graphics remembers dropping to Low on the next visit.
 - Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
   off, 99% of frames under 17 ms, on both OpenGL Core (the default) and Vulkan
@@ -459,9 +481,11 @@ Rough edges, honestly:
 - **No real touchscreen or controller testing.** Touch and gamepad have only been exercised
   through virtual devices and emulated browser touch. There's no native Android or iOS build, and
   phone-browser performance is untested.
-- **Portrait works, but landscape is better.** Held upright, the interface is bigger and
-  rearranged, but the island is still small, because its width sets the camera. The web page
-  suggests turning sideways.
+- **Portrait works, but landscape is better.** Held upright, the interface is bigger and the
+  camera frames about 60% of the island and follows Pip, which makes the island 1.56x bigger on a
+  20:9 phone. The rest of the island is a pan away, and needs out of frame wait at the screen's
+  edge. Whether edge-scrolling under a finger feels right hasn't been tried on a real phone. The
+  web page still suggests turning sideways.
 - **Encore balance is judged by bots only.** Both finish every Encore with time to spare, so
   skilled players may find them gentle.
 - **The audio has never been heard by a person.** It was balanced by measurement (loudness,
@@ -477,6 +501,12 @@ Rough edges, honestly:
   but it has **never been run on a Mac**. It isn't signed with a Developer ID or notarised, so
   Gatekeeper warns on first launch. There's no Windows build: the entry point exists, but this
   machine lacks Unity's Windows Build Support module.
+- **The Linux build keeps its prefs in `~/.config/unity3d/unknown/unknown/`** instead of a
+  folder named after the game, and other Unity games with the same quirk share that file. The
+  game's own keys are prefixed, so they don't collide.
+- **The web build has only run in headless Chrome.** That includes the music now arriving after
+  boot, which the browser downloads and decodes itself. Safari (iPhone, iPad, Mac) and Firefox
+  haven't been tried, and if a track can't be fetched the game plays on without it.
 - **The web build isn't hosted anywhere yet.** See [docs/HOSTING.md](docs/HOSTING.md).
 - **No license has been chosen yet.** Until a `LICENSE` file is added, the default copyright
   rules apply to the code and assets (the fonts remain under the OFL).

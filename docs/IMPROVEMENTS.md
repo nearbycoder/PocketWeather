@@ -682,3 +682,123 @@ reported rather than half-landed.
 - Windows Build Support, signing, hosting, licences, releases and the trailer are the owner's.
 - Full progressive loading (models and textures after boot) would need everything moved out of
   `Resources`; R3-4 does it for the music only.
+
+## Round 3 results
+
+Implemented on `improvements-3`, one commit per item. Screenshots are in
+[`docs/media/improvements/round3/`](media/improvements/round3/). At the end, the full self-test
+passed on the final code (a Linux build with all four items):
+- validator and loop seams
+- keyboard 33, gamepad 25 and touch 20 checks
+- the UI audit at five sizes, 17 checks each (three of them the new framing check)
+- the AutoPilot campaign 12/12 with 11/12 delights (the wedding bouquet catch, as before), no
+  exceptions
+
+`web_smoke` passed on desktop, `--phone`, `--portrait` and `--mouse`, with 0 console errors.
+
+### R3-1. Tools never touch the real save: done, and the scope's premise was wrong
+
+**Correction:** the scope said the self-test deleted real progress. It didn't. Under any
+automation flag `SaveData` already keeps progress under a separate key (`pw.save.test`), so
+`-pwFreshSave` only ever cleared the bots' own save. What the tests did write into the real
+prefs were **settings**: music volume and its pre-mute level, touch buttons, tap-to-rain and
+Auto graphics' "dropped to Low" memory. The real file is also not where the scope said: the
+Linux player keeps its prefs in `~/.config/unity3d/unknown/unknown/prefs`, despite a correct
+`app.info` (see "Found along the way").
+
+- `Tools/play.sh` sets `XDG_CONFIG_HOME` to `Recordings/config/` whenever a `-pw` automation
+  flag is passed (`PW_REAL_PREFS=1` opts out, `PW_CONFIG` picks another folder), and
+  `selftest.sh` uses a fresh `Recordings/selftest/config/` per run. Audio still connects with
+  the sandboxed config (checked with `pactl`).
+- **Verified:** the real file's `pw.*` entries were byte-identical before and after a sandboxed
+  keyboard test (33/33), whose settings changes went to its sandbox instead. The final
+  self-test's prefs ended up in `Recordings/selftest/config/`. A whole-file checksum couldn't
+  be used, because another game on this machine writes to the same `unknown/unknown` file.
+
+### R3-2. Portrait: a bigger island that follows Pip: done
+
+- In portrait the camera frames 58% of the island's width on a 390x844 phone and 70% at
+  720x1280, and slides with Pip (with a dead zone across the middle 30% of the view, clamped to the island's ends,
+  and Pip can never leave the frame however fast it flies). On the title, map, postcard and
+  ending it stays centred.
+- At 390x844 the camera is **1.56x closer** than whole-width framing and the island fills **43%**
+  of the screen's height (about 28% before). At 720x1280 it's 1.40x closer.
+- Bubbles of needs out of frame wait at the screen's edge with an arrow pointing the way.
+- Landscape is untouched: the UI audit checks the camera distance equals the old framing's, and
+  it did on Days 1, 4 and 12 at 1600x900, 1600x720 and 1200x900.
+- The UI audit's new framing check (Days 1, 4, 12, at all five sizes) sends Pip to both ends of
+  the island and fails if Pip or any bubble leaves the screen. It caught the edge arrow poking
+  2 px off a 390-wide screen, which was fixed.
+- The expert AutoPilot saved all 12 days in a 390x844 window, with no exceptions.
+
+![portrait](media/improvements/round3/2-portrait-before-after.jpg)
+
+Not verified: how edge-scrolling under a finger feels on a real phone. Holding a finger near the
+screen's edge keeps the view sliding that way until the island ends.
+
+### R3-3. Phones get touch wording from the first hint: done
+
+- `Assets/Plugins/WebGL/PocketWeather.jslib` asks the page whether its main pointer is coarse
+  (or, for iPads, whether it has touch points and no hover). `Platform.TouchFirst` combines that
+  with `Application.isMobilePlatform`, logs it at boot, and the hints and pause controls line use
+  it until the first input.
+- A second bug turned up on the way: tapping the page's "Play anyway" card makes the browser
+  move its mouse pointer, which play then counted as a mouse being used, so the first hint in
+  portrait still said "Point to fly". The pointer position is now kept in step while Pip's input
+  is off.
+- `web_smoke` now fails unless the first hint is "Drag to fly" with `--phone` and `--portrait`,
+  and a new `--mouse` mode (no touch emulation) must guess "no" and show "Point to fly". All four
+  modes pass with 0 console errors.
+
+![phone](media/improvements/round3/3-web-phone-portrait-drag-hint.jpg)
+
+### R3-4. The web download no longer waits for the music: done
+
+- The seven tracks moved from `Resources/Audio/Music` to `Assets/Music`. After each player build,
+  `BuildScript.AddMusic` packs each into an uncompressed asset bundle for that platform and
+  copies it to the player's `StreamingAssets/Music` (3.5 MB of Vorbis on Linux, 7.9 MB of AAC on
+  the web). Stings, effects and ambience stay where they were.
+- Desktop players open a track's bundle from disk the moment it's played, so nothing changes
+  there: a capture tour logged every day's track starting with the same loop lengths as before,
+  and a `-pwVideo` recording of the title matched the title track sample-aligned (at exactly
+  4.00 s).
+- The web player downloads the bundles one at a time in the background, title first. A track is
+  decoded only when it's about to play and released after it fades out, because browsers keep
+  decoded audio as raw samples (15–20 MB a track). The loader caches `.bundle` files, so later
+  visits don't download them again (the console shows each stored in the browser cache).
+- `package_web.sh` now includes `StreamingAssets/` and lists it separately; `HOSTING.md` says to
+  upload it.
+- **Sizes and boot times** (Chrome DevTools throttling, 60 ms latency, fresh profile each run,
+  alternating with round 2's build; machine load average 34 to 63):
+
+  | Web build | Before the title | Boot at 8 Mbps (3 runs) | Boot at 20 Mbps (3 runs) |
+  | --- | --- | --- | --- |
+  | round 2 | 28.8 MB | 31.7, 32.0, 32.7 s | 17.1, 18.0, 29.9 s |
+  | round 3 | 21.0 MB (+7.9 MB music later) | 23.4, 24.3, 23.5 s | 13.7, 14.2, 18.6 s |
+
+  Medians: **27% faster at 8 Mbps** (32.0 → 23.5 s) and **21% faster at 20 Mbps** (18.0 →
+  14.2 s). The title's music started 1.3 to 2.1 s after boot at 8 Mbps. The wasm grew by 15 KB
+  for the two modules added (asset bundles and their web request).
+
+Not verified: Safari and Firefox. If a browser can't fetch or decode a track, the game logs it,
+retries twice and plays on silently.
+
+### Also changed
+
+- Relative `-logFile` paths land in `Builds/Linux/` (the player changes directory), so the
+  README's AutoPilot example now uses `$PWD/Recordings/...`.
+
+### Found along the way, not fixed
+
+- **The Linux player stores its prefs under `unknown/unknown`.** `PocketWeather_Data/app.info`
+  correctly says "Pocketvale Studio / Pocket Weather", yet the save and settings go to
+  `~/.config/unity3d/unknown/unknown/prefs`, and on this machine another game's build writes the
+  same file. The game's keys are all prefixed `pw.`, so nothing collides except Unity's own
+  window-size keys, but two games sharing one prefs file is fragile. Not investigated further
+  this round; setting `PlayerSettings` names explicitly or checking a newer Unity would be the
+  next step.
+- While the editor builds, the Input System package sometimes adds its actions asset to
+  `preloadedAssets` in `ProjectSettings.asset`. It was reverted each time rather than committed.
+- The web smoke test's localhost fetch of the title's track once took 19 s with the machine's
+  load average around 50 (1.3 to 2.5 s otherwise). Under that load SwiftShader starves the main
+  thread; it says nothing about a real browser, but it was the slowest case seen.
