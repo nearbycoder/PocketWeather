@@ -37,6 +37,7 @@ namespace PocketWeather
                 case "closeup": yield return Closeup(); break;
                 case "shadetest": yield return ShadeTest(); break;
                 case "tour": yield return Tour(); break;
+                case "fixes": yield return Fixes(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -211,6 +212,42 @@ namespace PocketWeather
             flow.DebugEnding();
             yield return new WaitForSeconds(4.5f);
             yield return Shot("t06_ending");
+        }
+
+        /// <summary>Round-1 fixes: the title over the day you're up to, settings, best times.</summary>
+        IEnumerator Fixes()
+        {
+            var flow = GameFlow.I;
+            yield return new WaitForSeconds(1.5f);
+            foreach (int day in new[] { 0, 3, 8, 11 })
+            {
+                GameFlow.DisplayDayOverride = day;
+                flow.DebugShowTitle();
+                yield return new WaitForSeconds(2.5f);
+                yield return Shot($"f_title_day{day + 1:00}");
+            }
+            GameFlow.DisplayDayOverride = -1;
+            SaveData.RecordFinish(LevelLibrary.Campaign[0], 9.5f);
+            flow.DebugStart(0, false);
+            flow.DebugShowPostcard();
+            yield return new WaitForSeconds(1.2f);
+            yield return Shot("f_postcard_best");
+            flow.DebugStart(0, true);
+            yield return new WaitForSeconds(1.0f);
+            flow.Hud.ShowHint("Point to fly", "hand", 30f);
+            yield return new WaitForSeconds(0.6f);
+            flow.DebugPause();
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("f_pause_no_hint");
+            flow.DebugSettings();
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("f_settings");
+            flow.DebugCloseSettings();
+            flow.DebugResume();
+            yield return new WaitForSecondsRealtime(0.4f);
+            flow.DebugResults();
+            yield return new WaitForSecondsRealtime(2.5f);
+            yield return Shot("f_results_best");
         }
 
         void Log(string s) => Debug.Log("[PW] " + s);

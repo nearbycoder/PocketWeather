@@ -151,6 +151,10 @@ namespace PocketWeather
         public bool TouchButtonsVisible => touchRoot != null && touchRoot.gameObject.activeInHierarchy;
         /// <summary>Trailer capture: show the on-screen touch buttons without touching the saved setting.</summary>
         public static bool ForceTouchButtons;
+        /// <summary>A hint caption is on screen (faded in and not hidden behind the pause menu).</summary>
+        public bool HintVisible => hintRoot != null && hintRoot.gameObject.activeInHierarchy && hintGroup.alpha > 0.5f;
+        public string HintText => hintText != null ? hintText.text : "";
+        public bool HandVisible => hand != null && hand.gameObject.activeInHierarchy;
 
         /// <summary>Shows or hides the corner panels (gauge, sun track, tray, pause) but keeps thought
         /// bubbles, hints and toasts, for cinematic trailer shots.</summary>
@@ -417,7 +421,11 @@ namespace PocketWeather
             if (touchRoot.gameObject.activeSelf != (wantTouch && running)) touchRoot.gameObject.SetActive(wantTouch && running);
             if (cloud != null) cloud.Input.ButtonRain = rainBtn != null && rainBtn.Held && running;
 
-            // ---- hint
+            // ---- hint (tucked away, with its clock stopped, while the pause menu is up)
+            bool paused = GameFlow.I != null && GameFlow.I.Current == GameFlow.State.Paused;
+            if (hintRoot.gameObject.activeSelf == paused) hintRoot.gameObject.SetActive(!paused);
+            if (hand.gameObject.activeSelf && paused) hand.gameObject.SetActive(false);
+            if (paused) return;
             if (hintTimer > 0)
             {
                 hintTimer -= dt;
@@ -426,8 +434,8 @@ namespace PocketWeather
             if (handTimer > 0)
             {
                 handTimer -= dt;
-                if (handTimer <= 0) hand.gameObject.SetActive(false);
-                else
+                hand.gameObject.SetActive(handTimer > 0);
+                if (handTimer > 0)
                 {
                     var a = WorldToCanvasRoot(handA);
                     var bpos = WorldToCanvasRoot(handB);

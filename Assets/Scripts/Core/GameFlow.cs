@@ -123,6 +123,8 @@ namespace PocketWeather
         public void DebugBeginPlay() => BeginPlay();
         public void DebugShowMap() => ShowMapNow();
         public void DebugShowTitle() => ShowTitleNow();
+        /// <summary>Screenshots: which day's diorama the title and map show (-1 = the day you're up to).</summary>
+        public static int DisplayDayOverride = -1;
         public void DebugPause() => Pause();
         public void DebugSettings() => OpenSettings(pause);
         public void DebugCloseSettings() => CloseSettings();
@@ -134,7 +136,7 @@ namespace PocketWeather
             Level.Running = false;
             Current = State.Results;
             Hud.SetVisible(false, 0.2f);
-            results.Show(Level.Def, SaveData.StampSaved | SaveData.StampPar, 0, Level.Def.par - 1f, false);
+            results.Show(Level.Def, SaveData.StampSaved | SaveData.StampPar, 0, Level.Def.par - 1f, false, Level.Def.par - 1.5f);
         }
         public void DebugCloseMenus() => CloseAll();
         public void DebugEnding() { LevelIndex = LevelLibrary.Campaign.Length - 1; NextLevel(); }
@@ -161,8 +163,9 @@ namespace PocketWeather
         // ------------------------------------------------------------------ title & map
         void LoadDisplayLevel()
         {
-            int idx = Mathf.Clamp(SaveData.FirstUnfinished(), 0, LevelLibrary.Campaign.Length - 1);
-            string id = LevelLibrary.Campaign[0];
+            // the title and map sit over the day you're up to, so coming back shows how far you've got
+            int idx = Mathf.Clamp(DisplayDayOverride >= 0 ? DisplayDayOverride : SaveData.FirstUnfinished(), 0, LevelLibrary.Campaign.Length - 1);
+            string id = LevelLibrary.Campaign[idx];
             var def = LevelLibrary.Load(id) ?? LevelLibrary.Load("proto");
             if (Level != null && Level.Def.id == def.id && !Level.Running) return;
             LoadLevelObject(def);
@@ -180,7 +183,7 @@ namespace PocketWeather
             root.Rig.Zoom = 1.18f;
             root.Rig.FocusOffset = new Vector3(0, 0, 3.0f);
             AudioHub.I?.PlayMusic("title");
-            AudioHub.I?.PlayAmbience("meadow");
+            AudioHub.I?.PlayAmbience(string.IsNullOrEmpty(Level.Def.ambience) ? "meadow" : Level.Def.ambience);
             title.Open();
         }
 
@@ -324,10 +327,11 @@ namespace PocketWeather
             int before = SaveData.Get(lvl.Def.id).stamps;
             int fresh = SaveData.Award(lvl.Def.id, stamps & ~SaveData.StampDelight);
             fresh |= (DelightFoundThisRun && (before & SaveData.StampDelight) == 0) ? SaveData.StampDelight : 0;
+            float previousBest = SaveData.Get(lvl.Def.id).bestHour;
             SaveData.RecordFinish(lvl.Def.id, finish);
             Current = State.Results;
             bool last = LevelIndex >= LevelLibrary.Campaign.Length - 1;
-            results.Show(lvl.Def, stamps, fresh, finish, last);
+            results.Show(lvl.Def, stamps, fresh, finish, last, previousBest);
             Debug.Log($"[PW] level {lvl.Def.id} saved at {finish:0.00} (par {lvl.Def.par}) stamps={stamps} fresh={fresh} oopses={lvl.Oopses}");
         }
 
@@ -440,7 +444,7 @@ namespace PocketWeather
             {
                 if ((kb != null && (kb.escapeKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame)) || (pad != null && pad.startButton.wasPressedThisFrame))
                     Pause();
-                if (kb != null && kb.mKey.wasPressedThisFrame) GameSettings.Music = GameSettings.Music > 0.01f ? 0f : 0.8f;
+                if (kb != null && kb.mKey.wasPressedThisFrame) GameSettings.ToggleMusicMute();
             }
         }
     }

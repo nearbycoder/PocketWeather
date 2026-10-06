@@ -131,6 +131,11 @@ namespace PocketWeather
             Check("lifting the finger stops rain", !C.Raining);
             yield return null;
             Check("touch buttons appear for touch players", GameFlow.I.Hud.TouchButtonsVisible);
+            GameSettings.TouchButtons = 2;   // Settings > Touch buttons: Off
+            yield return null; yield return null;
+            Check("touch buttons Off hides them, even for touch players", !GameFlow.I.Hud.TouchButtonsVisible);
+            GameSettings.TouchButtons = 0;
+            yield return null;
 
             // --- tap the HUD pause button, then Resume in the menu
             yield return new WaitForSeconds(0.6f);

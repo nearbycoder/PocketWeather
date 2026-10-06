@@ -144,11 +144,22 @@ namespace PocketWeather
             var rest = C.transform.position;
             yield return new WaitForSeconds(0.5f);
             Check("Pip stays put afterwards", Dist2D(rest, C.transform.position) < 0.25f, $"drifted {Dist2D(rest, C.transform.position):0.00}");
+            // line up over the bed with small stick nudges, the way a player corrects a glide, so the
+            // whole shower lands on it (the glide alone can leave Pip half off the bed)
+            for (int tries = 0; tries < 10 && Dist2D(C.transform.position, target) > 0.3f; tries++)
+            {
+                var d = target - C.transform.position;
+                Stick(new Vector2(d.x, d.z).normalized * 0.5f);
+                yield return new WaitForSeconds(0.06f);
+                Stick(Vector2.zero);
+                float settle = 0;
+                while (C.Velocity.magnitude > 0.15f && settle < 1.5f) { settle += Time.deltaTime; yield return null; }
+            }
             float m0 = bed.Moisture;
             SetButton(GamepadButton.South, true);
-            yield return new WaitForSeconds(1.2f);
+            yield return new WaitForSeconds(1.5f);
             Check("holding A rains", C.Raining);
-            Check("rain waters the bed", bed.Moisture > m0 + 3f, $"{m0:0.0} -> {bed.Moisture:0.0}");
+            Check("rain waters the bed", bed.Moisture > m0 + 3f, $"{m0:0.0} -> {bed.Moisture:0.0}, {Dist2D(C.transform.position, target):0.00} from the bed");
             SetButton(GamepadButton.South, false);
             yield return new WaitForSeconds(0.4f);
             Check("releasing A stops the rain", !C.Raining);
@@ -156,6 +167,7 @@ namespace PocketWeather
             // --- accessibility: toggle rain (a press starts it, another stops it)
             bool hadToggle = GameSettings.RainToggle;
             GameSettings.RainToggle = true;
+            C.AddWater(60f);   // toggle rain switches itself off when Pip runs dry, which isn't what's tested here
             yield return Press(GamepadButton.South);
             yield return new WaitForSeconds(0.6f);
             Check("toggle mode: one press keeps it raining", C.Raining);

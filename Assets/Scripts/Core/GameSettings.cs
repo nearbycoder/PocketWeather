@@ -6,6 +6,15 @@ namespace PocketWeather
     public static class GameSettings
     {
         public static float Music { get => PlayerPrefs.GetFloat("pw.music", 0.8f); set => PlayerPrefs.SetFloat("pw.music", value); }
+        /// <summary>The music volume to come back to when M un-mutes it.</summary>
+        public static float MusicBeforeMute { get => PlayerPrefs.GetFloat("pw.music.unmuted", 0.8f); set => PlayerPrefs.SetFloat("pw.music.unmuted", value); }
+        /// <summary>M: silence the music, or bring it back at the player's own volume.</summary>
+        public static void ToggleMusicMute()
+        {
+            if (Music > 0.01f) { MusicBeforeMute = Music; Music = 0f; }
+            else Music = Mathf.Max(0.05f, MusicBeforeMute);
+            Save();
+        }
         public static float Sfx { get => PlayerPrefs.GetFloat("pw.sfx", 0.9f); set => PlayerPrefs.SetFloat("pw.sfx", value); }
         public static float Ambience { get => PlayerPrefs.GetFloat("pw.amb", 0.7f); set => PlayerPrefs.SetFloat("pw.amb", value); }
         public static bool ScreenShake { get => PlayerPrefs.GetInt("pw.shake", 1) == 1; set => PlayerPrefs.SetInt("pw.shake", value ? 1 : 0); }

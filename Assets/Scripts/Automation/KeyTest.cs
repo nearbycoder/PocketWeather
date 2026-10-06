@@ -107,21 +107,47 @@ namespace PocketWeather
             Check("device switches to keyboard", C.Input.LastDevice == CloudInput.Device.Keys, C.Input.LastDevice.ToString());
             Check("Pip stops near where the keys were released", Dist2D(released, C.GroundPoint) < C.Radius * 1.1f, $"glided {Dist2D(released, C.GroundPoint):0.00}");
 
+            // line up over the bed with short taps, the way a player corrects a glide, so the
+            // whole shower lands on it (the glide alone can leave Pip half off the bed)
+            for (int tries = 0; tries < 10 && Dist2D(C.GroundPoint, target) > 0.3f; tries++)
+            {
+                var d = target - C.GroundPoint;
+                Key nudge = Mathf.Abs(d.x) > Mathf.Abs(d.z) ? (d.x > 0 ? Key.D : Key.A) : (d.z > 0 ? Key.UpArrow : Key.DownArrow);
+                Set(nudge, true);
+                yield return new WaitForSeconds(0.04f);
+                Set(nudge, false);
+                yield return WaitFor(() => C.Velocity.magnitude < 0.15f, 1.5f);
+            }
             float m0 = bed.Moisture;
             Set(Key.Space, true);
-            yield return new WaitForSeconds(1.2f);
+            yield return new WaitForSeconds(1.5f);
             Check("holding Space rains", C.Raining);
-            Check("rain waters the bed", bed.Moisture > m0 + 3f, $"{m0:0.0} -> {bed.Moisture:0.0}");
+            Check("rain waters the bed", bed.Moisture > m0 + 3f, $"{m0:0.0} -> {bed.Moisture:0.0}, {Dist2D(C.GroundPoint, target):0.00} from the bed");
             Set(Key.Space, false);
             yield return new WaitForSeconds(0.4f);
             Check("releasing Space stops the rain", !C.Raining);
 
+            var hud = GameFlow.I.Hud;
+            hud.ShowHint("Test hint", "drop", 30f);
+            yield return new WaitForSecondsRealtime(0.5f);
             yield return Press(Key.Escape);
             yield return new WaitForSecondsRealtime(0.5f);
             Check("Esc pauses", Now == GameFlow.State.Paused, Now.ToString());
+            Check("hints hide behind the pause menu", !hud.HintVisible);
             yield return Press(Key.Escape);
             yield return new WaitForSecondsRealtime(0.5f);
             Check("Esc resumes", Now == GameFlow.State.Playing, Now.ToString());
+            Check("the hint comes back on resume", hud.HintVisible);
+            hud.HideHint();
+
+            // M mutes the music and brings it back at the player's own volume
+            float vol0 = GameSettings.Music;
+            GameSettings.Music = 0.42f;
+            yield return Press(Key.M);
+            float muted = GameSettings.Music;
+            yield return Press(Key.M);
+            Check("M mutes, then restores the player's music volume", muted < 0.01f && Mathf.Abs(GameSettings.Music - 0.42f) < 0.001f, $"{muted:0.00} then {GameSettings.Music:0.00}");
+            GameSettings.Music = vol0;
 
             // --- level 4: E blows the way Pip is moving
             GameFlow.I.DebugStart(3, true);
@@ -167,11 +193,16 @@ namespace PocketWeather
             yield return new WaitForSeconds(1.0f);
             GameFlow.I.DebugResults();
             yield return new WaitForSecondsRealtime(1.8f);
+            bool bestShown = false;
+            foreach (var txt in FindObjectsByType<UnityEngine.UI.Text>(FindObjectsInactive.Exclude))
+                if (txt.isActiveAndEnabled && txt.text.Contains("your best is")) bestShown = true;
+            Check("results show the best finishing time", bestShown);
             cur = EventSystem.current.currentSelectedGameObject;
             Check("results card selects Next day", cur != null && cur.name == "Btn_Next day", cur != null ? cur.name : "none");
             yield return Press(Key.Enter);
             yield return WaitFor(() => Now == GameFlow.State.Intro, 6f);
             Check("Next day opens day 2's postcard", Now == GameFlow.State.Intro && L != null && L.Def.id == "level02", $"{Now}, {L?.Def.id}");
+
 
             Debug.Log($"[KeyTest] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);

@@ -207,7 +207,7 @@ namespace PocketWeather
     {
         public Action OnStart;
         RectTransform card;
-        Text day, title, story, parText;
+        Text day, title, story, parText, best;
         RectTransform needsRow, stampsRow;
         Image icon;
 
@@ -227,6 +227,7 @@ namespace PocketWeather
             Ui.Icon(parRow, "clock", 54, new Vector2(-250, 0));
             parText = Ui.Label(parRow, "", 32, Ui.Ink, new Vector2(500, 60), new Vector2(40, 0), true, TextAnchor.MiddleLeft);
             stampsRow = Ui.Rect("Stamps", card, new Vector2(0.5f, 0.5f), new Vector2(240, 70), new Vector2(-330, -245));
+            best = Ui.Label(card, "", 30, Ui.InkSoft, new Vector2(330, 50), new Vector2(-30, -245), true);
             var start = Ui.Button(card, "Start", Ui.Coral, new Vector2(300, 104), new Vector2(300, -230), () => OnStart?.Invoke(), null, null, 50);
             firstSelected = start.gameObject;
         }
@@ -238,6 +239,8 @@ namespace PocketWeather
             story.text = def.story;
             icon.sprite = Ui.IconSprite(string.IsNullOrEmpty(def.icon) ? "flower" : def.icon);
             parText.text = $"Stamp for finishing before {FormatHour(def.par)}";
+            float bestHour = SaveData.Get(def.id).bestHour;
+            best.text = bestHour < 90f ? $"Your best: {FormatHour(bestHour)}" : "";
             foreach (Transform c in needsRow) Destroy(c.gameObject);
             var reqs = new List<NeedDef>();
             foreach (var n in def.needs) if (!n.hidden) reqs.Add(n);
@@ -287,9 +290,8 @@ namespace PocketWeather
 
         public static string FormatHour(float h)
         {
-            int hh = Mathf.FloorToInt(h);
-            int mm = Mathf.RoundToInt((h - hh) * 60);
-            return $"{hh}:{mm:00}";
+            int total = Mathf.RoundToInt(h * 60f);   // round once, so 9:59.7 shows as 10:00, not 9:60
+            return $"{total / 60}:{total % 60:00}";
         }
 
         void Update()
@@ -341,8 +343,11 @@ namespace PocketWeather
     public class SettingsMenu : MenuScreen
     {
         public Action OnClose;
-        JuicyButton resetBtn, gfxButton;
+        JuicyButton resetBtn, gfxButton, touchButton;
+        UnityEngine.UI.Slider musicSlider;
         bool confirmReset;
+
+        static string TouchButtonsLabel() => GameSettings.TouchButtons switch { 1 => "On", 2 => "Off", _ => "Auto" };
 
         static string GraphicsLabel() => GameSettings.Graphics switch
         {
@@ -357,7 +362,7 @@ namespace PocketWeather
             var p = Ui.Panel(root, new Vector2(760, 1060), Vector2.zero, Ui.Paper, null, 48f);
             Ui.Label(p.transform, "Settings", 70, Ui.Ink, new Vector2(600, 90), new Vector2(0, 455), true);
             float y = 362;
-            Ui.Slider(p.transform, "Music", GameSettings.Music, new Vector2(0, y), v => { GameSettings.Music = v; }, 640); y -= 78;
+            musicSlider = Ui.Slider(p.transform, "Music", GameSettings.Music, new Vector2(0, y), v => { GameSettings.Music = v; }, 640); y -= 78;
             Ui.Slider(p.transform, "Sounds", GameSettings.Sfx, new Vector2(0, y), v => { GameSettings.Sfx = v; }, 640); y -= 78;
             Ui.Slider(p.transform, "Ambience", GameSettings.Ambience, new Vector2(0, y), v => { GameSettings.Ambience = v; }, 640); y -= 78;
             Ui.Slider(p.transform, "Tilt-shift", GameSettings.TiltShift, new Vector2(0, y), v => { GameSettings.TiltShift = v; PostFx.ApplySettings(); }, 640); y -= 80;
@@ -373,7 +378,15 @@ namespace PocketWeather
             y -= 78;
             Ui.Toggle(p.transform, "Screen shake", GameSettings.ScreenShake, new Vector2(0, y), v => GameSettings.ScreenShake = v, 640); y -= 72;
             Ui.Toggle(p.transform, "Hints", GameSettings.Hints, new Vector2(0, y), v => GameSettings.Hints = v, 640); y -= 72;
-            Ui.Toggle(p.transform, "Touch buttons", GameSettings.TouchButtons == 1, new Vector2(0, y), v => GameSettings.TouchButtons = v ? 1 : 0, 640); y -= 72;
+            // touch buttons: tap to cycle Auto (when touch is used) / On / Off
+            var touchRow = Ui.Rect("Row_TouchButtons", p.transform, new Vector2(0.5f, 0.5f), new Vector2(640, 76), new Vector2(0, y));
+            Ui.Label(touchRow, "Touch buttons", 34, Ui.Ink, new Vector2(330, 60), new Vector2(-155, 0), false, TextAnchor.MiddleLeft);
+            touchButton = Ui.Button(touchRow, TouchButtonsLabel(), Ui.Sky, new Vector2(230, 66), new Vector2(205, 0), () =>
+            {
+                GameSettings.TouchButtons = (GameSettings.TouchButtons + 1) % 3;
+                touchButton.SetLabel(TouchButtonsLabel());
+            }, null, null, 30, "TouchButtons");
+            y -= 78;
             Ui.Toggle(p.transform, "Tap to rain (no holding)", GameSettings.RainToggle, new Vector2(0, y), v => GameSettings.RainToggle = v, 640); y -= 72;
             Ui.Toggle(p.transform, "Fullscreen", UnityEngine.Screen.fullScreen, new Vector2(0, y), v =>
             {
@@ -396,6 +409,8 @@ namespace PocketWeather
             confirmReset = false;
             resetBtn.SetLabel("Reset progress");
             gfxButton.SetLabel(GraphicsLabel());
+            touchButton.SetLabel(TouchButtonsLabel());
+            musicSlider.SetValueWithoutNotify(GameSettings.Music);   // M may have muted it since
         }
 
         void Update()
@@ -441,10 +456,13 @@ namespace PocketWeather
             firstSelected = next.gameObject;
         }
 
-        public void Show(LevelDef def, int stampsEarnedThisRun, int fresh, float finishHour, bool isLast)
+        /// <param name="previousBest">the best finishing hour before this run (99 if never finished)</param>
+        public void Show(LevelDef def, int stampsEarnedThisRun, int fresh, float finishHour, bool isLast, float previousBest = 99f)
         {
             subtitle.text = string.IsNullOrEmpty(def.thanks) ? "Everyone is happy!" : def.thanks;
-            timeLine.text = $"Finished at {Postcard.FormatHour(finishHour)}";
+            timeLine.text = previousBest > 90f ? $"Finished at {Postcard.FormatHour(finishHour)}"
+                : finishHour < previousBest - 1f / 120f ? $"Finished at {Postcard.FormatHour(finishHour)}  ·  a new best!"
+                : $"Finished at {Postcard.FormatHour(finishHour)}  ·  your best is {Postcard.FormatHour(previousBest)}";
             stampLabels[1].text = $"Before {Postcard.FormatHour(def.par)}";
             stampLabels[2].text = SaveData.Has(def.id, SaveData.StampDelight) ? def.delight.title : "Secret delight";
             next.SetLabel(isLast ? "The end" : "Next day");
