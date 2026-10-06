@@ -39,6 +39,7 @@ namespace PocketWeather
                 case "tour": yield return Tour(); break;
                 case "fixes": yield return Fixes(); break;
                 case "band": yield return Band(); break;
+                case "encore": yield return EncoreShots(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -276,6 +277,31 @@ namespace PocketWeather
                 yield return null;
             }
             yield return Shot("band_2_near_top");
+        }
+
+        /// <summary>Encore screens: the map with Encore stamps, a postcard offering it, the Encore
+        /// postcard, an Encore in play and its results card. Use with -pwFreshSave.</summary>
+        IEnumerator EncoreShots()
+        {
+            var flow = GameFlow.I;
+            yield return new WaitForSeconds(1.5f);
+            foreach (var id in new[] { "level01", "level02", "level03" }) SaveData.Award(id, SaveData.StampSaved | SaveData.StampPar);
+            SaveData.Award("level01", SaveData.StampEncore);
+            flow.DebugShowMap();
+            yield return new WaitForSeconds(1.5f);
+            yield return Shot("e1_map");
+            flow.DebugStart(1, false);
+            yield return new WaitForSeconds(1.4f);
+            yield return Shot("e2_postcard_offers_encore");
+            flow.DebugStart(1, false, true);
+            yield return new WaitForSeconds(1.4f);
+            yield return Shot("e3_encore_postcard");
+            flow.DebugStart(1, true, true);
+            yield return new WaitForSeconds(1.2f);
+            yield return Shot("e4_encore_play");
+            flow.DebugEncoreResults();
+            yield return new WaitForSecondsRealtime(2.2f);
+            yield return Shot("e5_encore_results");
         }
 
         void Log(string s) => Debug.Log("[PW] " + s);

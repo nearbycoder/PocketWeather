@@ -137,6 +137,10 @@ namespace PocketWeather
             Audit("title");
             f.DebugShowMap(); yield return Settle(); Audit("map");
             f.DebugStart(0, false); yield return Settle(1.6f); Audit("postcard");
+            SaveData.Award(LevelLibrary.Campaign[0], SaveData.StampSaved);   // opens Day 1's Encore
+            f.DebugShowMap(); yield return Settle(); Audit("map with an Encore open");
+            f.DebugStart(0, false, true); f.DebugShowPostcard(); yield return Settle(1.6f); Audit("encore postcard");
+            f.DebugStart(0, false); yield return Settle(1.6f);
             f.DebugBeginPlay(); yield return Settle(); Audit("hud"); CheckTopBar("hud top bar, day 1");
             f.DebugPause(); yield return Settle(); Audit("pause");
             f.DebugSettings(); yield return Settle(); Audit("settings");

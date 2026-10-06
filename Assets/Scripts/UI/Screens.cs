@@ -133,7 +133,8 @@ namespace PocketWeather
         public Action<int> OnPick;
         public Action OnBack, OnSettings;
         readonly List<JuicyButton> cards = new();
-        Text total;
+        Text total, encoreTotal;
+        RectTransform encorePill;
         RectTransform grid;
 
         protected override void Build()
@@ -149,6 +150,10 @@ namespace PocketWeather
             var tp = Ui.Panel(safe, new Vector2(230, 84), new Vector2(-150, -80), Ui.Paper, new Vector2(1, 1), 42f);
             Ui.Icon(tp.transform, "stamp_flower", 64, new Vector2(-70, 2));
             total = Ui.Label(tp.transform, "0/36", 40, Ui.Ink, new Vector2(140, 70), new Vector2(30, 2), true);
+            // Encore stamps get their own pill once the first Encore opens
+            encorePill = Ui.Panel(safe, new Vector2(230, 72), new Vector2(-150, -176), Ui.Paper, new Vector2(1, 1), 36f, true, "EncorePill").rectTransform;
+            Ui.Icon(encorePill, "stamp_encore", 56, new Vector2(-70, 2));
+            encoreTotal = Ui.Label(encorePill, "0/12", 36, Ui.Ink, new Vector2(140, 64), new Vector2(30, 2), true);
             var back = Ui.Button(safe, "Title", Ui.Lilac, new Vector2(220, 90), new Vector2(150, 80), () => OnBack?.Invoke(), null, new Vector2(0, 0), 38);
             Ui.Button(safe, "", Ui.Lilac, new Vector2(90, 90), new Vector2(-80, 80), () => OnSettings?.Invoke(), "gear", new Vector2(1, 0), 38, "Settings");
             grid = Ui.Rect("Grid", safe, new Vector2(0.5f, 0.5f), new Vector2(1700, 700), new Vector2(0, -20));
@@ -159,6 +164,9 @@ namespace PocketWeather
             foreach (Transform c in grid) Destroy(c.gameObject);
             cards.Clear();
             total.text = $"{SaveData.TotalStamps()}/{LevelLibrary.Campaign.Length * 3}";
+            bool anyEncore = SaveData.EncoreUnlocked(LevelLibrary.Campaign[0]);
+            encorePill.gameObject.SetActive(anyEncore);
+            encoreTotal.text = $"{SaveData.EncoreStamps()}/{LevelLibrary.Campaign.Length}";
             int next = SaveData.FirstUnfinished();
             for (int i = 0; i < LevelLibrary.Campaign.Length; i++)
             {
@@ -176,11 +184,12 @@ namespace PocketWeather
                 Ui.Label(face, $"Day {i + 1}", 30, Ui.InkSoft, new Vector2(220, 40), new Vector2(0, 118), true);
                 Ui.Icon(face, unlocked ? (def != null && !string.IsNullOrEmpty(def.icon) ? def.icon : "flower") : "lock", 120, new Vector2(0, 38));
                 Ui.Label(face, def != null ? def.title : "?", 30, Ui.Ink, new Vector2(226, 80), new Vector2(0, -62), true);
-                string[] stampIcons = { "stamp_sun", "stamp_clock", "stamp_flower" };
-                for (int s = 0; s < 3; s++)
+                string[] stampIcons = { "stamp_sun", "stamp_clock", "stamp_flower", "stamp_encore" };
+                int count = unlocked && SaveData.EncoreUnlocked(LevelLibrary.Campaign[i]) ? 4 : 3;
+                for (int s = 0; s < count; s++)
                 {
                     bool has = (save.stamps & (1 << s)) != 0;
-                    var st = Ui.Icon(face, has ? stampIcons[s] : "stamp_empty", 52, new Vector2((s - 1) * 58, -118));
+                    var st = Ui.Icon(face, has ? stampIcons[s] : "stamp_empty", count == 4 ? 46 : 52, new Vector2((s - (count - 1) / 2f) * (count == 4 ? 52 : 58), -118));
                     if (!has) st.color = new Color(1, 1, 1, 0.6f);
                 }
                 if (i == next && unlocked) card.gameObject.AddComponent<UiBob>().amplitude = 5;
@@ -226,16 +235,21 @@ namespace PocketWeather
     public class Postcard : MenuScreen
     {
         public Action OnStart;
+        /// <summary>The Encore / Normal day button: true asks for the Encore.</summary>
+        public Action<bool> OnEncore;
         RectTransform card;
         Text day, title, story, parText, best;
         RectTransform needsRow, stampsRow;
-        Image icon;
+        Image icon, stripe, parIcon;
+        JuicyButton startBtn, encoreBtn;
+        bool showingEncore;
+        public const string EncoreStory = "A scorcher! The sun races, the beds dry out as you watch, and Pip sets off half-empty.";
 
         protected override void Build()
         {
             Dim(0.25f);
             card = Ui.Panel(root, new Vector2(1000, 640), new Vector2(0, 10), Ui.Paper, null, 48f).rectTransform;
-            var stripe = Ui.Image(card, Ui.Rounded, Res.Hex("CFE6F7"), new Vector2(960, 120), new Vector2(0, 240), null, "Stripe");
+            stripe = Ui.Image(card, Ui.Rounded, Res.Hex("CFE6F7"), new Vector2(960, 120), new Vector2(0, 240), null, "Stripe");
             stripe.pixelsPerUnitMultiplier = 52f / 36f;
             icon = Ui.Icon(card, "flower", 150, new Vector2(-370, 245));
             day = Ui.Label(card, "Day 1", 34, Ui.InkSoft, new Vector2(600, 50), new Vector2(40, 272), true, TextAnchor.MiddleLeft);
@@ -244,21 +258,29 @@ namespace PocketWeather
             Ui.Label(card, "Today, help:", 30, Ui.InkSoft, new Vector2(400, 40), new Vector2(0, 22), true);
             needsRow = Ui.Rect("Needs", card, new Vector2(0.5f, 0.5f), new Vector2(900, 110), new Vector2(0, -60));
             var parRow = Ui.Rect("Par", card, new Vector2(0.5f, 0.5f), new Vector2(600, 60), new Vector2(-170, -175));
-            Ui.Icon(parRow, "clock", 54, new Vector2(-250, 0));
+            parIcon = Ui.Icon(parRow, "clock", 54, new Vector2(-250, 0));
             parText = Ui.Label(parRow, "", 32, Ui.Ink, new Vector2(500, 60), new Vector2(40, 0), true, TextAnchor.MiddleLeft);
             stampsRow = Ui.Rect("Stamps", card, new Vector2(0.5f, 0.5f), new Vector2(240, 70), new Vector2(-330, -245));
             best = Ui.Label(card, "", 30, Ui.InkSoft, new Vector2(330, 50), new Vector2(-30, -245), true);
-            var start = Ui.Button(card, "Start", Ui.Coral, new Vector2(300, 104), new Vector2(300, -230), () => OnStart?.Invoke(), null, null, 50);
-            firstSelected = start.gameObject;
+            startBtn = Ui.Button(card, "Start", Ui.Coral, new Vector2(300, 104), new Vector2(300, -240), () => OnStart?.Invoke(), null, null, 50);
+            // a saved day offers its Encore (and an Encore offers the ordinary day back)
+            encoreBtn = Ui.Button(card, "Encore", Res.Hex("FF9A5C"), new Vector2(260, 64), new Vector2(300, -150), () => OnEncore?.Invoke(!showingEncore), "stamp_encore", null, 32, "Encore");
+            firstSelected = startBtn.gameObject;
         }
 
         public void Show(LevelDef def, int index)
         {
-            day.text = $"Day {index + 1}";
+            showingEncore = def.encore;
+            day.text = def.encore ? $"Day {index + 1}  ·  Encore" : $"Day {index + 1}";
             title.text = def.title;
-            story.text = def.story;
+            story.text = def.encore ? EncoreStory : def.story;
             icon.sprite = Ui.IconSprite(string.IsNullOrEmpty(def.icon) ? "flower" : def.icon);
-            parText.text = $"Stamp for finishing before {FormatHour(def.par)}";
+            stripe.color = def.encore ? Res.Hex("FFD9B8") : Res.Hex("CFE6F7");
+            parIcon.sprite = Ui.IconSprite(def.encore ? "stamp_encore" : "clock");
+            parText.text = def.encore ? "The scorcher stamp for saving it" : $"Stamp for finishing before {FormatHour(def.par)}";
+            bool encoreOpen = SaveData.EncoreUnlocked(def.id);
+            encoreBtn.gameObject.SetActive(encoreOpen);
+            encoreBtn.SetLabel(def.encore ? "Normal day" : "Encore");
             float bestHour = SaveData.Get(def.id).bestHour;
             best.text = bestHour < 90f ? $"Your best: {FormatHour(bestHour)}" : "";
             foreach (Transform c in needsRow) Destroy(c.gameObject);
@@ -273,11 +295,12 @@ namespace PocketWeather
             }
             foreach (Transform c in stampsRow) Destroy(c.gameObject);
             var save = SaveData.Get(def.id);
-            string[] icons = { "stamp_sun", "stamp_clock", "stamp_flower" };
-            for (int s = 0; s < 3; s++)
+            string[] icons = { "stamp_sun", "stamp_clock", "stamp_flower", "stamp_encore" };
+            int count = encoreOpen ? 4 : 3;
+            for (int s = 0; s < count; s++)
             {
                 bool has = (save.stamps & (1 << s)) != 0;
-                var st = Ui.Icon(stampsRow, has ? icons[s] : "stamp_empty", 62, new Vector2((s - 1) * 72, 0));
+                var st = Ui.Icon(stampsRow, has ? icons[s] : "stamp_empty", count == 4 ? 54 : 62, new Vector2((s - (count - 1) / 2f) * (count == 4 ? 60 : 72), 0));
                 if (!has) st.color = new Color(1, 1, 1, 0.6f);
             }
             Open();
@@ -319,7 +342,11 @@ namespace PocketWeather
             if (!IsOpen || JustOpened) return;
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
-            if ((kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (pad != null && pad.startButton.wasPressedThisFrame))
+            // Enter/Space start the day unless the Encore button has the focus (then it's the
+            // button's own submit); the pad's Start button always starts
+            var sel = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            bool encoreFocused = sel != null && encoreBtn != null && sel == encoreBtn.gameObject;
+            if ((kb != null && !encoreFocused && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (pad != null && pad.startButton.wasPressedThisFrame))
                 OnStart?.Invoke();
         }
     }
@@ -510,6 +537,8 @@ namespace PocketWeather
         /// <param name="previousBest">the best finishing hour before this run (99 if never finished)</param>
         public void Show(LevelDef def, int stampsEarnedThisRun, int fresh, float finishHour, bool isLast, float previousBest = 99f)
         {
+            title.text = "Day saved!";
+            for (int i = 0; i < 3; i++) stamps[i].transform.parent.gameObject.SetActive(true);
             subtitle.text = string.IsNullOrEmpty(def.thanks) ? "Everyone is happy!" : def.thanks;
             timeLine.text = previousBest > 90f ? $"Finished at {Postcard.FormatHour(finishHour)}"
                 : finishHour < previousBest - 1f / 120f ? $"Finished at {Postcard.FormatHour(finishHour)}  ·  a new best!"
@@ -553,6 +582,38 @@ namespace PocketWeather
                 });
                 delay += 0.55f;
             }
+        }
+
+        /// <summary>An Encore's card: one stamp, the scorcher's, slammed in if it's new.</summary>
+        public void ShowEncore(LevelDef def, bool fresh, float finishHour)
+        {
+            title.text = "Encore saved!";
+            subtitle.text = "Even on a scorcher, everyone is happy!";
+            timeLine.text = $"Finished at {Postcard.FormatHour(finishHour)}";
+            for (int i = 0; i < 3; i++) stamps[i].transform.parent.gameObject.SetActive(i == 1);
+            stampLabels[1].text = "Scorcher saved";
+            int index = LevelLibrary.IndexOf(def.id);
+            next.SetLabel(index >= LevelLibrary.Campaign.Length - 1 ? "Map" : "Next day");
+            var st = stamps[1];
+            st.sprite = Ui.IconSprite(fresh ? "stamp_empty" : "stamp_encore");
+            st.color = fresh ? new Color(1, 1, 1, 0.55f) : Color.white;
+            st.rectTransform.localScale = Vector3.one;
+            Open();
+            Tween.To(700, 0, 0.55f, y => card.anchoredPosition = new Vector2(0, y), k => Ease.OutBack(k, 1.2f), 0, null, card);
+            if (!fresh) return;
+            Tween.Delay(0.6f, () =>
+            {
+                st.sprite = Ui.IconSprite("stamp_encore");
+                st.color = Color.white;
+                var t = st.rectTransform;
+                Tween.To(2.4f, 1f, 0.32f, k => { if (t != null) t.localScale = Vector3.one * k; }, Ease.InCubic, 0, () =>
+                {
+                    Sfx.Ui("stamp");
+                    Tween.Punch(card, 0.03f, 0.3f);
+                    GameRoot.Instance?.Rig.Shake(0.4f);
+                });
+                t.localRotation = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-12f, 12f));
+            });
         }
     }
 

@@ -381,6 +381,17 @@ def em_flower(m):
     m.sphere(0.12, pos=(0, 0, -0.04), scale=(1, 1, 0.5), color="FFE38A", subdiv=2)
 
 
+def em_scorcher(m):
+    """Encore stamp: the sun, with a little star in its middle."""
+    em_sun(m)
+    pts = []
+    for k in range(10):
+        a = math.pi / 2 + k * math.pi / 5
+        r = 0.19 if k % 2 == 0 else 0.085
+        pts.append((math.cos(a) * r, math.sin(a) * r))
+    m.prism(pts, 0.05, pos=(0, 0, -0.05), color="E8673A", bevel=0.01)
+
+
 def pip():
     m = Model("pip")
     for (x, y, r) in ((0, 0.08, 0.32), (-0.3, -0.04, 0.24), (0.31, -0.02, 0.25), (0.1, 0.28, 0.22), (-0.16, 0.22, 0.2), (-0.12, -0.14, 0.2), (0.15, -0.15, 0.2)):
@@ -509,6 +520,7 @@ ICONS = {
     "stamp_clock": lambda: stamp("5AA9E6", em_clock, "stamp_clock"),
     "stamp_flower": lambda: stamp("E8689A", em_flower, "stamp_flower"),
     "stamp_empty": lambda: stamp("D9D4E8", lambda m: None, "stamp_empty"),
+    "stamp_encore": lambda: stamp("E8673A", em_scorcher, "stamp_encore"),
 }
 
 

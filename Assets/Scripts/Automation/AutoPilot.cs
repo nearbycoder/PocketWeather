@@ -128,8 +128,9 @@ namespace PocketWeather
             yield return Shot($"{id}_end");
             bool ok = GameFlow.I.Current == GameFlow.State.Results;
             float finish = lvl.Elapsed;
-            string line = $"{(ok ? "PASS" : "FAIL")}{(newcomer ? " (newcomer)" : "")} {id} \"{lvl.Def.title}\" finished {(ok ? "" : "NOT ")}by sundown; elapsed {lvl.Elapsed:0}s of {lvl.Def.dayLength}s; " +
-                          $"hour {SaveData.Get(id).bestHour:0.00} par {lvl.Def.par:0.00} {(SaveData.Has(id, SaveData.StampPar) ? "(par stamp)" : "(missed par)")}; " +
+            string line = $"{(ok ? "PASS" : "FAIL")}{(newcomer ? " (newcomer)" : "")}{(lvl.Def.encore ? " (encore)" : "")} {id} \"{lvl.Def.title}\" finished {(ok ? "" : "NOT ")}by sundown; elapsed {lvl.Elapsed:0}s of {lvl.Def.dayLength}s; " +
+                          (lvl.Def.encore ? $"encore stamp {(SaveData.Has(id, SaveData.StampEncore) ? "yes" : "no")}; "
+                                          : $"hour {SaveData.Get(id).bestHour:0.00} par {lvl.Def.par:0.00} {(SaveData.Has(id, SaveData.StampPar) ? "(par stamp)" : "(missed par)")}; ") +
                           $"delight {(SaveData.Has(id, SaveData.StampDelight) ? "found" : "not found")}; oopses {lvl.Oopses}; water used {C?.WaterUsed:0}";
             if (!ok)
             {

@@ -30,6 +30,8 @@ namespace PocketWeather
         public SourceDef[] sources = new SourceDef[0];
         public DelightDef delight = new DelightDef();
         public EventDef[] events = new EventDef[0];
+        /// <summary>Loaded as its Encore (a scorcher): see LevelLibrary.MakeEncore. Not in the JSON.</summary>
+        [NonSerialized] public bool encore;
     }
 
     [Serializable]
@@ -157,5 +159,20 @@ namespace PocketWeather
         }
 
         public static int IndexOf(string id) => Array.IndexOf(Campaign, id);
+
+        // Encore: the same day on a scorcher. Generic rules rather than twelve hand-made variants, so
+        // the level JSON stays the single source of truth (validate_levels.py mirrors these numbers).
+        public const float EncoreDayScale = 0.75f;    // the sun crosses the sky in 3/4 of the time
+        public const float EncoreWaterScale = 0.5f;   // Pip sets off half as full
+        public const float EncoreDryRate = 0.35f;     // beds dry out (the Heatwave's own 0.55 stays)
+
+        public static LevelDef MakeEncore(LevelDef d)
+        {
+            d.encore = true;
+            d.dayLength *= EncoreDayScale;
+            d.startWater *= EncoreWaterScale;
+            d.island.dryRate = Mathf.Max(d.island.dryRate, EncoreDryRate);
+            return d;
+        }
     }
 }

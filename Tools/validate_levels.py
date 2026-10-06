@@ -41,8 +41,16 @@ def on_sea(lv, x, z):
             "east": x > w / 2 - width, "west": x < -w / 2 + width}[sea.get("side", "south")]
 
 
-def check(path):
+# Encore (a scorcher), mirroring LevelLibrary.MakeEncore in LevelData.cs
+ENCORE_DAY, ENCORE_WATER, ENCORE_DRY = 0.75, 0.5, 0.35
+
+
+def check(path, encore=False):
     lv = json.load(open(path))
+    if encore:
+        lv["dayLength"] *= ENCORE_DAY
+        lv["startWater"] = lv.get("startWater", 40) * ENCORE_WATER
+        lv["island"]["dryRate"] = max(lv["island"].get("dryRate", 0.0), ENCORE_DRY)
     errs, warns = [], []
     isl = lv["island"]
     hw, hd = isl["w"] / 2 - 0.35, isl["d"] / 2 - 0.35
@@ -117,6 +125,19 @@ def check(path):
             water_needed += 1.0 / 0.045 + 6
             time_needed += 2.5
 
+    # drying beds (the Heatwave, and every Encore): the ones watered first lose moisture while Pip
+    # does the rest, so they need topping up; and a bed's band must outlast the round trip
+    dry = isl.get("dryRate", 0.0)
+    beds = [n for n in required if n["type"] in ("bed", "sunny")]
+    if dry > 0 and beds:
+        topup = dry * time_needed * 0.5 * len(beds)
+        water_needed += topup
+        time_needed += topup / RAIN_RATE
+        for n in beds:
+            lo, hi = n["target"][0], n["target"][1] if len(n["target"]) > 1 else n["target"][0] * 1.8
+            if (hi - lo) / dry < 8:
+                warns.append(f"{n['id']}: stays in its band only {(hi - lo) / dry:.0f}s at dry rate {dry}")
+
     start = lv.get("startWater", 40)
     deficit = max(0.0, water_needed - start)
     refills = math.ceil(deficit / 80.0)
@@ -132,7 +153,9 @@ def check(path):
     par_seconds = (lv["par"] - lv["startHour"]) * sec_per_hour
     if time_needed > lv["dayLength"] * 0.8:
         errs.append(f"estimated {time_needed:.0f}s exceeds 80% of the day ({lv['dayLength']}s)")
-    if time_needed > par_seconds:
+    if encore:
+        pass   # an Encore has no par stamp: saving it before sundown is the goal
+    elif time_needed > par_seconds:
         errs.append(f"estimated {time_needed:.0f}s exceeds par ({par_seconds:.0f}s)")
     elif time_needed > par_seconds * 0.85:
         warns.append(f"par is tight: estimate {time_needed:.0f}s vs par {par_seconds:.0f}s")
@@ -153,6 +176,17 @@ def main():
             print("   error:", e)
         for w in warns:
             print("   note: ", w)
+        bad += len(errs)
+    print("Encore (a scorcher: day x0.75, Pip starts at half, beds dry at 0.35/s):")
+    for path in sorted(glob.glob(os.path.join(LEVELS, "level*.json"))):
+        lv, errs, warns, water, est, par = check(path, encore=True)
+        status = "OK" if not errs else "ERROR"
+        print(f"{lv['id']:8} {lv['title'][:16]:16} {'':5} {water:6.0f} {est:6.0f} {'-':>6} {lv['dayLength']:6.0f}  {status}")
+        for e in errs:
+            print("   error:", e)
+        for w in warns:
+            if "stays in its band" in w:
+                print("   note: ", w)
         bad += len(errs)
     bad += check_music()
     print("all levels pass static checks" if bad == 0 else f"{bad} errors")

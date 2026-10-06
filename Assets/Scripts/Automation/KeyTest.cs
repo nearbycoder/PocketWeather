@@ -227,6 +227,28 @@ namespace PocketWeather
             yield return new WaitForSeconds(9.5f);
             Check("campfire night follows up with the campfire", hud.HintText.Contains("campfire"), hud.HintText);
 
+            // --- Encore: a saved day's postcard offers it, and it runs as a scorcher
+            SaveData.Award("level01", SaveData.StampSaved);
+            GameFlow.I.DebugStart(0, false);
+            GameFlow.I.DebugShowPostcard();
+            yield return new WaitForSecondsRealtime(1.0f);
+            var encoreBtn = GameObject.Find("Encore");
+            Check("a saved day's postcard offers its Encore", encoreBtn != null && encoreBtn.activeInHierarchy);
+            if (encoreBtn != null)
+            {
+                EventSystem.current.SetSelectedGameObject(encoreBtn);
+                yield return Press(Key.Enter);
+                yield return WaitFor(() => Now == GameFlow.State.Intro && L != null && L.Def.encore, 8f);
+                yield return new WaitForSecondsRealtime(1.0f);
+                Check("Enter on Encore opens Day 1's Encore postcard", L != null && L.Def.encore && Now == GameFlow.State.Intro, $"{Now}, encore {L?.Def.encore}");
+                yield return Press(Key.Enter);
+                yield return WaitFor(() => Now == GameFlow.State.Playing, 5f);
+                bool rules = L.Def.encore && Mathf.Abs(L.Def.dayLength - 120f * LevelLibrary.EncoreDayScale) < 0.01f
+                             && C.Water <= 30f * LevelLibrary.EncoreWaterScale + 0.5f && L.Def.island.dryRate >= LevelLibrary.EncoreDryRate;
+                Check("the Encore runs as a scorcher (shorter day, half water, drying beds)", rules,
+                      $"day {L.Def.dayLength:0}s, water {C.Water:0}, dry {L.Def.island.dryRate:0.00}");
+            }
+
             Debug.Log($"[KeyTest] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);
             Application.Quit();

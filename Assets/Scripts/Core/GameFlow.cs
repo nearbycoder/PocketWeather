@@ -19,6 +19,9 @@ namespace PocketWeather
         public int LevelIndex { get; private set; } = -1;
         public Hud Hud { get; private set; }
         public bool DelightFoundThisRun { get; private set; }
+        /// <summary>The current day is its Encore (a scorcher). Automation: -pwEncore plays every
+        /// campaign day as its Encore.</summary>
+        public bool Encore { get; private set; }
 
         GameRoot root;
         TitleScreen title;
@@ -80,15 +83,16 @@ namespace PocketWeather
             map.OnSettings = () => OpenSettings(map);
             map.OnPick = i => StartLevel(i);
             postcard.OnStart = BeginPlay;
+            postcard.OnEncore = on => { if (Current == State.Intro && LevelIndex >= 0) StartLevel(LevelIndex, on); };
             pause.OnResume = Resume;
-            pause.OnRestart = () => { Resume(); StartLevel(LevelIndex); };
+            pause.OnRestart = () => { Resume(); StartLevel(LevelIndex, Encore); };
             pause.OnMap = () => { Resume(); Transition(ShowMapNow); };
             pause.OnSettings = () => OpenSettings(pause);
             settings.OnClose = CloseSettings;
             results.OnNext = NextLevel;
-            results.OnReplay = () => StartLevel(LevelIndex);
+            results.OnReplay = () => StartLevel(LevelIndex, Encore);
             results.OnMap = () => Transition(ShowMapNow);
-            fail.OnRetry = () => StartLevel(LevelIndex);
+            fail.OnRetry = () => StartLevel(LevelIndex, Encore);
             fail.OnMap = () => Transition(ShowMapNow);
             ending.OnDone = () => Transition(ShowMapNow);
         }
@@ -117,10 +121,10 @@ namespace PocketWeather
         }
 
         /// <summary>Automation: load a campaign level instantly and start playing (no wipe/postcard).</summary>
-        public void DebugStart(int index, bool play = true)
+        public void DebugStart(int index, bool play = true, bool encore = false)
         {
             Time.timeScale = 1f;
-            StartLevelNow(index);
+            StartLevelNow(index, encore);
             postcard.Close();
             if (play) BeginPlay();
         }
@@ -145,6 +149,14 @@ namespace PocketWeather
             results.Show(Level.Def, SaveData.StampSaved | SaveData.StampPar, 0, Level.Def.par - 1f, false, Level.Def.par - 1.5f);
         }
         public void DebugCloseMenus() => CloseAll();
+        public void DebugEncoreResults()
+        {
+            if (Level == null) return;
+            Level.Running = false;
+            Current = State.Results;
+            Hud.SetVisible(false, 0.2f);
+            results.ShowEncore(Level.Def, true, Level.Def.par - 1f);
+        }
         public void DebugEnding() { LevelIndex = LevelLibrary.Campaign.Length - 1; NextLevel(); }
 
         System.Action queuedTransition;
@@ -213,17 +225,19 @@ namespace PocketWeather
         }
 
         // ------------------------------------------------------------------ levels
-        public void StartLevel(int index)
+        public void StartLevel(int index, bool encore = false)
         {
             Time.timeScale = 1f;
-            Transition(() => StartLevelNow(index));
+            Transition(() => StartLevelNow(index, encore));
         }
 
-        void StartLevelNow(int index)
+        void StartLevelNow(int index, bool encore = false)
         {
             CloseAll();
             LevelIndex = index;
             var def = LevelLibrary.Load(LevelLibrary.Campaign[index]);
+            Encore = encore || GameRoot.HasArg("-pwEncore");
+            if (Encore) LevelLibrary.MakeEncore(def);
             LoadLevelObject(def);
             Current = State.Intro;
             Level.Cloud.Input.Enabled = false;
@@ -274,6 +288,7 @@ namespace PocketWeather
             onboarding = gameObject.AddComponent<Onboarding>();
             onboarding.Init(Level, Hud);
             Level.Cloud.Visual.Emote(CloudVisual.Determined, 0.8f);
+            if (Encore) Hud.Toast("Encore: a scorcher!", "stamp_encore", 2.6f, Res.Hex("FFC59A"));
         }
 
         void OnDelight(string title)
@@ -327,6 +342,16 @@ namespace PocketWeather
                 if (t > dur * 0.6f) lvl.Cloud.Visual.Override = CloudVisual.Sleepy;
                 yield return null;
             }
+            if (lvl.Def.encore)
+            {
+                // an Encore earns its own stamp; the day's other stamps (and best time) belong to the
+                // ordinary day
+                int freshEncore = SaveData.Award(lvl.Def.id, SaveData.StampEncore);
+                Current = State.Results;
+                results.ShowEncore(lvl.Def, freshEncore != 0, finish);
+                Debug.Log($"[PW] level {lvl.Def.id} encore saved at {finish:0.00} fresh={freshEncore != 0} oopses={lvl.Oopses}");
+                yield break;
+            }
             int stamps = SaveData.StampSaved;
             if (finish <= lvl.Def.par + 1e-3f) stamps |= SaveData.StampPar;
             if (DelightFoundThisRun) stamps |= SaveData.StampDelight;
@@ -371,6 +396,14 @@ namespace PocketWeather
 
         void NextLevel()
         {
+            if (Encore)
+            {
+                // from an Encore, on to the next day's Encore if it's open (the ending has been seen)
+                int next = LevelIndex + 1;
+                if (next >= LevelLibrary.Campaign.Length) Transition(ShowMapNow);
+                else StartLevel(next, SaveData.EncoreUnlocked(LevelLibrary.Campaign[next]));
+                return;
+            }
             if (LevelIndex >= LevelLibrary.Campaign.Length - 1)
             {
                 Transition(() =>

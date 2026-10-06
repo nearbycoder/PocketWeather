@@ -144,6 +144,10 @@ the day plays out as a timelapse into a starry night. Each day has three stamps:
 **Before par** (finish before the par hour on the sun track) and **Delight**, a secret reaction
 hinted at by a riddle in the pause menu.
 
+Once a day is saved, its postcard offers an **Encore**: the same diorama on a scorcher. The sun
+races across the sky, the beds dry out as you watch, and Pip sets off half-empty. Saving it
+earns that day's fourth stamp.
+
 </td>
 <td><img src="docs/media/screenshot-day-saved.jpg" alt="The day-saved card with three stamps"></td>
 </tr>
@@ -177,7 +181,8 @@ the delights are left for you to find.
 | 12 | The Wedding | the finale |
 
 A day runs two to three and a third minutes from dawn to dusk (saving it usually takes less), so
-the whole summer is roughly half an hour, and longer if you chase all 36 stamps.
+the whole summer is roughly half an hour, and longer if you chase all 36 stamps, plus the
+twelve Encore stamps.
 
 ## Screenshots
 

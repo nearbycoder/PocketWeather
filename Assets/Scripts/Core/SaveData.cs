@@ -7,7 +7,7 @@ namespace PocketWeather
     /// <summary>Progress: stamps per level (1 day saved, 2 before par, 4 delight), best finishing hour.</summary>
     public static class SaveData
     {
-        public const int StampSaved = 1, StampPar = 2, StampDelight = 4;
+        public const int StampSaved = 1, StampPar = 2, StampDelight = 4, StampEncore = 8;
 
         [Serializable]
         public class LevelSave
@@ -95,6 +95,7 @@ namespace PocketWeather
             return Has(LevelLibrary.Campaign[index - 1], StampSaved);
         }
 
+        /// <summary>The summer's 36 stamps (saved, before par, delight per day).</summary>
         public static int TotalStamps()
         {
             int n = 0;
@@ -105,6 +106,17 @@ namespace PocketWeather
             }
             return n;
         }
+
+        /// <summary>Encore stamps (one per day, for saving its scorcher).</summary>
+        public static int EncoreStamps()
+        {
+            int n = 0;
+            foreach (var id in LevelLibrary.Campaign) if (Has(id, StampEncore)) n++;
+            return n;
+        }
+
+        /// <summary>A day's Encore opens once the day itself has been saved.</summary>
+        public static bool EncoreUnlocked(string id) => Has(id, StampSaved) || GameRoot.HasArg("-pwUnlockAll");
 
         public static int FirstUnfinished()
         {
