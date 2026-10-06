@@ -31,6 +31,14 @@ namespace PocketWeather
         public virtual Surface RainSurface => Def.plant == "mud" ? Surface.Soil : Surface.Leaf;
         public override Vector3 BubbleAnchor => transform.position + Vector3.up * (layout == "arch" ? 2.0f : layout == "single" ? 1.25f : 1.0f);
         public bool InBand => Moisture >= BandMin && Moisture <= BandMax;
+        /// <summary>The moisture at a full bubble ring: the band sits at a fixed spot inside it, so the
+        /// player can see how much more rain the bed takes before it goes soggy.</summary>
+        public float GaugeMax => BandMax * 1.3f;
+        /// <summary>Time.time of the last drop that landed here.</summary>
+        public float LastRainedAt { get; private set; } = -99f;
+        /// <summary>A happy bed still shows its bubble while rain is landing on it (and a moment after),
+        /// so the player can watch the moisture climb toward the top of the band and stop in time.</summary>
+        public override bool ShowBubble => Required && (!Met || Time.time - LastRainedAt < 1.2f);
 
         protected class Plant
         {
@@ -173,6 +181,7 @@ namespace PocketWeather
         public void ReceiveRain(float amount, Vector3 point)
         {
             Moisture = Mathf.Min(Def.max, Moisture + amount);
+            LastRainedAt = Time.time;
             Plant best = null;
             float bd = 1e9f;
             foreach (var p in plants)

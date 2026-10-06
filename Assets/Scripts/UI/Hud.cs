@@ -57,6 +57,8 @@ namespace PocketWeather
             public float shown, phase, shake;
             public bool wasMet, wasProblem;
             public string iconName;
+            public BedNeed bed;              // beds show their moisture against the "just right" band
+            public RectTransform tickHi;
         }
 
         public static Hud Create(Transform parent)
@@ -149,12 +151,12 @@ namespace PocketWeather
         }
 
         public bool TouchButtonsVisible => touchRoot != null && touchRoot.gameObject.activeInHierarchy;
-        /// <summary>Trailer capture: show the on-screen touch buttons without touching the saved setting.</summary>
-        public static bool ForceTouchButtons;
         /// <summary>A hint caption is on screen (faded in and not hidden behind the pause menu).</summary>
         public bool HintVisible => hintRoot != null && hintRoot.gameObject.activeInHierarchy && hintGroup.alpha > 0.5f;
         public string HintText => hintText != null ? hintText.text : "";
         public bool HandVisible => hand != null && hand.gameObject.activeInHierarchy;
+        /// <summary>Trailer capture: show the on-screen touch buttons without touching the saved setting.</summary>
+        public static bool ForceTouchButtons;
 
         /// <summary>Shows or hides the corner panels (gauge, sun track, tray, pause) but keeps thought
         /// bubbles, hints and toasts, for cinematic trailer shots.</summary>
@@ -213,14 +215,49 @@ namespace PocketWeather
             Ui.Image(b.rt, Ui.SoftShadow, new Color(0.2f, 0.18f, 0.35f, 0.18f), new Vector2(140, 140), new Vector2(0, 86), null, "Shadow");
             b.bg = Ui.Image(b.rt, Ui.Circle, Color.white, new Vector2(108, 108), new Vector2(0, 92), null, "Bg");
             var ringBg = Ui.Image(b.bg.transform, Ui.Ring, new Color(0.85f, 0.88f, 0.95f), new Vector2(108, 108), Vector2.zero, null, "RingBg");
-            b.ring = Ui.Image(b.bg.transform, Ui.Ring, Ui.Sky, new Vector2(108, 108), Vector2.zero, null, "Ring");
-            b.ring.type = Image.Type.Filled;
-            b.ring.fillMethod = Image.FillMethod.Radial360;
-            b.ring.fillOrigin = (int)Image.Origin360.Top;
-            b.ring.fillClockwise = true;
+            b.bed = need as BedNeed;
+            if (b.bed != null)
+            {
+                // the band: a pale green stretch of the track from the bottom to the top of "just right"
+                float lo = b.bed.BandMin / b.bed.GaugeMax, hi = b.bed.BandMax / b.bed.GaugeMax;
+                var band = RadialRing(b.bg.transform, BandColor, "Band");
+                band.fillAmount = hi - lo;
+                band.rectTransform.localRotation = Quaternion.Euler(0, 0, -360f * lo);
+            }
+            b.ring = RadialRing(b.bg.transform, Ui.Sky, "Ring");
+            if (b.bed != null)
+            {
+                b.tickHi = RingTick(b.bg.transform, b.bed.BandMax / b.bed.GaugeMax, 24f, "TickHi");
+            }
             b.icon = Ui.Icon(b.bg.transform, need.Icon, 66, new Vector2(0, 0));
             b.group.alpha = 0;
             bubbles.Add(b);
+        }
+
+        static readonly Color BandColor = Res.Hex("A6DFB4");
+
+        Image RadialRing(Transform parent, Color c, string name)
+        {
+            var r = Ui.Image(parent, Ui.Ring, c, new Vector2(108, 108), Vector2.zero, null, name);
+            r.type = Image.Type.Filled;
+            r.fillMethod = Image.FillMethod.Radial360;
+            r.fillOrigin = (int)Image.Origin360.Top;
+            r.fillClockwise = true;
+            return r;
+        }
+
+        /// <summary>A notch across the outer edge of the bubble's ring at a fraction of the way round
+        /// (clockwise from the top): the "stop here" mark at the top of a bed's band.</summary>
+        RectTransform RingTick(Transform parent, float at, float length, string name)
+        {
+            var holder = Ui.Rect(name, parent, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            holder.localRotation = Quaternion.Euler(0, 0, -360f * at);
+            var notch = Ui.Rect("Notch", holder, new Vector2(0.5f, 0.5f), new Vector2(11, length + 4), new Vector2(0, 53));
+            var edge = Ui.Image(notch, Ui.Rounded, Color.white, new Vector2(11, length + 4), Vector2.zero, null, "Edge");
+            edge.pixelsPerUnitMultiplier = 52f / 5.5f;
+            var mark = Ui.Image(notch, Ui.Rounded, Ui.Ink, new Vector2(6, length), Vector2.zero, null, "Mark");
+            mark.pixelsPerUnitMultiplier = 52f / 3f;
+            return notch;   // scaled about its own centre to throb
         }
 
         public void SetVisible(bool v, float duration = 0.3f)
@@ -412,8 +449,21 @@ namespace PocketWeather
                 bool metNow = b.need.Met;
                 if (metNow && !b.wasMet && running && vis) FlyCheck(b.rt.anchoredPosition + new Vector2(0, 92), b.need);
                 b.wasMet = metNow;
-                b.ring.fillAmount = Mathf.Lerp(b.ring.fillAmount, b.need.Progress, 1 - Mathf.Exp(-10f * dt));
-                b.ring.color = problem ? Ui.Coral : b.need.Progress > 0.999f ? Ui.Mint : Ui.Sky;
+                if (b.bed != null)
+                {
+                    var bed = b.bed;
+                    b.ring.fillAmount = Mathf.Lerp(b.ring.fillAmount, Mathf.Clamp01(bed.Moisture / bed.GaugeMax), 1 - Mathf.Exp(-10f * dt));
+                    b.ring.color = problem ? Ui.Coral : bed.InBand ? Ui.Mint : Ui.Sky;
+                    // close to the top of the band while the rain is still landing: the "stop" notch throbs
+                    bool nearTop = bed.InBand && bed.Moisture > bed.BandMax - 0.25f * (bed.BandMax - bed.BandMin) && Time.time - bed.LastRainedAt < 0.3f;
+                    float throb = nearTop ? 1f + 0.35f * Mathf.Abs(Mathf.Sin(t * 12f)) : 1f;
+                    b.tickHi.localScale = Vector3.one * Mathf.Lerp(b.tickHi.localScale.x, throb, 1 - Mathf.Exp(-20f * dt));
+                }
+                else
+                {
+                    b.ring.fillAmount = Mathf.Lerp(b.ring.fillAmount, b.need.Progress, 1 - Mathf.Exp(-10f * dt));
+                    b.ring.color = problem ? Ui.Coral : b.need.Progress > 0.999f ? Ui.Mint : Ui.Sky;
+                }
             }
 
             // ---- touch buttons

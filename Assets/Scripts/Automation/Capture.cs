@@ -38,6 +38,7 @@ namespace PocketWeather
                 case "shadetest": yield return ShadeTest(); break;
                 case "tour": yield return Tour(); break;
                 case "fixes": yield return Fixes(); break;
+                case "band": yield return Band(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -248,6 +249,33 @@ namespace PocketWeather
             flow.DebugResults();
             yield return new WaitForSecondsRealtime(2.5f);
             yield return Shot("f_results_best");
+        }
+
+        /// <summary>Day 2's beds at each moisture state, to check the band on the bubbles reads.</summary>
+        IEnumerator Band()
+        {
+            GameFlow.I.DebugStart(1, true);
+            yield return new WaitForSeconds(1.5f);
+            C.Teleport(new Vector3(0.5f, 0, 2.8f));
+            yield return new WaitForSeconds(0.8f);
+            yield return Shot("band_0_all_thirsty");
+            BedNeed Bed(string id) => L.FindNeed(id) as BedNeed;
+            var carrots = Bed("carrots"); var cabbages = Bed("cabbages"); var tomatoes = Bed("tomatoes");
+            void Fill(BedNeed b, float to) { if (b != null && b.Moisture < to) b.ReceiveRain(to - b.Moisture, b.transform.position); }
+            Fill(cabbages, (cabbages.BandMin + cabbages.BandMax) / 2f);
+            Fill(tomatoes, tomatoes.BandMax + 6f);
+            Fill(carrots, carrots.BandMin * 0.6f);
+            yield return new WaitForSeconds(0.7f);
+            Log($"band states: carrots {carrots.Moisture:0.0} [{carrots.BandMin}-{carrots.BandMax}], cabbages {cabbages.Moisture:0.0}, tomatoes {tomatoes.Moisture:0.0} soggy={tomatoes.Soggy}");
+            yield return Shot("band_1_thirsty_inband_soggy");
+            // carrots creeping up to the top of the band while it's still raining on them: the notch throbs
+            for (float t = 0; t < 0.6f; t += Time.deltaTime)
+            {
+                Fill(carrots, carrots.BandMax - 1.2f);
+                carrots.ReceiveRain(0.001f, carrots.transform.position);
+                yield return null;
+            }
+            yield return Shot("band_2_near_top");
         }
 
         void Log(string s) => Debug.Log("[PW] " + s);
