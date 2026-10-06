@@ -25,6 +25,10 @@ namespace PocketWeather
             fired = new bool[l.Def.events.Length];
             // a pending spark is part of the level: finishing early brings it forward instead of skipping it
             foreach (var e in l.Def.events) if (e.type == "ignite") l.HoldCompletion++;
+            // the wedding isn't over until the bouquet has been thrown and has landed: if the couple's
+            // rainbow was the last thing missing, the day used to be saved in that same frame, before
+            // the toss, and the finale's bouquet never flew
+            if (l.Def.id == "level12") l.HoldCompletion++;
         }
 
         bool RequiredMet()
@@ -109,8 +113,7 @@ namespace PocketWeather
 
         IEnumerator Bouquet(RainbowWishNeed wish)
         {
-            tossed = true;
-            level.HoldCompletion++;
+            tossed = true;   // completion has been held since Init; released when the bouquet lands
             Sfx.Play("church_bells", wish.transform.position, 0.8f);
             Sfx.Play("cheer", wish.transform.position);
             yield return new WaitForSeconds(1.2f);
@@ -143,6 +146,7 @@ namespace PocketWeather
                 yield return null;
             }
             BouquetFlying = false;
+            Debug.Log($"[PW] bouquet {(caught ? "caught" : "landed")} at hour {level.Hour:0.00}");
             if (caught)
             {
                 b.SetParent(cloud.transform, true);
