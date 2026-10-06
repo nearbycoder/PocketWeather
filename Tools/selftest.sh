@@ -12,6 +12,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="$ROOT/Recordings/selftest"
 rm -rf "$OUT"; mkdir -p "$OUT"
 PLAY="$ROOT/Tools/play.sh"
+# a fresh save and settings for this run, never the real ones in ~/.config/unity3d (play.sh
+# would sandbox these runs anyway; this makes the sandbox per-run)
+export PW_CONFIG="$OUT/config"
+unset PW_REAL_PREFS
 fail=0
 row() { printf '  %-34s %s\n' "$1" "$2"; }
 
