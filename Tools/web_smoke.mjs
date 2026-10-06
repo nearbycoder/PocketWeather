@@ -6,6 +6,8 @@
 //
 // --phone emulates an Android phone held landscape (844x390 CSS px, 2x); --portrait holds it
 // upright (390x844) and checks the page's "turn sideways" card and its "Play anyway" button.
+// --mouse is a desktop without a touchscreen (no touch emulation; the same steps with mouse
+// events), to check the first hint speaks mouse there.
 // --throttle 20 emulates a 20 Mbps connection with 60 ms latency, to time a realistic first visit
 // (a fresh browser profile each run, so nothing is cached). --dir serves another build folder
 // (default Builds/WebGL), e.g. an older release, to compare load times under the same conditions.
@@ -24,6 +26,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 const PORTRAIT = args.includes("--portrait");   // a phone held upright (implies --phone)
 const PHONE = args.includes("--phone") || PORTRAIT;
+const MOUSE = args.includes("--mouse") && !PHONE;   // a desktop with no touchscreen
 const ti = args.indexOf("--throttle"), di = args.indexOf("--dir");
 const MBPS = ti >= 0 ? parseFloat(args[ti + 1]) : 0;
 const WEBDIR = di >= 0 ? args[di + 1] : join(ROOT, "Builds/WebGL");
@@ -71,6 +74,12 @@ async function shot(name) {
   console.log("shot", name);
 }
 async function touch(type, x, y) {
+  if (MOUSE) {
+    const t = { touchStart: "mousePressed", touchMove: "mouseMoved", touchEnd: "mouseReleased" }[type];
+    if (t === "mousePressed") await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+    await send("Input.dispatchMouseEvent", { type: t, x, y, button: t === "mouseMoved" ? "none" : "left", buttons: t === "mouseReleased" ? 0 : 1, clickCount: 1 });
+    return;
+  }
   await send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y, radiusX: 4, radiusY: 4, force: 1, id: 1 }] });
 }
 async function tap(x, y) { await touch("touchStart", x, y); await sleep(90); await touch("touchEnd", x, y); }
@@ -91,7 +100,7 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   await send("Page.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: PHONE ? 2 : 1, mobile: PHONE });
   if (PHONE) await send("Emulation.setUserAgentOverride", { userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0 Mobile Safari/537.36" });
-  await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+  if (!MOUSE) await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
   if (MBPS > 0) {
     await send("Network.enable");
     await send("Network.emulateNetworkConditions", { offline: false, latency: 60, downloadThroughput: MBPS * 125000, uploadThroughput: 2 * 125000 });
@@ -164,11 +173,20 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     remembered = again && /graphics: low \(Auto\)/.test(line);
     console.log(`second visit remembers Low: ${remembered ? "yes" : "NO"} (${line.slice(0, 60)})`);
   }
+  // before any touch in play, the first hint must already speak touch on a phone
+  const firstHint = (log.find((l) => /\[PW\] hint: /.test(l)) || "").replace(/.*\[PW\] hint: /, "").trim();
+  // and the game's guess before any input (logged at boot) matches the device
+  const guess = (log.find((l) => /\[PW\] touch-first device: /.test(l)) || "").replace(/.*device: /, "").trim();
+  const guessOk = !booted || (PHONE ? guess === "yes" : MOUSE ? guess === "no" : true);
+  console.log(`touch-first guess before any input: ${guess || "not logged"}${guessOk ? "" : " (WRONG for this device)"}`);
+  const hintOk = guessOk && (!booted || (PHONE ? firstHint === "Drag to fly" : MOUSE ? firstHint === "Point to fly" : true));
+  const wanted = PHONE ? "touch wording, as it should be on a phone" : MOUSE ? "mouse wording, as it should be without a touchscreen" : "";
+  console.log(`first hint: "${firstHint || "none"}"${wanted ? (hintOk ? ` (${wanted})` : ` (NOT the ${wanted.split(",")[0]})`) : ""}`);
   writeFileSync(join(OUT, "console.txt"), log.join("\n"));
   const ex = log.filter((l) => /exception|error/i.test(l) && !/favicon/i.test(l));
   console.log(`console lines ${log.length}, error/exception lines ${ex.length}`);
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
   cleanup();
-  process.exit(booted && ex.length === 0 && remembered && rotateOk ? 0 : 1);
+  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk ? 0 : 1);
 })().catch((e) => { console.error(e); cleanup(); process.exit(2); });

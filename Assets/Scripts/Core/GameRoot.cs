@@ -46,6 +46,7 @@ namespace PocketWeather
             Day = DayCycle.Create();
             DontDestroyOnLoad(Day.gameObject);
             Debug.Log("[PW] GameRoot booted");
+            _ = Platform.TouchFirst;   // logs the device guess the first hints will use
         }
 
         void Start()

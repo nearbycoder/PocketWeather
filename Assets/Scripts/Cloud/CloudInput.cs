@@ -100,6 +100,10 @@ namespace PocketWeather
             }
             if (!Enabled)
             {
+                // menus and postcards: the pointer moving here isn't Pip being steered by a mouse
+                // (a phone's tap on the page outside the game also moves it), so it mustn't count
+                // as mouse movement when play starts
+                if (Mouse.current != null) lastMousePos = Mouse.current.position.ReadValue();
                 RainHeld = false;
                 rainToggled = rawRainBefore = false;
                 Aiming = false;

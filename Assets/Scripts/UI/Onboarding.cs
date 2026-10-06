@@ -26,8 +26,8 @@ namespace PocketWeather
         }
 
         CloudInput.Device Dev => level.Cloud.Input.LastDevice;
-        // before the first input, guess from the platform (phones and tablets, including their browsers)
-        bool Touch => Dev == CloudInput.Device.Touch || (Dev == CloudInput.Device.None && Application.isMobilePlatform);
+        // before the first input, guess from the device (phones and tablets, including their browsers)
+        bool Touch => Dev == CloudInput.Device.Touch || (Dev == CloudInput.Device.None && Platform.TouchFirst);
         string shownText;   // the move/rain hint on screen, re-worded if the player switches device
         bool Keys => Dev == CloudInput.Device.Keys;
         bool Pad => Dev == CloudInput.Device.Pad;

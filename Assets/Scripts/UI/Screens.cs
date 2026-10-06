@@ -361,7 +361,7 @@ namespace PocketWeather
         public static string ControlsLine(CloudInput.Device d)
         {
             if (d == CloudInput.Device.None || d == CloudInput.Device.Virtual)
-                d = Application.isMobilePlatform ? CloudInput.Device.Touch : CloudInput.Device.Mouse;
+                d = Platform.TouchFirst ? CloudInput.Device.Touch : CloudInput.Device.Mouse;
             bool tap = GameSettings.RainToggle;
             return d switch
             {

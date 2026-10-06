@@ -298,6 +298,7 @@ namespace PocketWeather
         public void ShowHint(string text, string icon = "hand", float seconds = 4f)
         {
             if (!GameSettings.Hints) return;
+            if (hintText.text != text) Debug.Log("[PW] hint: " + text);
             hintText.text = text;
             hintIcon.sprite = Ui.IconSprite(icon);
             float w = Mathf.Clamp(hintText.preferredWidth + 170f, 420f, 1100f);
