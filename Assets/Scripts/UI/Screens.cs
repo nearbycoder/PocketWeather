@@ -393,7 +393,7 @@ namespace PocketWeather
             gfxButton = Ui.Button(gfxRow, GraphicsLabel(), Ui.Sky, new Vector2(230, 66), new Vector2(205, 0), () =>
             {
                 GameSettings.Graphics = (GameSettings.Graphics + 1) % 3;
-                Quality.Apply();
+                if (GameSettings.Graphics == 0) Quality.ResetAuto(); else Quality.Apply();
                 gfxButton.SetLabel(GraphicsLabel());
             }, null, null, 30, "Graphics");
             y -= 78;

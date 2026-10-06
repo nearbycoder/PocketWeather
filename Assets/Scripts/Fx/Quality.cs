@@ -19,6 +19,15 @@ namespace PocketWeather
         public static bool AutoDowngraded { get; private set; }
 
         static Quality instance;
+        const string RememberKey = "pw.gfx.autolow";
+
+        /// <summary>The player picked Auto again in settings: forget the old verdict and judge afresh.</summary>
+        public static void ResetAuto()
+        {
+            AutoDowngraded = false;
+            PlayerPrefs.DeleteKey(RememberKey);
+            Apply();
+        }
         static float baseRenderScale = 1f, baseShadowDistance = 45f;
         static int baseMsaa = 4;
         readonly FrameTiming[] timings = new FrameTiming[1];
@@ -35,6 +44,10 @@ namespace PocketWeather
                 baseMsaa = urp.msaaSampleCount;
                 baseShadowDistance = urp.shadowDistance;
             }
+            // a machine that needed Low last time starts there, rather than stuttering for the first
+            // seconds of every visit while Auto works it out again (phones, browsers)
+            if ((Mode)GameSettings.Graphics == Mode.Auto && PlayerPrefs.GetInt(RememberKey, 0) == 1 && !GameRoot.Automated)
+                AutoDowngraded = true;
             Apply();
             Debug.Log($"[PW] graphics: {(Low ? "low" : "high")} ({(Mode)GameSettings.Graphics}), GPU frame timing {(FrameTimingManager.IsFeatureEnabled() ? "enabled" : "unavailable")}, {SystemInfo.graphicsDeviceName} / {SystemInfo.graphicsDeviceType}");
         }
@@ -82,6 +95,8 @@ namespace PocketWeather
             if (slowTime > 4f)
             {
                 AutoDowngraded = true;
+                PlayerPrefs.SetInt(RememberKey, 1);
+                PlayerPrefs.Save();
                 Debug.Log($"[PW] Auto graphics: {(GpuMs > 0 ? $"GPU {GpuMs:0.0}" : $"frame {frameMs:0.0}")} ms, switching to Low");
                 Apply();
             }

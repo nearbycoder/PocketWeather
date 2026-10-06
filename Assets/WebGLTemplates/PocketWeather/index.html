@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>{{{ PRODUCT_NAME }}}: a tiny cloud helps a miniature world through its day</title>
+    <meta name="description" content="A cosy puzzle game about being the weather. Rain on thirsty gardens, shade hot sheep and gust sailboats home across twelve tilt-shift dioramas. Plays in the browser with mouse, touch, keyboard or gamepad.">
+    <meta name="theme-color" content="#BFD9F2">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{{ PRODUCT_NAME }}}">
+    <meta property="og:description" content="You're Pip, a tiny cloud helping a miniature world through its day. Play it in your browser.">
+    <meta property="og:image" content="TemplateData/og.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" sizes="64x64" href="TemplateData/favicon.png">
+    <link rel="apple-touch-icon" href="TemplateData/icon-180.png">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="pw-loader">
+      <div id="pw-card">
+        <img id="pw-logo" src="TemplateData/logo.png" alt="{{{ PRODUCT_NAME }}}">
+        <div id="pw-bar"><div id="pw-fill"></div></div>
+        <div id="pw-status">Floating over to Pocketvale…</div>
+        <div id="pw-tip">Mouse, touch, keyboard or gamepad · best with sound</div>
+      </div>
+    </div>
+    <div id="pw-error" hidden>
+      <div id="pw-error-card">
+        <img src="TemplateData/pip.png" alt="">
+        <h1>Pip can't float here</h1>
+        <p id="pw-error-text"></p>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var canvas = document.getElementById("unity-canvas");
+        var loader = document.getElementById("pw-loader");
+        var fill = document.getElementById("pw-fill");
+        var status = document.getElementById("pw-status");
+        function fail(msg) {
+          loader.hidden = true;
+          document.getElementById("pw-error-text").textContent = msg;
+          document.getElementById("pw-error").hidden = false;
+        }
+        var probe = document.createElement("canvas");
+        if (!probe.getContext("webgl2")) {
+          fail("This browser doesn't have WebGL 2 switched on, which the game needs. Try a current Chrome, Edge, Firefox or Safari, and check that hardware acceleration is enabled.");
+          return;
+        }
+        var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+        // Phones have 2-3x screens; rendering every physical pixel with depth of field costs far more
+        // than it shows, so cap the backing resolution (the UI is scaled, so it stays crisp enough).
+        var dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2);
+        var config = {
+          arguments: [],
+#if PROGRESSIVE_ASSET_LOADING
+          primaryDataUrls: {{{ JSON.stringify(PRIMARY_DATA_FILES) }}},
+          secondaryDataUrls: {{{ JSON.stringify(SECONDARY_DATA_FILES) }}},
+#else
+          dataUrl: "Build/{{{ DATA_FILENAME }}}",
+#endif
+          frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_WASM
+          codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+          symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+          productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+          productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+          devicePixelRatio: dpr,
+          showBanner: function (msg, type) { if (type === "error") console.error(msg); else console.warn(msg); },
+        };
+        var script = document.createElement("script");
+        script.src = "Build/{{{ LOADER_FILENAME }}}";
+        script.onload = function () {
+          createUnityInstance(canvas, config, function (p) {
+            fill.style.width = Math.round(100 * p) + "%";
+            status.textContent = p < 0.9 ? "Floating over to Pocketvale… " + Math.round(100 * p) + "%" : "Unpacking the dioramas…";
+          }).then(function (instance) {
+            window.pwInstance = instance;
+            loader.classList.add("done");
+            setTimeout(function () { loader.hidden = true; }, 600);
+            canvas.focus();
+          }).catch(function (message) {
+            fail("Something went wrong while loading: " + message);
+          });
+        };
+        script.onerror = function () { fail("The game files couldn't be downloaded. Check your connection and reload the page."); };
+        document.body.appendChild(script);
+        // keyboard players: clicking or tapping the game gives it the keys
+        canvas.addEventListener("pointerdown", function () { canvas.focus(); });
+      })();
+    </script>
+  </body>
+</html>

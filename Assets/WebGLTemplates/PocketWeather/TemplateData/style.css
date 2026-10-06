@@ -1,0 +1,41 @@
+/* Pocket Weather web page: the game fills the window; a cloud-paper loading card sits over the sky
+   until it's ready. Colours are the game's own (Ui.cs): paper FFF8EC, ink 3B3A5A, sky 5FB8E6. */
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+  background: linear-gradient(180deg, #A9CCEF 0%, #CFE1F4 55%, #EADCEB 100%);
+  overscroll-behavior: none; touch-action: none;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif;
+}
+#unity-canvas {
+  position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
+  display: block; outline: none; background: transparent;
+}
+#pw-loader, #pw-error {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #A9CCEF 0%, #CFE1F4 55%, #EADCEB 100%);
+  transition: opacity 0.6s ease;
+}
+#pw-loader.done { opacity: 0; pointer-events: none; }
+#pw-loader[hidden], #pw-error[hidden] { display: none; }
+#pw-card { display: flex; flex-direction: column; align-items: center; width: min(560px, 86vw); }
+#pw-logo { width: 100%; margin: 0 0 22px; animation: pw-bob 2.6s ease-in-out infinite; filter: drop-shadow(0 6px 8px rgba(59, 58, 90, 0.15)); }
+#pw-bar {
+  width: 82%; height: 22px; border-radius: 11px; background: #FFF8EC; padding: 5px; box-sizing: content-box;
+  box-shadow: 0 6px 14px rgba(59, 58, 90, 0.16);
+}
+#pw-fill { width: 0%; height: 100%; border-radius: 11px; background: #5FB8E6; transition: width 0.25s ease; }
+#pw-status { margin-top: 14px; color: #3B3A5A; font-weight: 700; font-size: 18px; }
+#pw-tip { margin-top: 6px; color: #6E6A8E; font-size: 15px; }
+#pw-error-card {
+  max-width: min(520px, 86vw); background: #FFF8EC; color: #3B3A5A; border-radius: 28px;
+  padding: 26px 30px; text-align: center; box-shadow: 0 10px 24px rgba(59, 58, 90, 0.2);
+}
+#pw-error-card img { width: 96px; }
+#pw-error-card h1 { font-size: 26px; margin: 8px 0; }
+#pw-error-card p { font-size: 17px; line-height: 1.45; margin: 0; }
+@keyframes pw-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@media (max-height: 420px) {   /* phones held landscape */
+  #pw-logo { width: 70%; margin-bottom: 10px; }
+  #pw-status { font-size: 16px; }
+}
