@@ -18,6 +18,31 @@ namespace PocketWeather.EditorTools
         }
 
         /// <summary>
+        /// macOS player, universal (Intel and Apple Silicon), Mono. Built from Linux it is unsigned
+        /// and not notarised, so Gatekeeper warns on first launch, and it has never been run on a Mac.
+        /// </summary>
+        [MenuItem("Pocket Weather/Build macOS Player (unsigned)")]
+        public static void BuildMac()
+        {
+            ProjectSetup.EnsureScene();
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, BundleId);
+            EditorUserBuildSettings.SetPlatformSettings("OSXUniversal", "Architecture", "x64ARM64");
+            Build(BuildTarget.StandaloneOSX, "Builds/macOS/PocketWeather.app");
+        }
+
+        /// <summary>Windows player (x64). Needs Unity's Windows Build Support module, which isn't
+        /// installed on the machine this was written on, so this entry point has never run.</summary>
+        [MenuItem("Pocket Weather/Build Windows Player")]
+        public static void BuildWindows()
+        {
+            ProjectSetup.EnsureScene();
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, BundleId);
+            Build(BuildTarget.StandaloneWindows64, "Builds/Windows/PocketWeather.exe");
+        }
+
+        const string BundleId = "com.nearbycoder.pocketweather";
+
+        /// <summary>
         /// Web build, ready to drop on any static host (GitHub Pages, itch.io, a plain web server):
         /// the game's own full-window page and loading card (Assets/WebGLTemplates/PocketWeather),
         /// wasm optimised for download size, and Brotli with the decompression fallback, so no
