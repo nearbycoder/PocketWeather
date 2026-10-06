@@ -99,7 +99,10 @@ namespace PocketWeather
             bool shotMid = false;
             // a delight gets a second try if the first missed (rainbows depend on where the mist
             // happens to build up, so one attempt finds the Day 6 delight only about half the time)
-            int delightTries = !delights || string.IsNullOrEmpty(lvl.Def.delight.type) ? 2 : 0;
+            // (only for delights TryDelight chases: the wedding's "catch" happens in Step when the
+            // bouquet flies, and a second pass there would only send Pip off to refill at a bad moment)
+            string dType = lvl.Def.delight?.type;
+            int delightTries = !delights || string.IsNullOrEmpty(dType) ? 2 : dType == "catch" ? 1 : 0;
             float nextDelightAt = 2f;
             while (GameFlow.I.Current == GameFlow.State.Playing)
             {
