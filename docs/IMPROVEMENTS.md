@@ -584,3 +584,101 @@ KeyTest checks both. A fresh browser profile in `web_smoke` lands on the postcar
   checked on a real phone.
 - The bot still catches the wedding bouquet only some of the time (11/12 delights in the final
   campaign). That's its catching, not the game, as round 1 found.
+
+## Round 3 scope
+
+Planned 2026-10-06 on `improvements-3`, from `main` at `ffabb6a` (round 2 merged, `main` equal to
+`origin/main`). Round 2 left the phone player with a small island in portrait and a desktop hint
+before their first touch, and the web player with a 28.8 MB wait. While checking how the tools
+keep away from real saves, I also found that the self-tests don't: the Linux player keeps
+progress and settings in `~/.config/unity3d/Pocketvale Studio/Pocket Weather/prefs`, and
+`selftest.sh`'s AutoPilot run passes `-pwFreshSave`, which deletes the save there. Anyone who
+plays the game and runs the self-test on the same machine loses their stamps.
+
+### R3-1. Tools never touch the real save
+
+**What:** `Tools/play.sh` points the player's config folder (`XDG_CONFIG_HOME`, which the Unity
+Linux player honours; checked) at the gitignored `Recordings/config/` whenever it's started with
+an automation flag (`-pwAutopilot`, `-pwKeyTest`, `-pwCapture` and the rest). `selftest.sh` uses
+a fresh one per run. `PW_REAL_PREFS=1` opts out. A plain `Tools/play.sh` still plays with the
+real save.
+
+**Acceptance:** the real prefs file's checksum is unchanged after a full `selftest.sh`, and the
+sandbox holds the test's save afterwards.
+
+**Verify:** `sha256sum` before and after the end-of-round self-test.
+
+### R3-2. Portrait: a bigger island that follows Pip
+
+**Why:** held upright, the island's width sets the camera, so a 390x844 phone shows the island in
+a strip about 28% of the screen tall, with empty sky above and below it.
+
+**What:** in portrait the camera frames part of the island's width (about 57% on a 20:9 phone,
+70% at 720x1280, all of it again from a 4:5 window upward) and pans side to side to follow Pip,
+with a dead zone in the middle, clamped to the island's edges. On the title, map and postcard it
+stays centred. Touch still puts Pip under the finger, so holding a finger near the screen's edge
+scrolls the view that way. Thought bubbles of needs that are off screen are pinned to the screen
+edge, with their tail pointing toward the need, so nothing waits out of sight. Landscape framing
+doesn't change.
+
+**Acceptance:**
+- At 390x844 the island's on-screen height is at least 1.5x what it is today (the UI audit
+  measures and logs it, and fails below the target).
+- The UI audit sends Pip to each end of the island at both portrait sizes and fails if Pip leaves
+  the screen, or if a pinned bubble sits off screen.
+- At 1600x900 the camera distance is identical to before (logged), and the UI audit still passes
+  at all five sizes.
+- The expert AutoPilot campaign still passes in a portrait window (the bot is world-space, so this
+  checks nothing else broke).
+
+**Verify:** UI audit at five sizes, before/after portrait screenshots of Days 1, 4, 7 and 12, and
+a portrait AutoPilot run. Whether edge-scrolling under a finger feels good needs a real phone.
+
+### R3-3. Phones get touch wording from the first hint
+
+**Why:** before the first touch, the game guesses the device from `Application.isMobilePlatform`,
+which the WebGL player doesn't set in Chrome's phone emulation, and which can't know about an iPad
+(it reports itself as a Mac). So the first hint can read "Point to fly" on a phone.
+
+**What:** a small JavaScript plugin asks the browser whether its main pointer is coarse (a finger)
+and the game uses that as its guess before any input, for the hints and the pause menu's controls
+line. Native mobile platforms keep `isMobilePlatform`.
+
+**Acceptance:** `web_smoke --phone` reads the first hint from the log and fails unless it's the
+touch wording ("Drag to fly"). The Linux build's keyboard test, which checks hint wording, still
+passes.
+
+**Verify:** web smoke on desktop and phone, and the self-tests.
+
+### R3-4. The web download no longer waits for the music
+
+**Why:** the music is about a quarter of the web download (Unity re-encodes it to 160 kbps AAC),
+and all of it arrives before the title screen, though the player hears one track at a time.
+
+**What:** the music tracks move out of `Resources` into one asset bundle per track, built for the
+target platform by `BuildScript` into `StreamingAssets`. The Linux and macOS players load a track
+from disk the moment it's needed, so nothing changes there. The web player starts with the
+title's track and fetches the rest in the background in campaign order. A track that hasn't
+arrived yet fades in when it does. Stings and sound effects stay in the main download. The
+bundles are plain files, so the "any static host" promise in `HOSTING.md` still holds.
+
+**Acceptance:**
+- The web build's up-front download is at least 5 MB smaller than round 2's 28.8 MB.
+- Boot at an emulated 8 Mbps is at least 15% faster than round 2's build measured alongside it.
+- `web_smoke` passes on desktop and phone with 0 console errors and logs the title and Day 1
+  tracks starting.
+- On Linux, a capture tour logs each day's track starting with the right length, and the
+  self-test passes.
+
+**Verify:** throttled web smoke runs alternating with round 2's build, `package_web.sh` sizes, and
+the Linux self-test and tour logs.
+
+**Risk:** if bundles fight back (loop seams, a track that doesn't arrive), this is reverted and
+reported rather than half-landed.
+
+### Not in this round
+
+- Encore tuning, audio by ear, and real phones and controllers still need people.
+- Windows Build Support, signing, hosting, licences, releases and the trailer are the owner's.
+- Full progressive loading (models and textures after boot) would need everything moved out of
+  `Resources`; R3-4 does it for the music only.
