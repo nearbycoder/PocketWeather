@@ -28,12 +28,14 @@ namespace PocketWeather
         public static Font Heading => heading ??= Resources.Load<Font>("Fonts/Fredoka-SemiBold");
         public static Font Body => body ??= Resources.Load<Font>("Fonts/Nunito-Bold");
 
-        static Sprite rounded, circle, ring, softShadow, ringThin;
+        static Sprite rounded, circle, ring, softShadow, ringThin, arrow;
         public static Sprite Rounded => rounded ??= MakeRounded(128, 52, false);
         public static Sprite SoftShadow => softShadow ??= MakeRounded(128, 52, true);
         public static Sprite Circle => circle ??= MakeCircle(128, 0f);
         public static Sprite Ring => ring ??= MakeCircle(128, 0.16f);
         public static Sprite RingThin => ringThin ??= MakeCircle(128, 0.07f);
+        /// <summary>A soft-cornered triangle pointing right.</summary>
+        public static Sprite Arrow => arrow ??= MakeArrow(64);
 
         static readonly Dictionary<string, Sprite> icons = new();
 
@@ -84,6 +86,31 @@ namespace PocketWeather
                 float a = Mathf.Clamp01(half - 1 - d + 0.5f);
                 if (ringWidth > 0) a *= Mathf.Clamp01(d - (half - 1 - half * ringWidth * 2f) + 0.5f);
                 px[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255));
+            }
+            tex.SetPixels32(px);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100);
+        }
+
+        static Sprite MakeArrow(int size)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear };
+            var px = new Color32[size * size];
+            // an equilateral-ish triangle pointing +x, its corners rounded by r (signed distance)
+            Vector2 a = new(size * 0.84f, size * 0.5f), b = new(size * 0.22f, size * 0.86f), c = new(size * 0.22f, size * 0.14f);
+            float r = size * 0.07f;
+            float Edge(Vector2 p, Vector2 p0, Vector2 p1)
+            {
+                var e = p1 - p0; var n = new Vector2(e.y, -e.x).normalized;
+                return Vector2.Dot(p - p0, n);
+            }
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                var p = new Vector2(x + 0.5f, y + 0.5f);
+                float d = Mathf.Max(Edge(p, a, b), Mathf.Max(Edge(p, b, c), Edge(p, c, a))) + r;
+                float al = Mathf.Clamp01(0.5f - d);
+                px[y * size + x] = new Color32(255, 255, 255, (byte)(al * 255));
             }
             tex.SetPixels32(px);
             tex.Apply();

@@ -200,6 +200,7 @@ namespace PocketWeather
             Hud.SetVisible(false);
             root.Rig.Zoom = 1.18f;
             root.Rig.FocusOffset = new Vector3(0, 0, 3.0f);
+            root.Rig.FollowPip = false;
             AudioHub.I?.PlayMusic("title");
             AudioHub.I?.PlayAmbience(string.IsNullOrEmpty(Level.Def.ambience) ? "meadow" : Level.Def.ambience);
             title.Open();
@@ -214,6 +215,7 @@ namespace PocketWeather
             Hud.SetVisible(false);
             root.Rig.Zoom = 1.08f;
             root.Rig.FocusOffset = Vector3.zero;
+            root.Rig.FollowPip = false;
             AudioHub.I?.PlayMusic("title");
             map.Open();
         }
@@ -243,6 +245,7 @@ namespace PocketWeather
             Level.Cloud.Input.Enabled = false;
             root.Rig.Zoom = 1.04f;
             root.Rig.FocusOffset = Vector3.zero;
+            root.Rig.FollowPip = false;
             AudioHub.I?.PlayMusic(string.IsNullOrEmpty(def.music) ? "morning" : def.music);
             AudioHub.I?.PlayAmbience(string.IsNullOrEmpty(def.ambience) ? "meadow" : def.ambience);
             Hud.Bind(Level);
@@ -281,6 +284,7 @@ namespace PocketWeather
             Level.Running = true;
             Level.Cloud.Input.Enabled = true;
             root.Rig.Zoom = 1f;
+            root.Rig.FollowPip = true;   // portrait: the view slides with Pip
             Hud.Bind(Level);
             Hud.SetVisible(true);
             SaveData.RecordPlay(Level.Def.id);
@@ -417,6 +421,7 @@ namespace PocketWeather
                     Level.gameObject.AddComponent<EndingCelebration>().Init(Level);
                     root.Rig.Zoom = 1.16f;
                     root.Rig.FocusOffset = new Vector3(0, 0, 2.4f);   // island lower, under the card
+                    root.Rig.FollowPip = false;
                     AudioHub.I?.PlayMusic("wedding");
                     ending.Open();
                 });

@@ -40,6 +40,7 @@ namespace PocketWeather
                 case "fixes": yield return Fixes(); break;
                 case "band": yield return Band(); break;
                 case "encore": yield return EncoreShots(); break;
+                case "framing": yield return Framing(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -302,6 +303,30 @@ namespace PocketWeather
             flow.DebugEncoreResults();
             yield return new WaitForSecondsRealtime(2.2f);
             yield return Shot("e5_encore_results");
+        }
+
+        /// <summary>Portrait framing: a few days at the start of play, then with Pip at each end
+        /// of the island (the view follows; bubbles of needs out of frame wait at the edge).</summary>
+        IEnumerator Framing()
+        {
+            var flow = GameFlow.I;
+            string only = GameRoot.Arg("-pwOnly", "1,4,7,12");
+            foreach (var d in only.Split(','))
+            {
+                int i = int.Parse(d) - 1;
+                flow.DebugStart(i, true);
+                yield return new WaitForSeconds(1.6f);
+                yield return Shot($"fr_L{i + 1:00}_start");
+                float hw = L.Def.island.w / 2f - 0.8f;
+                foreach (float side in new[] { -1f, 1f })
+                {
+                    C.Teleport(new Vector3(side * hw, 0, 0));
+                    yield return new WaitForSeconds(2.2f);
+                    yield return Shot($"fr_L{i + 1:00}_{(side < 0 ? "left" : "right")}");
+                }
+                var rig = GameRoot.Instance.Rig;
+                Log($"framing day {i + 1}: distance {rig.Distance:0.00}, whole-width {rig.LegacyDistance:0.00}, pan range ±{rig.PanMax:0.0}");
+            }
         }
 
         void Log(string s) => Debug.Log("[PW] " + s);

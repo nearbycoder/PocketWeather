@@ -59,6 +59,9 @@ namespace PocketWeather
             public string iconName;
             public BedNeed bed;              // beds show their moisture against the "just right" band
             public RectTransform tickHi;
+            public GameObject tail1, tail2;
+            public RectTransform arrow;      // shown while the need is off screen (portrait) and the bubble waits at the edge
+            public bool pinned;
         }
 
         public static Hud Create(Transform parent)
@@ -214,8 +217,10 @@ namespace PocketWeather
             b.rt = Ui.Rect("Bubble_" + need.Id, bubbleLayer, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f));
             b.group = Ui.Group(b.rt.gameObject);
             b.group.blocksRaycasts = false;
-            Ui.Image(b.rt, Ui.Circle, Color.white, new Vector2(18, 18), new Vector2(-6, 10), null, "Tail2");
-            Ui.Image(b.rt, Ui.Circle, Color.white, new Vector2(28, 28), new Vector2(6, 30), null, "Tail1");
+            b.tail2 = Ui.Image(b.rt, Ui.Circle, Color.white, new Vector2(18, 18), new Vector2(-6, 10), null, "Tail2").gameObject;
+            b.tail1 = Ui.Image(b.rt, Ui.Circle, Color.white, new Vector2(28, 28), new Vector2(6, 30), null, "Tail1").gameObject;
+            b.arrow = Ui.Image(b.rt, Ui.Arrow, new Color(Ui.Ink.r, Ui.Ink.g, Ui.Ink.b, 0.8f), new Vector2(56, 56), new Vector2(76, 92), null, "EdgeArrow").rectTransform;
+            b.arrow.gameObject.SetActive(false);
             Ui.Image(b.rt, Ui.SoftShadow, new Color(0.2f, 0.18f, 0.35f, 0.18f), new Vector2(140, 140), new Vector2(0, 86), null, "Shadow");
             b.bg = Ui.Image(b.rt, Ui.Circle, Color.white, new Vector2(108, 108), new Vector2(0, 92), null, "Bg");
             var ringBg = Ui.Image(b.bg.transform, Ui.Ring, new Color(0.85f, 0.88f, 0.95f), new Vector2(108, 108), Vector2.zero, null, "RingBg");
@@ -389,6 +394,23 @@ namespace PocketWeather
             return lp;
         }
 
+        /// <summary>Bubbles on screen right now (screen-pixel rects), and whether each is pinned to
+        /// the edge for a need that's out of frame. For the UI audit.</summary>
+        public List<(string id, Rect rect, bool pinned)> VisibleBubbles()
+        {
+            var list = new List<(string, Rect, bool)>();
+            var c = new Vector3[4];
+            foreach (var b in bubbles)
+            {
+                if (b.need == null || b.group.alpha < 0.5f) continue;
+                ((RectTransform)b.bg.transform).GetWorldCorners(c);
+                var r = Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
+                if (b.pinned) { b.arrow.GetWorldCorners(c); r = Rect.MinMaxRect(Mathf.Min(r.xMin, c[0].x), r.yMin, Mathf.Max(r.xMax, c[2].x), r.yMax); }
+                list.Add((b.need.Id, r, b.pinned));
+            }
+            return list;
+        }
+
         /// <summary>The top bar's pieces, for the UI audit's overlap check.</summary>
         public RectTransform[] TopBar => new[] { gauge, sunTrack, tray, (RectTransform)PauseButton.transform };
 
@@ -466,12 +488,32 @@ namespace PocketWeather
 
             // ---- bubbles
             bool running = level != null && level.Running;
+            // portrait: the camera frames part of the island, so a need off to the side keeps its
+            // bubble at the screen's edge, with an arrow pointing the way
+            var rig = GameRoot.Instance != null ? GameRoot.Instance.Rig : null;
+            bool canPin = rig != null && rig.PanMax > 0.01f;
+            float halfW = bubbleLayer.rect.width * 0.5f;
             foreach (var b in bubbles)
             {
                 if (b.need == null) continue;
                 bool show = running && b.need.ShowBubble;
                 b.shown = Mathf.MoveTowards(b.shown, show ? 1 : 0, dt * 4f);
                 var lp = WorldToCanvas(b.need.BubbleAnchor, out bool vis);
+                bool pinned = canPin && Mathf.Abs(lp.x) > halfW - 30f;
+                if (canPin) lp.x = Mathf.Clamp(lp.x, -(halfW - 116f), halfW - 116f);   // room for the arrow beside it
+                if (pinned != b.pinned)
+                {
+                    b.pinned = pinned;
+                    b.tail1.SetActive(!pinned);
+                    b.tail2.SetActive(!pinned);
+                    b.arrow.gameObject.SetActive(pinned);
+                }
+                if (pinned)
+                {
+                    float side = Mathf.Sign(lp.x);
+                    b.arrow.anchoredPosition = new Vector2(side * (76f + Mathf.Abs(Mathf.Sin(t * 4f)) * 6f), 92f);
+                    b.arrow.localRotation = Quaternion.Euler(0, 0, side > 0 ? 0f : 180f);
+                }
                 float bob = Mathf.Sin(t * 2.2f + b.phase) * 5f;
                 b.shake = Mathf.MoveTowards(b.shake, 0, dt * 2f);
                 b.rt.anchoredPosition = lp + new Vector2(Mathf.Sin(t * 40f) * 6f * b.shake, bob);

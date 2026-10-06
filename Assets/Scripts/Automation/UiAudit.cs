@@ -127,6 +127,57 @@ namespace PocketWeather
             GameFlow.I.DebugCloseMenus();
         }
 
+        /// <summary>Framing: landscape keeps the old whole-island framing exactly; portrait frames
+        /// a bigger island than that (at least 1.5x closer on a 20:9 phone). Pip stays in frame at
+        /// both ends of the island, and every bubble on screen, pinned to the edge or not, is
+        /// fully inside it.</summary>
+        IEnumerator CheckFraming(int day)
+        {
+            var f = GameFlow.I;
+            var rig = GameRoot.Instance.Rig;
+            f.DebugStart(day, true);
+            yield return Settle(1.6f);
+            var problems = new List<string>();
+            var cam = rig.Cam;
+            var def = Level.Current.Def;
+            float aspect = cam.aspect, ratio = rig.LegacyDistance / rig.Distance;
+            float hd = def.island.d / 2f;
+            float yLo = cam.WorldToScreenPoint(new Vector3(rig.Pan, -1.3f, -hd)).y, yHi = cam.WorldToScreenPoint(new Vector3(rig.Pan, 0.3f, hd)).y;
+            float tall = Mathf.Abs(yHi - yLo) / Screen.height;
+            if (aspect >= 1f)
+            {
+                if (Mathf.Abs(ratio - 1f) > 1e-4f) problems.Add($"landscape framing changed: distance {rig.Distance:0.000}, was {rig.LegacyDistance:0.000}");
+            }
+            else
+            {
+                float want = aspect < 0.5f ? 1.5f : 1.2f;
+                if (ratio < want) problems.Add($"portrait island only {ratio:0.00}x closer than whole-width framing, want {want:0.0}x");
+            }
+            string ends = "";
+            foreach (float side in new[] { -1f, 1f })
+            {
+                var c = Cloud.Instance;
+                c.Teleport(new Vector3(side * (def.island.w / 2f - 0.8f), 0, 0));
+                yield return Settle(2.5f);
+                var sp = cam.WorldToScreenPoint(c.transform.position);
+                string end = side < 0 ? "left" : "right";
+                if (sp.x < 0 || sp.x > Screen.width || sp.y < 0 || sp.y > Screen.height) problems.Add($"Pip off screen at the {end} end ({sp.x:0},{sp.y:0})");
+                int shown = 0, pinned = 0;
+                foreach (var (id, r, pin) in f.Hud.VisibleBubbles())
+                {
+                    shown++;
+                    if (pin) pinned++;
+                    if (r.xMin < -1 || r.xMax > Screen.width + 1 || r.yMin < -1 || r.yMax > Screen.height + 1) problems.Add($"bubble {id} off screen at the {end} end {r}");
+                }
+                ends += $", {end} end: pan {rig.Pan:0.0}/{rig.PanMax:0.0}, {shown} bubbles ({pinned} pinned)";
+            }
+            bool ok = problems.Count == 0;
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} framing, day {day + 1}: distance {rig.Distance:0.00} (whole-width {rig.LegacyDistance:0.00}, {ratio:0.00}x closer), " +
+                      $"frames {rig.ViewHalfWidth * 2f / def.island.w * 100f:0}% of the width, island {tall * 100f:0}% of the screen's height{ends} at {Screen.width}x{Screen.height}" +
+                      (ok ? "" : "\n    " + string.Join("\n    ", problems)));
+            if (ok) passes++; else fails++;
+        }
+
         IEnumerator Start()
         {
             var f = GameFlow.I;
@@ -152,6 +203,7 @@ namespace PocketWeather
             f.DebugSunset(); yield return Settle(3.2f); Audit("sunset");
             f.DebugEnding(); yield return Settle(4f); Audit("ending");
             f.DebugStart(11, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 12 (7 needs)");
+            foreach (int d in new[] { 0, 3, 11 }) yield return CheckFraming(d);
             yield return WantBadges();
             Debug.Log($"[UiAudit] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);
