@@ -97,14 +97,18 @@ namespace PocketWeather
             Time.timeScale = speed;
             float startReal = Time.realtimeSinceStartup;
             bool shotMid = false;
-            bool delightTried = !delights || string.IsNullOrEmpty(lvl.Def.delight.type);
+            // a delight gets a second try if the first missed (rainbows depend on where the mist
+            // happens to build up, so one attempt finds the Day 6 delight only about half the time)
+            int delightTries = !delights || string.IsNullOrEmpty(lvl.Def.delight.type) ? 2 : 0;
+            float nextDelightAt = 2f;
             while (GameFlow.I.Current == GameFlow.State.Playing)
             {
-                if (!delightTried && lvl.Elapsed > 2f)
+                if (delightTries < 2 && !GameFlow.I.DelightFoundThisRun && lvl.Elapsed > nextDelightAt)
                 {
-                    delightTried = true;
+                    delightTries++;
                     Recorder.Mark("delight " + lvl.Def.id);
                     yield return TryDelight();
+                    nextDelightAt = lvl.Elapsed + 7f;   // past the rainbow cooldown
                     continue;
                 }
                 yield return Step();
