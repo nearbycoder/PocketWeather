@@ -151,7 +151,7 @@ LEVELS.append(level(
 # ============================================================================ 4. Becalmed
 LEVELS.append(level(
     "level04", "Becalmed", "Not a breath of wind in the harbour, and Tom's boat is stuck out at sea.",
-    "boat", "morning", "sea", 140, 7.0, 19.5, 13.0, 50, (-3.0, 0.5),
+    "boat", "seaside", "sea", 140, 7.0, 19.5, 13.0, 50, (-3.0, 0.5),
     isl(14, 9, grass="8CCB5E", bumps=[{"x": -4.0, "z": 3.0, "r": 2.6, "h": 0.5}, {"x": 3.5, "z": 3.4, "r": 2.2, "h": 0.4}],
         sea={"side": "south", "width": 3.7, "level": -0.12, "depth": 0.75, "beach": 1.4},
         paths=[{"pts": [[-6.8, 1.0], [-2.0, 1.0], [2.5, 0.9], [3.6, -0.6]], "w": 0.6, "color": "D9C49A"}]),
@@ -273,7 +273,7 @@ LEVELS.append(level(
 # ============================================================================ 10. Regatta
 LEVELS.append(level(
     "level10", "Regatta", "Race day at the beach! Blow the boats to their buoys, but mind the sandcastle.",
-    "castle", "afternoon", "sea", 170, 9.0, 19.5, 15.0, 60, (0.0, -0.5),
+    "castle", "seaside", "sea", 170, 9.0, 19.5, 15.0, 60, (0.0, -0.5),
     isl(14, 9, grass="8CCB5E", bumps=[{"x": -3.6, "z": 3.4, "r": 2.6, "h": 0.4}],
         sea={"side": "south", "width": 4.2, "level": -0.12, "depth": 0.8, "beach": 2.2}),
     [P("beach_umbrella", 2.1, 0.5, 0, 1.3), P("beach_umbrella_b", 4.4, 1.0, 0, 1.2), P("towel", 2.5, 0.0, 10, 1.3),

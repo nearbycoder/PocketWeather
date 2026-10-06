@@ -266,7 +266,37 @@ def wedding():
     return s
 
 
-TRACKS = [morning, afternoon, evening, title, night, wedding]
+def seaside():
+    """The sea days (Becalmed, the Regatta): a lilting off-beat strum in A, like a ukulele on a
+    jetty, with a generated marimba tune and a glockenspiel answer in the second half."""
+    seed(77)
+    A, E, Fsm, D = ("A", [57, 61, 64], 45), ("E", [56, 59, 64], 40), ("F#m", [54, 57, 61], 42), ("D", [54, 57, 62], 38)
+    chords = [A, E, Fsm, D, A, E, D, E]
+    s = Song("seaside", 88, 4, chords)
+    for start, (name, notes, root) in s.each_chord():
+        for bar in range(2):
+            b = start + bar * 4
+            for off in (0.5, 1.5, 2.5, 3.5):          # off-beat strums
+                for i, m in enumerate(notes):
+                    s.add(pluck(midi_hz(m + 12), vel(0.5, 0.08), 0.9, bright=0.5), b + off + i * 0.01, pan=0.25, gain=0.38, rev=0.25, jitter=0.004)
+            s.add(bass(midi_hz(root), vel(0.75), 1.1), b, gain=0.7, rev=0.05)
+            s.add(bass(midi_hz(root + 7), vel(0.6), 0.6), b + 2.5, gain=0.55, rev=0.05)
+        s.add(pad([midi_hz(n) for n in notes], s.beats_per_chord * s.spb, 0.5, attack=1.5, release=2.0, cutoff=1000), start, gain=0.5, rev=0.5)
+    for b8 in range(s.total_beats * 2):
+        b = b8 * 0.5
+        s.add(shaker(0.8 if b8 % 2 else 0.4), b, pan=-0.3, gain=0.45, rev=0.1, jitter=0.01)
+        if b8 % 8 in (0, 5):
+            s.add(kick(0.5), b, gain=0.55, rev=0.02, jitter=0.0)
+        if b8 % 8 == 4:
+            s.add(brush(0.6), b, pan=0.1, gain=0.5, rev=0.15)
+    A_MAJOR = [57, 59, 61, 62, 64, 66, 68]
+    melody(s, phrase_melody(s, 0, chords, A_MAJOR, 69, 83, 7701), marimba, gain=0.6, pan=-0.1, rev=0.3)
+    answer = [(b, d, m) for (b, d, m) in phrase_melody(s, 0, chords, A_MAJOR, 81, 93, 7702) if b >= 32 and d >= 1]
+    melody(s, answer, lambda f, v, dur: glock(f, v, dur=dur, bright=0.6), gain=0.35, pan=0.3, rev=0.4)
+    return s
+
+
+TRACKS = [morning, afternoon, evening, title, night, wedding, seaside]
 
 
 # ----------------------------------------------------------------------------- stingers

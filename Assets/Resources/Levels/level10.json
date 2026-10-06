@@ -3,7 +3,7 @@
  "title": "Regatta",
  "story": "Race day at the beach! Blow the boats to their buoys, but mind the sandcastle.",
  "icon": "castle",
- "music": "afternoon",
+ "music": "seaside",
  "ambience": "sea",
  "dayLength": 170,
  "startHour": 9.0,

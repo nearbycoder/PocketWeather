@@ -154,8 +154,32 @@ def main():
         for w in warns:
             print("   note: ", w)
         bad += len(errs)
+    bad += check_music()
     print("all levels pass static checks" if bad == 0 else f"{bad} errors")
     sys.exit(1 if bad else 0)
+
+
+MAX_DAYS_PER_TRACK = 3   # a 40-80 s loop under more than ~3 days of a 30-minute summer gets old
+
+
+def check_music():
+    """Every level's track exists, and no track carries more than three days."""
+    music = os.path.join(ROOT, "Assets", "Resources", "Audio", "Music")
+    uses = {}
+    bad = 0
+    for path in sorted(glob.glob(os.path.join(LEVELS, "level*.json"))):
+        lv = json.load(open(path))
+        track = lv.get("music") or "morning"
+        uses.setdefault(track, []).append(lv["id"][-2:])
+        if not os.path.exists(os.path.join(music, f"music_{track}.ogg")):
+            print(f"   error: {lv['id']} plays missing track '{track}'")
+            bad += 1
+    print("music:", ", ".join(f"{t} (days {' '.join(d)})" for t, d in sorted(uses.items())))
+    for t, days in uses.items():
+        if len(days) > MAX_DAYS_PER_TRACK:
+            print(f"   error: '{t}' plays on {len(days)} days (most allowed: {MAX_DAYS_PER_TRACK})")
+            bad += 1
+    return bad
 
 
 main()

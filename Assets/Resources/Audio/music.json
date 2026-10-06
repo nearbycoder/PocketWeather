@@ -449,6 +449,94 @@
    ]
   },
   {
+   "name": "seaside",
+   "bpm": 88,
+   "beatsPerBar": 4,
+   "lengthBeats": 64,
+   "chords": [
+    {
+     "start": 0,
+     "beats": 8,
+     "name": "A",
+     "notes": [
+      57,
+      61,
+      64
+     ]
+    },
+    {
+     "start": 8,
+     "beats": 8,
+     "name": "E",
+     "notes": [
+      56,
+      59,
+      64
+     ]
+    },
+    {
+     "start": 16,
+     "beats": 8,
+     "name": "F#m",
+     "notes": [
+      54,
+      57,
+      61
+     ]
+    },
+    {
+     "start": 24,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      54,
+      57,
+      62
+     ]
+    },
+    {
+     "start": 32,
+     "beats": 8,
+     "name": "A",
+     "notes": [
+      57,
+      61,
+      64
+     ]
+    },
+    {
+     "start": 40,
+     "beats": 8,
+     "name": "E",
+     "notes": [
+      56,
+      59,
+      64
+     ]
+    },
+    {
+     "start": 48,
+     "beats": 8,
+     "name": "D",
+     "notes": [
+      54,
+      57,
+      62
+     ]
+    },
+    {
+     "start": 56,
+     "beats": 8,
+     "name": "E",
+     "notes": [
+      56,
+      59,
+      64
+     ]
+    }
+   ]
+  },
+  {
    "name": "title",
    "bpm": 72,
    "beatsPerBar": 4,
