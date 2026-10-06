@@ -14,6 +14,7 @@ namespace PocketWeather
         public bool Grumpy => grumpyTimer > 0;
         public override string Icon => "sun";
         public override string ProblemIcon => "grumpy";
+        public override string WantIcon => "pip";   // Pip's shadow
         public Surface RainSurface => Surface.Creature;
         public override Vector3 BubbleAnchor => transform.position + Vector3.up * (person ? 1.05f : 0.95f);
         public bool InShade { get; private set; }

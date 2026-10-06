@@ -10,6 +10,7 @@ namespace PocketWeather
     public class BoatNeed : Need, IGustReceiver, IRainReceiver
     {
         public override string Icon => "boat";
+        public override string WantIcon => "wind";
         public Vector3 GustPoint => boat.position;
         public Surface RainSurface => Surface.Wood;
         public override Vector3 BubbleAnchor => boat.position + Vector3.up * 1.45f;

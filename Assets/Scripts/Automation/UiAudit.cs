@@ -73,6 +73,28 @@ namespace PocketWeather
 
         IEnumerator Settle(float s = 1.2f) { yield return new WaitForSecondsRealtime(s); }
 
+        /// <summary>Every need in every day has a decided "wants" badge, and its icon exists.</summary>
+        IEnumerator WantBadges()
+        {
+            var problems = new List<string>();
+            int count = 0;
+            for (int i = 0; i < LevelLibrary.Campaign.Length; i++)
+            {
+                GameFlow.I.DebugStart(i, false);
+                yield return null;
+                foreach (var n in Level.Current.Needs)
+                {
+                    count++;
+                    if (n.WantIcon == "?") problems.Add($"{Level.Current.Def.id}/{n.Id} ({n.GetType().Name}) has no want badge decided");
+                    else if (n.WantIcon != null && Ui.IconSprite(n.WantIcon) == null) problems.Add($"{n.Id}: icon '{n.WantIcon}' missing");
+                }
+            }
+            bool ok = problems.Count == 0 && count > 0;
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} want badges: {count} needs over {LevelLibrary.Campaign.Length} days" + (problems.Count > 0 ? "\n    " + string.Join("\n    ", problems) : ""));
+            if (ok) passes++; else fails++;
+            GameFlow.I.DebugCloseMenus();
+        }
+
         IEnumerator Start()
         {
             var f = GameFlow.I;
@@ -93,6 +115,7 @@ namespace PocketWeather
             f.DebugStart(1, true); yield return Settle(1.2f);
             f.DebugSunset(); yield return Settle(3.2f); Audit("sunset");
             f.DebugEnding(); yield return Settle(4f); Audit("ending");
+            yield return WantBadges();
             Debug.Log($"[UiAudit] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);
             Application.Quit();

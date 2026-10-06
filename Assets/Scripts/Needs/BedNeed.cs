@@ -28,6 +28,7 @@ namespace PocketWeather
             _ => "flower",
         };
         public override string ProblemIcon => "soggy";
+        public override string WantIcon => "drop";
         public virtual Surface RainSurface => Def.plant == "mud" ? Surface.Soil : Surface.Leaf;
         public override Vector3 BubbleAnchor => transform.position + Vector3.up * (layout == "arch" ? 2.0f : layout == "single" ? 1.25f : 1.0f);
         public bool InBand => Moisture >= BandMin && Moisture <= BandMax;
@@ -295,6 +296,7 @@ namespace PocketWeather
         float shadeTime, sunTime = 99f;
         bool sulking;
         public override string ProblemIcon => sulking ? "sun" : "soggy";
+        public override string WantIcon => "sun";
 
         protected override bool ExtraMet => !sulking;
 

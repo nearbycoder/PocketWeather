@@ -27,6 +27,11 @@ namespace PocketWeather
         }
         public abstract string Icon { get; }
         public virtual string ProblemIcon => "oops";
+        /// <summary>What helps, as a small badge on the bubble and the tray: an icon name, or null where
+        /// the main icon already says it. "?" means nobody has decided (the UI audit fails on it).</summary>
+        public virtual string WantIcon => "?";
+        /// <summary>The want badge means "not this" and is crossed out (keep the rain off).</summary>
+        public virtual bool WantIsNot => false;
         public virtual Vector3 BubbleAnchor => transform.position + Vector3.up * 0.9f;
         public virtual bool ShowBubble => Required && !Met;
         public float MetTime { get; private set; } = -1f;

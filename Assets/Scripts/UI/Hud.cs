@@ -184,6 +184,7 @@ namespace PocketWeather
                 var bg = Ui.Image(item, Ui.Circle, Ui.Paper, new Vector2(84, 84), Vector2.zero, null, "Bg");
                 Ui.Image(item, Ui.RingThin, new Color(Ui.Ink.r, Ui.Ink.g, Ui.Ink.b, 0.12f), new Vector2(84, 84), Vector2.zero, null, "Edge");
                 var ic = Ui.Icon(item, need.Icon, 60, new Vector2(0, 2));
+                WantBadge(item, need, new Vector2(-29, -27), 36f);
                 var badge = Ui.Icon(item, "check", 40, new Vector2(28, -26));
                 badge.gameObject.SetActive(false);
                 trayItems.Add((need, bg, ic, badge, false, false));
@@ -230,11 +231,32 @@ namespace PocketWeather
                 b.tickHi = RingTick(b.bg.transform, b.bed.BandMax / b.bed.GaugeMax, 24f, "TickHi");
             }
             b.icon = Ui.Icon(b.bg.transform, need.Icon, 66, new Vector2(0, 0));
+            WantBadge(b.bg.transform, need, new Vector2(43, -40), 44f);
             b.group.alpha = 0;
             bubbles.Add(b);
         }
 
         static readonly Color BandColor = Res.Hex("A6DFB4");
+
+        /// <summary>A small round badge saying what helps (rain, shade, gust, sun), crossed out for
+        /// "keep the rain off".</summary>
+        static RectTransform WantBadge(Transform parent, Need need, Vector2 pos, float size)
+        {
+            string icon = need.WantIcon;
+            if (string.IsNullOrEmpty(icon) || icon == "?") return null;
+            var holder = Ui.Rect("Want", parent, new Vector2(0.5f, 0.5f), new Vector2(size, size), pos);
+            // Pip (shade) is a white cloud, so it sits on a sky disc; everything else on white
+            Ui.Image(holder, Ui.Circle, icon == "pip" ? Ui.Sky : Color.white, new Vector2(size, size), Vector2.zero, null, "Disc");
+            Ui.Image(holder, Ui.RingThin, new Color(Ui.Ink.r, Ui.Ink.g, Ui.Ink.b, 0.18f), new Vector2(size, size), Vector2.zero, null, "Edge");
+            Ui.Icon(holder, icon, size * 0.74f, new Vector2(0, 1));
+            if (need.WantIsNot)
+            {
+                var slash = Ui.Image(holder, Ui.Rounded, Ui.Coral, new Vector2(size * 0.13f, size * 0.92f), Vector2.zero, null, "Not");
+                slash.pixelsPerUnitMultiplier = 52f / (size * 0.065f);
+                slash.rectTransform.localRotation = Quaternion.Euler(0, 0, -45f);
+            }
+            return holder;
+        }
 
         Image RadialRing(Transform parent, Color c, string name)
         {

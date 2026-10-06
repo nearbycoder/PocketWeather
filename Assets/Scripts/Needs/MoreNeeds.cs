@@ -10,6 +10,7 @@ namespace PocketWeather
         public float Wetness { get; private set; } = 1f;
         public override string Icon => "shirt";
         public override string ProblemIcon => "soggy";
+        public override string WantIcon => "wind";
         public Vector3 GustPoint => transform.position + Vector3.up * 0.6f;
         public Surface RainSurface => Surface.Fabric;
         public override Vector3 BubbleAnchor => transform.position + Vector3.up * 1.55f;
@@ -86,6 +87,7 @@ namespace PocketWeather
     {
         public float Charge { get; private set; }
         public override string Icon => "windmill";
+        public override string WantIcon => "wind";
         public Vector3 GustPoint => transform.position + Vector3.up * 1.2f;
         public override Vector3 BubbleAnchor => transform.position + Vector3.up * 2.5f;
         Transform sails;
@@ -140,6 +142,7 @@ namespace PocketWeather
     public class RainbowWishNeed : Need, IRainReceiver
     {
         public override string Icon => "rainbow";
+        public override string WantIcon => null;   // the rainbow is the want
         public Surface RainSurface => Surface.Creature;
         public override Vector3 BubbleAnchor => transform.position + Vector3.up * 1.1f;
         Critter critter;
@@ -293,6 +296,7 @@ namespace PocketWeather
     {
         public float Intensity { get; private set; }
         public override string Icon => "fire";
+        public override string WantIcon => "drop";
         public Surface RainSurface => Surface.Fire;
         public Vector3 GustPoint => transform.position + Vector3.up * 0.4f;
         public override Vector3 BubbleAnchor => transform.position + Vector3.up * 1.6f;
@@ -381,6 +385,8 @@ namespace PocketWeather
         public float Lit { get; private set; } = 1f;
         public override string Icon => "campfire";
         public override string ProblemIcon => "campfire";
+        public override string WantIcon => "drop";
+        public override bool WantIsNot => true;
         public override bool ShowBubble => Required && (!Met || Lit < 0.5f);
         public Surface RainSurface => Surface.Fire;
         public Vector3 GustPoint => transform.position + Vector3.up * 0.3f;
@@ -446,6 +452,8 @@ namespace PocketWeather
         public bool Ruined { get; private set; }
         public override string Icon => (Def.model ?? "").Contains("castle") ? "castle" : (Def.model ?? "").Contains("cake") ? "cake" : "shirt";
         public override string ProblemIcon => "soggy";
+        public override string WantIcon => "drop";
+        public override bool WantIsNot => true;
         public override bool ShowBubble => Required && Ruined;
         public Surface RainSurface => Surface.Fabric;
         public override Vector3 BubbleAnchor => transform.position + Vector3.up * 1.2f;
@@ -510,6 +518,7 @@ namespace PocketWeather
     public class PondLineNeed : Need
     {
         public override string Icon => "duck";
+        public override string WantIcon => null;   // taught by its hint and the shoreline mark
         public override string ProblemIcon => "oops";
         public override bool ShowBubble => Required && !Met;
         public override Vector3 BubbleAnchor => (water != null ? new Vector3(water.Def.x, water.Level, water.Def.z) : transform.position) + Vector3.up * 1.0f;
@@ -582,6 +591,7 @@ namespace PocketWeather
     public class ReactNeed : Need, IRainReceiver, IGustReceiver
     {
         public override string Icon => "star";
+        public override string WantIcon => null;   // secret delights don't show
         public override bool Required => false;
         public Surface RainSurface => Surface.Creature;
         public Vector3 GustPoint => transform.position + Vector3.up * 0.4f;
