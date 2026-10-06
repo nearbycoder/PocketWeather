@@ -64,6 +64,38 @@ namespace PocketWeather
             if (ok) passes++; else fails++;
         }
 
+        /// <summary>The HUD's gauge, sun track, needs tray and pause button sit on screen without
+        /// overlapping, and the UI isn't drawn smaller than its design scale (portrait included).</summary>
+        void CheckTopBar(string what)
+        {
+            var problems = new List<string>();
+            var bar = GameFlow.I.Hud.TopBar;
+            string[] names = { "gauge", "sun track", "tray", "pause" };
+            var rects = new Rect[bar.Length];
+            var c = new Vector3[4];
+            for (int i = 0; i < bar.Length; i++)
+            {
+                bar[i].GetWorldCorners(c);
+                rects[i] = Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
+                if (rects[i].xMin < -1 || rects[i].yMin < -1 || rects[i].xMax > Screen.width + 1 || rects[i].yMax > Screen.height + 1)
+                    problems.Add($"{names[i]} off-screen {rects[i]}");
+            }
+            for (int i = 0; i < rects.Length; i++)
+            for (int j = i + 1; j < rects.Length; j++)
+            {
+                var a = rects[i]; var b = rects[j];
+                float ox = Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin), oy = Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin);
+                if (ox > 1 && oy > 1) problems.Add($"{names[i]} overlaps {names[j]} ({ox:0}x{oy:0} px)");
+            }
+            var canvas = GameFlow.I.Hud.GetComponentInChildren<Canvas>();
+            float want = Ui.Portrait ? Screen.width / Ui.PortraitWidth : Mathf.Min(Screen.width / 1920f, Screen.height / 1080f);
+            if (canvas.scaleFactor < want * 0.99f) problems.Add($"UI scale {canvas.scaleFactor:0.000}, want {want:0.000}");
+            bool ok = problems.Count == 0;
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} {what}: scale {canvas.scaleFactor:0.000} at {Screen.width}x{Screen.height}" +
+                      (ok ? "" : "\n    " + string.Join("\n    ", problems)));
+            if (ok) passes++; else fails++;
+        }
+
         static string Path(Transform t)
         {
             string p = t.name;
@@ -105,7 +137,7 @@ namespace PocketWeather
             Audit("title");
             f.DebugShowMap(); yield return Settle(); Audit("map");
             f.DebugStart(0, false); yield return Settle(1.6f); Audit("postcard");
-            f.DebugBeginPlay(); yield return Settle(); Audit("hud");
+            f.DebugBeginPlay(); yield return Settle(); Audit("hud"); CheckTopBar("hud top bar, day 1");
             f.DebugPause(); yield return Settle(); Audit("pause");
             f.DebugSettings(); yield return Settle(); Audit("settings");
             f.DebugCloseSettings(); yield return Settle(0.6f);
@@ -115,6 +147,7 @@ namespace PocketWeather
             f.DebugStart(1, true); yield return Settle(1.2f);
             f.DebugSunset(); yield return Settle(3.2f); Audit("sunset");
             f.DebugEnding(); yield return Settle(4f); Audit("ending");
+            f.DebugStart(11, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 12 (7 needs)");
             yield return WantBadges();
             Debug.Log($"[UiAudit] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);

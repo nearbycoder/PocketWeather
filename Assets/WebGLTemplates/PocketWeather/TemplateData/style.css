@@ -17,7 +17,26 @@ html, body {
   transition: opacity 0.6s ease;
 }
 #pw-loader.done { opacity: 0; pointer-events: none; }
-#pw-loader[hidden], #pw-error[hidden] { display: none; }
+#pw-loader[hidden], #pw-error[hidden], #pw-rotate[hidden] { display: none; }
+#pw-rotate {
+  position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+  background: rgba(59, 58, 90, 0.35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+#pw-rotate-card {
+  width: min(320px, 82vw); background: #FFF8EC; color: #3B3A5A; border-radius: 28px; padding: 24px 22px 20px;
+  text-align: center; box-shadow: 0 10px 24px rgba(59, 58, 90, 0.25);
+}
+#pw-rotate-card h1 { font-size: 22px; margin: 14px 0 6px; }
+#pw-rotate-card p { font-size: 16px; line-height: 1.4; margin: 0 0 16px; color: #6E6A8E; }
+#pw-rotate-phone {
+  width: 34px; height: 58px; margin: 6px auto 0; border: 5px solid #5FB8E6; border-radius: 9px;
+  animation: pw-turn 2.4s ease-in-out infinite;
+}
+#pw-rotate-play {
+  font: inherit; font-weight: 700; font-size: 18px; color: #fff; background: #FF7A6B; border: 0;
+  border-radius: 22px; padding: 10px 26px; box-shadow: 0 5px 0 #c85d52; cursor: pointer;
+}
+@keyframes pw-turn { 0%, 30% { transform: rotate(0deg); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
 #pw-card { display: flex; flex-direction: column; align-items: center; width: min(560px, 86vw); }
 #pw-logo { width: 100%; margin: 0 0 22px; animation: pw-bob 2.6s ease-in-out infinite; filter: drop-shadow(0 6px 8px rgba(59, 58, 90, 0.15)); }
 #pw-bar {

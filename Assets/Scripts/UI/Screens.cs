@@ -163,8 +163,7 @@ namespace PocketWeather
             for (int i = 0; i < LevelLibrary.Campaign.Length; i++)
             {
                 int idx = i;
-                int col = i % 6, row = i / 6;
-                var pos = new Vector2((col - 2.5f) * 272, (0.5f - row) * 330);
+                var pos = CardPos(i, Ui.Portrait);
                 var def = LevelLibrary.Load(LevelLibrary.Campaign[i]);
                 bool unlocked = SaveData.Unlocked(i);
                 var save = SaveData.Get(LevelLibrary.Campaign[i]);
@@ -191,10 +190,31 @@ namespace PocketWeather
             }
             firstSelected = cards[Mathf.Clamp(next, 0, cards.Count - 1)].gameObject;
             if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(firstSelected);
+            laidOutPortrait = Ui.Portrait;
+        }
+
+        bool laidOutPortrait;
+
+        /// <summary>Six cards a row in landscape, four in portrait (the narrower design width).</summary>
+        static Vector2 CardPos(int i, bool portrait)
+        {
+            int cols = portrait ? 4 : 6, rows = (LevelLibrary.Campaign.Length + cols - 1) / cols;
+            int col = i % cols, row = i / cols;
+            return new Vector2((col - (cols - 1) / 2f) * 272, ((rows - 1) / 2f - row) * 330);
         }
 
         void Update()
         {
+            if (IsOpen && laidOutPortrait != Ui.Portrait)
+            {
+                laidOutPortrait = Ui.Portrait;
+                for (int i = 0; i < cards.Count; i++)
+                {
+                    var rt = (RectTransform)cards[i].transform;
+                    rt.anchoredPosition = CardPos(i, laidOutPortrait);
+                    rt.GetComponent<UiBob>()?.Rebase();
+                }
+            }
             if (!IsOpen || JustOpened) return;
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
@@ -335,13 +355,23 @@ namespace PocketWeather
             Ui.Button(p.transform, "Settings", Ui.Mint, new Vector2(420, 96), new Vector2(0, -76), () => OnSettings?.Invoke(), null, null, 42);
             Ui.Button(p.transform, "Map", Ui.Lilac, new Vector2(420, 96), new Vector2(0, -192), () => OnMap?.Invoke(), null, null, 42);
             delight = Ui.Label(p.transform, "", 30, Ui.InkSoft, new Vector2(560, 90), new Vector2(0, -300), false);
-            var strip = Ui.Panel(root, new Vector2(1500, 76), new Vector2(0, -425), new Color(1, 1, 1, 0.86f), null, 38f, false);
-            strip.raycastTarget = false;
-            controls = Ui.Label(strip.transform, "", 28, Ui.Ink, new Vector2(1460, 70), Vector2.zero, false, TextAnchor.MiddleCenter);
+            strip = Ui.Panel(root, new Vector2(1500, 76), new Vector2(0, -425), new Color(1, 1, 1, 0.86f), null, 38f, false).rectTransform;
+            strip.GetComponent<Image>().raycastTarget = false;
+            controls = Ui.Label(strip, "", 28, Ui.Ink, new Vector2(1460, 70), Vector2.zero, false, TextAnchor.MiddleCenter);
             firstSelected = r.gameObject;
         }
 
-        public void SetControls(CloudInput.Device device) => controls.text = ControlsLine(device);
+        RectTransform strip;
+
+        /// <summary>The controls line wraps onto two lines in portrait's narrower design width.</summary>
+        public void SetControls(CloudInput.Device device)
+        {
+            controls.text = ControlsLine(device);
+            bool p = Ui.Portrait;
+            strip.sizeDelta = p ? new Vector2(1140, 116) : new Vector2(1500, 76);
+            strip.anchoredPosition = new Vector2(0, p ? -445 : -425);
+            controls.rectTransform.sizeDelta = p ? new Vector2(1090, 110) : new Vector2(1460, 70);
+        }
         public string ControlsText => controls.text;
 
         public void SetDelight(LevelDef def, bool found)
@@ -639,6 +669,12 @@ namespace PocketWeather
         public static CloudWipe Create(Transform parent)
         {
             var c = Ui.MakeCanvas("WipeCanvas", 100, parent);
+            // the puffs are laid out over a 1080-high band: match the height so a portrait screen is
+            // covered top to bottom (at 16:9 this is identical to the other canvases)
+            Destroy(c.GetComponent<OrientationScaler>());
+            var sc = c.GetComponent<CanvasScaler>();
+            sc.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            sc.matchWidthOrHeight = 1f;
             var w = c.gameObject.AddComponent<CloudWipe>();
             w.root = (RectTransform)c.transform;
             w.Build();

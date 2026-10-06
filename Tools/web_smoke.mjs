@@ -4,7 +4,8 @@
 //
 //   node Tools/web_smoke.mjs [outDir] [--phone] [--throttle <Mbps>] [--dir <build folder>]  (default /tmp/pw-web)
 //
-// --phone emulates an Android phone held landscape (844x390 CSS px, 2x).
+// --phone emulates an Android phone held landscape (844x390 CSS px, 2x); --portrait holds it
+// upright (390x844) and checks the page's "turn sideways" card and its "Play anyway" button.
 // --throttle 20 emulates a 20 Mbps connection with 60 ms latency, to time a realistic first visit
 // (a fresh browser profile each run, so nothing is cached). --dir serves another build folder
 // (default Builds/WebGL), e.g. an older release, to compare load times under the same conditions.
@@ -22,12 +23,13 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
-const PHONE = args.includes("--phone");
+const PORTRAIT = args.includes("--portrait");   // a phone held upright (implies --phone)
+const PHONE = args.includes("--phone") || PORTRAIT;
 const ti = args.indexOf("--throttle"), di = args.indexOf("--dir");
 const MBPS = ti >= 0 ? parseFloat(args[ti + 1]) : 0;
 const WEBDIR = di >= 0 ? args[di + 1] : join(ROOT, "Builds/WebGL");
 const OUT = args.find((a, i) => !a.startsWith("--") && !(ti >= 0 && i === ti + 1) && !(di >= 0 && i === di + 1)) || "/tmp/pw-web";
-const W = PHONE ? 844 : 1280, H = PHONE ? 390 : 720;
+const W = PORTRAIT ? 390 : PHONE ? 844 : 1280, H = PORTRAIT ? 844 : PHONE ? 390 : 720;
 // free ports each run: other projects on this machine run the same kind of smoke test, and a fixed
 // port can silently serve (and "test") somebody else's build
 const freePort = () => new Promise((res) => { const sv = createServer(); sv.listen(0, "127.0.0.1", () => { const p = sv.address().port; sv.close(() => res(p)); }); });
@@ -97,6 +99,21 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/index.html` });
   if (MBPS > 0) { await sleep(2500); await shot("w00_loading"); }   // the page's own loading card, mid-download
 
+  let rotateOk = true;
+  if (PORTRAIT) {
+    // the page asks phones held upright to turn sideways; "Play anyway" must dismiss it
+    await sleep(1500);
+    const vis = async () => (await send("Runtime.evaluate", { expression: "!document.getElementById('pw-rotate').hidden", returnByValue: true })).result.value;
+    const shown = await vis();
+    await shot("w00_rotate");
+    const { result: br } = await send("Runtime.evaluate", { expression: "JSON.stringify(document.getElementById('pw-rotate-play').getBoundingClientRect())", returnByValue: true });
+    const b = JSON.parse(br.value);
+    await tap(b.x + b.width / 2, b.y + b.height / 2);
+    await sleep(500);
+    const gone = !(await vis());
+    rotateOk = shown && gone;
+    console.log(`rotate card: shown ${shown ? "yes" : "NO"}, dismissed by Play anyway ${gone ? "yes" : "NO"}`);
+  }
   const booted = await waitLog(/\[PW\] graphics/, 300000);
   console.log(booted ? `booted in ${((Date.now() - t0) / 1000).toFixed(1)}s` : "did not boot within 300s");
   await sleep(6000);
@@ -109,7 +126,9 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     // UI positions in the game's 1920x1080 design units (offset from the screen centre), mapped
     // the way its CanvasScaler (Expand) does, so taps land on the same buttons at any aspect
     const aspect = r.width / r.height;
-    const cw = aspect > 16 / 9 ? 1080 * aspect : 1920, ch = aspect > 16 / 9 ? 1080 : 1920 / aspect;
+    // portrait screens use a 1200-wide design (Ui.PortraitWidth)
+    const cw = aspect < 1 ? 1200 : aspect > 16 / 9 ? 1080 * aspect : 1920;
+    const ch = aspect < 1 ? 1200 / aspect : aspect > 16 / 9 ? 1080 : 1920 / aspect;
     const ui = (dx, dy) => [r.x + r.width * (0.5 + dx / cw), r.y + r.height * (0.5 - dy / ch)];
     await tap(...at(0.5, 0.5));                    // title: tap anywhere (a fresh profile goes straight to Day 1's postcard)
     await sleep(3500);
@@ -147,5 +166,5 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
   cleanup();
-  process.exit(booted && ex.length === 0 && remembered ? 0 : 1);
+  process.exit(booted && ex.length === 0 && remembered && rotateOk ? 0 : 1);
 })().catch((e) => { console.error(e); cleanup(); process.exit(2); });

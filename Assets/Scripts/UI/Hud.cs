@@ -200,7 +200,10 @@ namespace PocketWeather
         void FitTray()
         {
             var safeRt = (RectTransform)tray.parent;
-            float avail = safeRt.rect.width * 0.5f - sunTrack.rect.width * 0.5f - 150f - 24f;
+            // landscape: between the sun track and the pause button; portrait (sun track on the row
+            // below): between the water gauge and the pause button
+            float avail = Ui.Portrait ? safeRt.rect.width - 470f - 150f - 24f
+                                      : safeRt.rect.width * 0.5f - sunTrack.rect.width * 0.5f - 150f - 24f;
             float s = tray.sizeDelta.x > 1f ? Mathf.Clamp(avail / tray.sizeDelta.x, 0.55f, 1f) : 1f;
             tray.localScale = new Vector3(s, s, 1f);
         }
@@ -340,10 +343,10 @@ namespace PocketWeather
             toast.GetComponentInChildren<Image>().color = color ?? Ui.Butter;
             toast.gameObject.SetActive(true);
             Tween.KillOwner(toast);
-            Tween.To(260, 0, 0.5f, y => toast.anchoredPosition = new Vector2(0, -190 + y), k => Ease.OutBack(k), 0, null, toast);
+            Tween.To(260, 0, 0.5f, y => toast.anchoredPosition = new Vector2(0, ToastY + y), k => Ease.OutBack(k), 0, null, toast);
             Tween.Delay(seconds, () =>
             {
-                Tween.To(0, 300, 0.4f, y => { if (toast != null) toast.anchoredPosition = new Vector2(0, -190 + y); }, Ease.InCubic, 0,
+                Tween.To(0, 300, 0.4f, y => { if (toast != null) toast.anchoredPosition = new Vector2(0, ToastY + y); }, Ease.InCubic, 0,
                     () => { if (toast != null) toast.gameObject.SetActive(false); });
             });
         }
@@ -386,11 +389,27 @@ namespace PocketWeather
             return lp;
         }
 
+        /// <summary>The top bar's pieces, for the UI audit's overlap check.</summary>
+        public RectTransform[] TopBar => new[] { gauge, sunTrack, tray, (RectTransform)PauseButton.transform };
+
+        bool? laidOutPortrait;
+        static float ToastY => Ui.Portrait ? -306f : -190f;
+
+        /// <summary>Portrait screens are too narrow for gauge + sun track + tray in one row: the sun
+        /// track drops to a second row (and the toast below it).</summary>
+        void Layout(bool portrait)
+        {
+            laidOutPortrait = portrait;
+            sunTrack.anchoredPosition = new Vector2(0, portrait ? -190 : -74);
+            if (toast.gameObject.activeSelf) toast.anchoredPosition = new Vector2(0, ToastY);
+        }
+
         void Update()
         {
             float dt = Clock.UnscaledDelta;
             float t = Clock.UnscaledTime;
             var cloud = Cloud.Instance;
+            if (laidOutPortrait != Ui.Portrait) Layout(Ui.Portrait);
             if (trayItems.Count > 0) FitTray();
 
             // ---- gauge

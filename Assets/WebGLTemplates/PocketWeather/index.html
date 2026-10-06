@@ -25,6 +25,14 @@
         <div id="pw-tip">Mouse, touch, keyboard or gamepad · best with sound</div>
       </div>
     </div>
+    <div id="pw-rotate" hidden>
+      <div id="pw-rotate-card">
+        <div id="pw-rotate-phone" aria-hidden="true"></div>
+        <h1>Turn your phone sideways</h1>
+        <p>Pocketvale's little islands are wide. They fit best with the phone on its side.</p>
+        <button id="pw-rotate-play" type="button">Play anyway</button>
+      </div>
+    </div>
     <div id="pw-error" hidden>
       <div id="pw-error-card">
         <img src="TemplateData/pip.png" alt="">
@@ -43,6 +51,15 @@
           document.getElementById("pw-error-text").textContent = msg;
           document.getElementById("pw-error").hidden = false;
         }
+        // phones held upright get a friendly nudge to turn sideways; it goes away by itself when they
+        // do, and "Play anyway" keeps it away for the rest of the visit
+        var rotate = document.getElementById("pw-rotate"), rotateDismissed = false;
+        var phone = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 600);
+        function checkRotate() { rotate.hidden = rotateDismissed || !phone || window.innerWidth >= window.innerHeight; }
+        document.getElementById("pw-rotate-play").addEventListener("click", function () { rotateDismissed = true; checkRotate(); canvas.focus(); });
+        window.addEventListener("resize", checkRotate);
+        window.addEventListener("orientationchange", checkRotate);
+        checkRotate();
         var probe = document.createElement("canvas");
         if (!probe.getContext("webgl2")) {
           fail("This browser doesn't have WebGL 2 switched on, which the game needs. Try a current Chrome, Edge, Firefox or Safari, and check that hardware acceleration is enabled.");

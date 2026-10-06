@@ -104,8 +104,25 @@ namespace PocketWeather
             // Expand: the whole 1920x1080 design area always fits, on 20:9 phones, 4:3 tablets
             // and even portrait windows; at 16:9 it's identical to a fixed reference
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+            go.AddComponent<OrientationScaler>();
             go.AddComponent<GraphicRaycaster>();
             return c;
+        }
+
+        /// <summary>Taller than wide: a phone held upright, or a narrow window.</summary>
+        public static bool Portrait => Screen.width < Screen.height;
+        /// <summary>The design width in portrait. 1920 would show the UI at 0.375x on a 720-wide
+        /// phone; at 1200 it's 0.6x, and the few layouts wider than that reflow.</summary>
+        public const float PortraitWidth = 1200f;
+        /// <summary>Raised when the screen turns between landscape and portrait.</summary>
+        public static event Action<bool> OrientationChanged;
+        static bool? lastPortrait;
+        internal static void PollOrientation()
+        {
+            bool p = Portrait;
+            if (lastPortrait == p) return;
+            lastPortrait = p;
+            OrientationChanged?.Invoke(p);
         }
 
         public static RectTransform Rect(string name, Transform parent, Vector2 anchor, Vector2 size, Vector2 pos, Vector2? pivot = null)
@@ -422,6 +439,20 @@ namespace PocketWeather
             rt.anchorMin = new Vector2(sa.xMin / Screen.width, sa.yMin / Screen.height);
             rt.anchorMax = new Vector2(sa.xMax / Screen.width, sa.yMax / Screen.height);
             rt.offsetMin = rt.offsetMax = Vector2.zero;
+        }
+    }
+
+    /// <summary>Gives a canvas a narrower design width while the screen is in portrait (see
+    /// Ui.PortraitWidth); landscape keeps the 1920x1080 reference exactly.</summary>
+    public class OrientationScaler : MonoBehaviour
+    {
+        CanvasScaler scaler;
+        void Awake() { scaler = GetComponent<CanvasScaler>(); Apply(); }
+        void Update() { Ui.PollOrientation(); Apply(); }
+        void Apply()
+        {
+            var want = Ui.Portrait ? new Vector2(Ui.PortraitWidth, 1080) : new Vector2(1920, 1080);
+            if (scaler != null && scaler.referenceResolution != want) scaler.referenceResolution = want;
         }
     }
 
