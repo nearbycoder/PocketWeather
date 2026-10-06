@@ -60,6 +60,9 @@ namespace PocketWeather
             return n;
         }
 
+        /// <summary>Nobody has played a day yet (a brand-new player).</summary>
+        public static bool IsFresh => Data.levels.TrueForAll(l => l.plays == 0 && l.stamps == 0);
+
         public static bool Has(string id, int stamp) => (Get(id).stamps & stamp) != 0;
 
         /// <summary>Adds stamps; returns the newly earned ones.</summary>

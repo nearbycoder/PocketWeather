@@ -111,10 +111,10 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     const aspect = r.width / r.height;
     const cw = aspect > 16 / 9 ? 1080 * aspect : 1920, ch = aspect > 16 / 9 ? 1080 : 1920 / aspect;
     const ui = (dx, dy) => [r.x + r.width * (0.5 + dx / cw), r.y + r.height * (0.5 - dy / ch)];
-    await tap(...at(0.5, 0.5));                    // title: tap anywhere
+    await tap(...at(0.5, 0.5));                    // title: tap anywhere (a fresh profile goes straight to Day 1's postcard)
     await sleep(3500);
-    await shot("w02_map");
-    await tap(...ui(-739, 151));                   // map: Day 1 card (top-left of the grid)
+    await shot("w02_after_title");
+    await tap(...ui(-739, 151));                   // map's Day 1 card, for builds that show the map first (harmless on the postcard)
     await sleep(3000);
     await shot("w03_postcard");
     await tap(...ui(300, -220));                   // postcard: Start

@@ -68,7 +68,13 @@ namespace PocketWeather
             settings = Make<SettingsMenu>(menus.transform, "Settings");
             wipe = CloudWipe.Create(transform);
 
-            title.OnPlay = () => { if (Current == State.Title) Transition(ShowMapNow); };
+            // a brand-new player goes straight to Day 1's postcard: a map with one card to pick is
+            // just one more screen between them and the cloud
+            title.OnPlay = () =>
+            {
+                if (Current != State.Title) return;
+                if (SaveData.IsFresh) StartLevel(0); else Transition(ShowMapNow);
+            };
             title.OnSettings = () => OpenSettings(title);
             map.OnBack = () => Transition(ShowTitleNow);
             map.OnSettings = () => OpenSettings(map);

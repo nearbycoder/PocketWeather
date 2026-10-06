@@ -63,6 +63,15 @@ namespace PocketWeather
             yield return WaitFor(() => GameFlow.I != null && Now == GameFlow.State.Title, 20f);
             yield return new WaitForSecondsRealtime(1.0f);
 
+            // --- a brand-new player's first press goes straight to Day 1
+            SaveData.Reset();
+            yield return Press(Key.Enter);
+            yield return WaitFor(() => Now == GameFlow.State.Intro, 5f);
+            Check("a new player's first press opens Day 1's postcard", Now == GameFlow.State.Intro && L != null && L.Def.id == "level01", $"{Now}, {L?.Def.id}");
+            SaveData.RecordPlay("level01");   // from now on a returning player
+            GameFlow.I.DebugShowTitle();
+            yield return new WaitForSecondsRealtime(1.0f);
+
             // --- menus
             yield return Press(Key.Enter);
             yield return WaitFor(() => Now == GameFlow.State.Map, 5f);
