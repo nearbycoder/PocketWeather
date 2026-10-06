@@ -387,3 +387,104 @@ Support isn't installed.
 - **On a shared machine,** the shared `/tmp` filled up (55 GB tmpfs) during the round, so this
   round's scratch files live in the gitignored `Recordings/scratch`. `selftest.sh` still writes
   its logs to `/tmp/pw-selftest`.
+
+## Round 2 scope
+
+Planned 2026-10-06 on `improvements-2`, from `main` after round 1 was merged. These items come
+from the ranked list (10: post-campaign content) and from what round 1 turned up (the small
+portrait HUD, and music still repeating across days). They're ordered by value to a player who
+opens the game, most likely from a link on a phone.
+
+### R2-1. Phones held upright
+
+**Why:** the UI is laid out on a 1920-wide canvas. Held upright, a phone shows it at 0.375×:
+720 px wide, so the HUD is tiny, and the map's six-card rows only fit because they shrink with it.
+
+**What:** in portrait, the canvases switch to a narrower design width (1200), so everything is
+about 1.6× bigger. The screens that don't fit in 1200 reflow:
+- **HUD:** the sun track drops to a second row under the gauge and tray.
+- **Map:** four cards per row instead of six.
+- **Pause:** the controls line wraps.
+- **Toast:** moves below the HUD's second row.
+
+The web page also asks phones held upright to turn sideways (the dioramas are wide), with a
+"Play anyway" button. Landscape layouts stay exactly as they are.
+
+**Acceptance:**
+- The UI audit passes at 720x1280 and a new 390x844 (phone) size.
+- A new audit check fails if the HUD's top elements overlap, at any of the audited sizes.
+- In portrait, the UI scale is at least 0.56 at 720 px wide (it was 0.375).
+- Landscape screenshots at 1600x900 show no layout change; the UI audit still passes at all
+  landscape sizes.
+- The web smoke test with a portrait phone shows the rotate card, and "Play anyway" dismisses it.
+
+**Verify:** UI audit at six window shapes, before/after screenshots, and the web smoke test with
+`--phone --portrait`.
+
+### R2-2. No music track on more than three days
+
+**Why:** after round 1, "morning" still plays on Days 1–4 and "afternoon" on 5, 6, 8 and 10.
+
+**What:** a fourth daytime track, made with the existing synth like the others. Its own key,
+tempo and instruments, with a generated melody over its chords (round 1's `phrase_melody`).
+It plays on Becalmed and the Regatta, the two sea days.
+
+**Acceptance:**
+- `validate_levels.py` fails if any track plays on more than 3 days, and the levels pass.
+- The new track's loop seam passes `check_loops.py`. Its peak is at most -1 dBFS and its RMS is
+  within 1 dB of the other daytime tracks.
+- Its chord timeline is exported to `music.json`.
+- The player logs the new track starting on Days 4 and 10.
+- The web download grows by at most 1 MB.
+
+**Verify:** the validator, the synth's stats, the loop checker, a capture tour's logs, and
+`package_web.sh` sizes. It's still unheard by a person, and the README will keep saying so.
+
+### R2-3. Encore days (something to do after 36 stamps)
+
+**Why:** after all 36 stamps there's nothing left to play for.
+
+**What:** once a day has been saved, its postcard offers an Encore: the same diorama on a
+scorcher. The sun runs faster (the day is 25% shorter), beds and the flower arch dry out as if it
+were the heatwave, and Pip starts with less water. Saving an Encore earns that day's fourth stamp
+(a gold sun), so the summer has 48 stamps. The map cards and postcards show it.
+
+The rules are generic modifiers applied when a level loads, not twelve hand-made variants, so the
+existing level data and validator stay the source of truth. Saves from round 1 load unchanged.
+
+**Acceptance:**
+- The expert AutoPilot saves all 12 Encores before sundown (`-pwEncore`), and the newcomer bot
+  saves at least 10 of 12.
+- The level validator gets an Encore pass using the same budget estimate.
+- The keyboard test opens an unlocked Encore from the postcard and checks that it runs with the
+  modifiers.
+- The UI audit covers the Encore postcard and a 4-stamp map.
+- A round-1 save still loads with its stamps.
+
+**Verify:** the AutoPilot and newcomer campaigns with `-pwEncore`, the self-tests, the validator,
+and screenshots.
+
+**Risk:** balance is judged only by bots. If the Encores can't all be made reliably solvable,
+this ships with the solvable subset or is deferred, rather than half-landed.
+
+### R2-4. The first minute
+
+**Why:** a brand-new player currently goes Title → Map (one card unlocked) → Postcard → play.
+
+**What:** on a fresh save, tapping the title goes straight to Day 1's postcard. Later visits still
+go to the map.
+
+**Acceptance:** a fresh-save self-test check that Enter on the title opens Day 1's postcard, plus
+the existing check that a returning player reaches the map.
+
+**Verify:** the keyboard and touch tests.
+
+### Not in this round
+
+- Windows Build Support, signing and notarisation, hosting, licences, and releases or tags are
+  the owner's.
+- Real-device phone and controller testing, and listening to the audio, need people.
+- Unity's experimental progressive web loading
+  (`PlayerSettings.WebGL.progressiveAssetLoading`) could start the game before every file has
+  arrived. But the game loads all its content through `Resources` at runtime, so it would need
+  restructuring. That's left as a lead.
