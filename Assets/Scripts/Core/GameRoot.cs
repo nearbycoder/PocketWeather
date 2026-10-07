@@ -50,6 +50,8 @@ namespace PocketWeather
             // Unity opens its prefs before reading the game's name when it sees this flag
             if (HasArg("-screen-fullscreen"))
                 Debug.LogWarning("[PW] started with -screen-fullscreen: the Linux player then keeps settings and progress in unity3d/unknown/unknown/ (shared with other Unity games) instead of the game's own folder");
+            // which display the window went to (the self-test checks its windows stay in a private KWin)
+            Debug.Log($"[PW] display: Wayland {Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") ?? "-"}, X11 {Environment.GetEnvironmentVariable("DISPLAY") ?? "-"}");
 #endif
             _ = Platform.TouchFirst;   // logs the device guess the first hints will use
         }

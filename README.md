@@ -238,6 +238,8 @@ Tools/unity.sh mac            # Builds/macOS/PocketWeather.app (universal, unsig
 Tools/unity.sh                # open the editor
 Tools/play.sh                 # run the Linux build at 1600x900 (bots, tests and captures get
                               # throwaway prefs in Recordings/config and a window, never your real prefs)
+Tools/nested.sh <command>     # run a command with its windows in a private KWin on a virtual screen
+                              # (play.sh's tool runs and selftest.sh do this by themselves; PW_NESTED=0 opts out)
 Tools/serve_web.sh            # serve the web build on :8080, with LAN addresses for a phone
 Tools/package_web.sh          # zip Builds/WebGL for a static host (docs/HOSTING.md)
 ```
@@ -277,7 +279,8 @@ Tools/.venv/bin/python Tools/audio/synth.py
 `Tools/selftest.sh` runs every unattended check against the Linux build and prints a one-line
 verdict for each (`--quick` skips the full campaign). It plays with fresh prefs of its own in
 `Recordings/selftest/config`, so the settings it changes never reach anyone playing on the same
-machine:
+machine, and when `kwin_wayland` is installed its windows open in a private KWin on a virtual
+screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that each one did:
 
 - **Level validator** (`python3 Tools/validate_levels.py`): every referenced model and icon
   exists, needs sit inside Pip's reachable area and on land (boats on water), and a water budget
@@ -373,7 +376,7 @@ Assets/
   Plugins/WebGL/ a small jslib (asks the browser whether it's a touch device)
 ArtSource/       Blender generators: pw_lib (the kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
-Tools/           unity.sh, play.sh, selftest.sh, serve_web.sh, package_web.sh, web_smoke.mjs,
+Tools/           unity.sh, play.sh, nested.sh, selftest.sh, serve_web.sh, package_web.sh, web_smoke.mjs,
                  linux/PocketWeather.sh (the launcher copied next to every Linux build),
                  make_levels.py, validate_levels.py, make_video.py, make_trailer.py,
                  make_web_template.py, audio/ (synth, sfx, music)

@@ -9,6 +9,11 @@
 # shared RAM disk on the machine this was built on).
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# every window opens in a private KWin on a virtual screen (Tools/nested.sh), never on the desktop;
+# PW_NESTED=0 opens ordinary windows instead
+if [ -z "${PW_IN_NESTED:-}" ] && [ "${PW_NESTED:-1}" != 0 ] && command -v kwin_wayland > /dev/null; then
+  exec "$ROOT/Tools/nested.sh" "$ROOT/Tools/selftest.sh" "$@"
+fi
 OUT="$ROOT/Recordings/selftest"
 rm -rf "$OUT"; mkdir -p "$OUT"
 PLAY="$ROOT/Tools/play.sh"
@@ -55,6 +60,12 @@ fi
 appinfo="$ROOT/Builds/Linux/PocketWeather_Data/app.info"
 own="$PW_CONFIG/unity3d/$(sed -n 1p "$appinfo")/$(sed -n 2p "$appinfo")/prefs"
 if [ -f "$own" ] && [ ! -e "$PW_CONFIG/unity3d/unknown" ]; then row "prefs in the game's own folder" "PASS"; else row "prefs in the game's own folder" "FAIL ($(ls "$PW_CONFIG/unity3d" 2>/dev/null | tr '\n' ' '))"; fail=1; fi
+
+# with a private KWin, every game window went there and none to the desktop's X server
+if [ -n "${PW_IN_NESTED:-}" ]; then
+  shown=$(grep -h "\[PW\] display: " "$OUT"/*.log 2>/dev/null | sed 's/.*display: //' | sort | uniq -c | sed 's/^ *//' | tr '\n' ';')
+  if [ -n "$shown" ] && ! grep -h "\[PW\] display: " "$OUT"/*.log | grep -qv "display: Wayland $PW_IN_NESTED, X11 -"; then row "windows in a private KWin" "PASS ($shown)"; else row "windows in a private KWin" "FAIL (${shown:-no display logged})"; fail=1; fi
+fi
 
 [ $fail = 0 ] && echo "all checks passed" || echo "SOME CHECKS FAILED"
 exit $fail
