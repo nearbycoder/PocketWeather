@@ -244,8 +244,10 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     // the way its CanvasScaler (Expand) does, so taps land on the same buttons at any aspect
     const aspect = r.width / r.height;
     // portrait screens use a 1200-wide design (Ui.PortraitWidth)
-    const cw = aspect < 1 ? 1200 : aspect > 16 / 9 ? 1080 * aspect : 1920;
-    const ch = aspect < 1 ? 1200 / aspect : aspect > 16 / 9 ? 1080 : 1920 / aspect;
+    // and a phone held sideways draws its menus bigger (logged at boot), so fewer units fit
+    const boost = parseFloat(((log.filter((l) => /\[PW\] menu scale: /.test(l)).pop() || "").match(/, x([\d.]+) at /) || [0, "1"])[1]);
+    const cw = (aspect < 1 ? 1200 : aspect > 16 / 9 ? 1080 * aspect : 1920) / boost;
+    const ch = (aspect < 1 ? 1200 / aspect : aspect > 16 / 9 ? 1080 : 1920 / aspect) / boost;
     const ui = (dx, dy) => [r.x + r.width * (0.5 + dx / cw), r.y + r.height * (0.5 - dy / ch)];
     await tap(...at(0.5, 0.5));                    // title: tap anywhere (a fresh profile goes straight to Day 1's postcard)
     await sleep(3500);
