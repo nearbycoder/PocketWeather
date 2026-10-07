@@ -348,8 +348,10 @@ namespace PocketWeather
             bool encoreOpen = SaveData.EncoreUnlocked(def.id);
             encoreBtn.gameObject.SetActive(encoreOpen);
             encoreBtn.SetLabel(def.encore ? "Normal day" : "Encore");
-            float bestHour = SaveData.Get(def.id).bestHour;
-            best.text = bestHour < 90f ? $"Your best: {FormatHour(bestHour)}" : "";
+            // an Encore's postcard shows the scorcher's own best, never the ordinary day's
+            var rec = SaveData.Get(def.id);
+            best.text = def.encore ? (rec.HasEncoreBest ? $"Scorcher best: {FormatHour(rec.encoreBest)}" : "")
+                      : rec.bestHour < 90f ? $"Your best: {FormatHour(rec.bestHour)}" : "";
             foreach (Transform c in needsRow) Destroy(c.gameObject);
             var reqs = new List<NeedDef>();
             foreach (var n in def.needs) if (!n.hidden) reqs.Add(n);
@@ -655,15 +657,18 @@ namespace PocketWeather
             firstSelected = next.gameObject;
         }
 
+        static string TimeLine(float finishHour, float previousBest) =>
+            previousBest > 90f ? $"Finished at {Postcard.FormatHour(finishHour)}"
+            : finishHour < previousBest - 1f / 120f ? $"Finished at {Postcard.FormatHour(finishHour)}  ·  a new best!"
+            : $"Finished at {Postcard.FormatHour(finishHour)}  ·  your best is {Postcard.FormatHour(previousBest)}";
+
         /// <param name="previousBest">the best finishing hour before this run (99 if never finished)</param>
         public void Show(LevelDef def, int stampsEarnedThisRun, int fresh, float finishHour, bool isLast, float previousBest = 99f)
         {
             title.text = "Day saved!";
             for (int i = 0; i < 3; i++) stamps[i].transform.parent.gameObject.SetActive(true);
             subtitle.text = string.IsNullOrEmpty(def.thanks) ? "Everyone is happy!" : def.thanks;
-            timeLine.text = previousBest > 90f ? $"Finished at {Postcard.FormatHour(finishHour)}"
-                : finishHour < previousBest - 1f / 120f ? $"Finished at {Postcard.FormatHour(finishHour)}  ·  a new best!"
-                : $"Finished at {Postcard.FormatHour(finishHour)}  ·  your best is {Postcard.FormatHour(previousBest)}";
+            timeLine.text = TimeLine(finishHour, previousBest);
             stampLabels[1].text = $"Before {Postcard.FormatHour(def.par)}";
             stampLabels[2].text = SaveData.Has(def.id, SaveData.StampDelight) ? def.delight.title : "Secret delight";
             next.SetLabel(isLast ? "The end" : "Next day");
@@ -706,11 +711,12 @@ namespace PocketWeather
         }
 
         /// <summary>An Encore's card: one stamp, the scorcher's, slammed in if it's new.</summary>
-        public void ShowEncore(LevelDef def, bool fresh, float finishHour)
+        /// <param name="previousBest">the Encore's best finishing hour before this run (99 if never saved)</param>
+        public void ShowEncore(LevelDef def, bool fresh, float finishHour, float previousBest = 99f)
         {
             title.text = "Encore saved!";
             subtitle.text = "Even on a scorcher, everyone is happy!";
-            timeLine.text = $"Finished at {Postcard.FormatHour(finishHour)}";
+            timeLine.text = TimeLine(finishHour, previousBest);
             for (int i = 0; i < 3; i++) stamps[i].transform.parent.gameObject.SetActive(i == 1);
             stampLabels[1].text = "Scorcher saved";
             int index = LevelLibrary.IndexOf(def.id);

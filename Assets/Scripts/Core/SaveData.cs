@@ -4,7 +4,8 @@ using UnityEngine;
 
 namespace PocketWeather
 {
-    /// <summary>Progress: stamps per level (1 day saved, 2 before par, 4 delight), best finishing hour.</summary>
+    /// <summary>Progress: stamps per level (1 day saved, 2 before par, 4 delight, 8 Encore), best
+    /// finishing hours of the day and of its Encore.</summary>
     public static class SaveData
     {
         public const int StampSaved = 1, StampPar = 2, StampDelight = 4, StampEncore = 8;
@@ -16,6 +17,10 @@ namespace PocketWeather
             public int stamps;
             public float bestHour = 99f;
             public int plays;
+            /// <summary>The Encore's best finishing hour; 0 (what a save from before round 7 reads
+            /// as) means none yet.</summary>
+            public float encoreBest;
+            public bool HasEncoreBest => encoreBest > 0f && encoreBest < 90f;
         }
 
         [Serializable]
@@ -114,6 +119,20 @@ namespace PocketWeather
             if (hour < l.bestHour) l.bestHour = hour;
             Save();
         }
+
+        /// <summary>Records an Encore's finishing hour; returns the best before it (99 if none).</summary>
+        public static float RecordEncoreFinish(string id, float hour)
+        {
+            var l = Get(id);
+            float before = l.HasEncoreBest ? l.encoreBest : 99f;
+            if (hour < before) l.encoreBest = hour;
+            Save();
+            return before;
+        }
+
+        /// <summary>For the self-tests: reads a save's text as the game would, without touching the
+        /// save in use.</summary>
+        public static List<LevelSave> DebugParse(string json) => JsonUtility.FromJson<SaveFile>(json)?.levels;
 
         public static void RecordPlay(string id)
         {

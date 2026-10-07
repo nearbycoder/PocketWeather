@@ -29,6 +29,13 @@ namespace PocketWeather
         Cloud C => Cloud.Instance;
         GameFlow.State Now => GameFlow.I.Current;
 
+        static bool TextShowing(string part)
+        {
+            foreach (var t in FindObjectsByType<UnityEngine.UI.Text>(FindObjectsInactive.Exclude))
+                if (t.isActiveAndEnabled && t.text.Contains(part)) return true;
+            return false;
+        }
+
         void Check(string name, bool ok, string detail = "")
         {
             Debug.Log($"[KeyTest] {(ok ? "PASS" : "FAIL")} {name}{(detail != "" ? " (" + detail + ")" : "")}");
@@ -252,7 +259,35 @@ namespace PocketWeather
                              && C.Water <= 30f * LevelLibrary.EncoreWaterScale + 0.5f && L.Def.island.dryRate >= LevelLibrary.EncoreDryRate;
                 Check("the Encore runs as a scorcher (shorter day, half water, drying beds)", rules,
                       $"day {L.Def.dayLength:0}s, water {C.Water:0}, dry {L.Def.island.dryRate:0.00}");
+
+                // --- saving it records the scorcher's own best, and leaves the ordinary day's alone
+                SaveData.RecordFinish("level01", 10.5f);   // the ordinary day was finished at 10:30 once
+                float dayBest = SaveData.Get("level01").bestHour;
+                yield return new WaitForSeconds(1.0f);
+                float hour = L.Hour;
+                GameFlow.I.DebugSaveDay();
+                yield return WaitFor(() => Now == GameFlow.State.Results, 10f);
+                yield return new WaitForSecondsRealtime(1.0f);
+                var rec = SaveData.Get("level01");
+                Check("saving an Encore records the scorcher's best", rec.HasEncoreBest && Mathf.Abs(rec.encoreBest - hour) < 0.1f && Mathf.Approximately(rec.bestHour, dayBest),
+                      $"scorcher best {rec.encoreBest:0.00} (saved at about {hour:0.00}), day best {rec.bestHour:0.00} (was {dayBest:0.00})");
+                string want = "Scorcher best: " + Postcard.FormatHour(rec.encoreBest);
+                GameFlow.I.DebugCloseMenus();
+                GameFlow.I.DebugStart(0, false, true);
+                GameFlow.I.DebugShowPostcard();
+                yield return new WaitForSecondsRealtime(1.0f);
+                Check("the Encore postcard shows the scorcher's best", TextShowing(want) && !TextShowing("Your best"), want);
+                GameFlow.I.DebugStart(0, false);
+                GameFlow.I.DebugShowPostcard();
+                yield return new WaitForSecondsRealtime(1.0f);
+                Check("the day's own postcard still shows the day's best", !TextShowing("Scorcher best") &&
+                      (dayBest > 90f ? !TextShowing("Your best") : TextShowing("Your best: " + Postcard.FormatHour(dayBest))), $"day best {dayBest:0.00}");
             }
+
+            // --- a save from before Encore best times (round 6) loads with its stamps and none
+            var old = SaveData.DebugParse("{\"levels\":[{\"id\":\"level01\",\"stamps\":15,\"bestHour\":10.5,\"plays\":3}],\"seenTitle\":true}");
+            Check("a round-6 save loads with its stamps and no scorcher best", old != null && old.Count == 1 && old[0].stamps == 15 && Mathf.Approximately(old[0].bestHour, 10.5f) && !old[0].HasEncoreBest,
+                  old != null && old.Count > 0 ? $"stamps {old[0].stamps}, best {old[0].bestHour}, scorcher best {old[0].encoreBest}" : "unreadable");
 
             Debug.Log($"[KeyTest] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);

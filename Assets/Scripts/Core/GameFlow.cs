@@ -152,13 +152,16 @@ namespace PocketWeather
             results.Show(Level.Def, SaveData.StampSaved | SaveData.StampPar, 0, Level.Def.par - 1f, false, Level.Def.par - 1.5f);
         }
         public void DebugCloseMenus() => CloseAll();
+        /// <summary>Saves the day as if its last need had just been met (the real celebration, records
+        /// and results card).</summary>
+        public void DebugSaveDay() => OnAllMet();
         public void DebugEncoreResults()
         {
             if (Level == null) return;
             Level.Running = false;
             Current = State.Results;
             Hud.SetVisible(false, 0.2f);
-            results.ShowEncore(Level.Def, true, Level.Def.par - 1f);
+            results.ShowEncore(Level.Def, true, Level.Def.par - 1f, Level.Def.par - 1.5f);
         }
         public void DebugEnding() { LevelIndex = LevelLibrary.Campaign.Length - 1; NextLevel(); }
 
@@ -354,8 +357,9 @@ namespace PocketWeather
                 // an Encore earns its own stamp; the day's other stamps (and best time) belong to the
                 // ordinary day
                 int freshEncore = SaveData.Award(lvl.Def.id, SaveData.StampEncore);
+                float previousEncoreBest = SaveData.RecordEncoreFinish(lvl.Def.id, finish);
                 Current = State.Results;
-                results.ShowEncore(lvl.Def, freshEncore != 0, finish);
+                results.ShowEncore(lvl.Def, freshEncore != 0, finish, previousEncoreBest);
                 Debug.Log($"[PW] level {lvl.Def.id} encore saved at {finish:0.00} fresh={freshEncore != 0} oopses={lvl.Oopses}");
                 yield break;
             }

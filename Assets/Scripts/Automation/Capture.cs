@@ -290,6 +290,8 @@ namespace PocketWeather
             yield return new WaitForSeconds(1.5f);
             foreach (var id in new[] { "level01", "level02", "level03" }) SaveData.Award(id, SaveData.StampSaved | SaveData.StampPar);
             SaveData.Award("level01", SaveData.StampEncore);
+            SaveData.RecordFinish("level02", 10f + 40f / 60f);           // the day's best, 10:40
+            SaveData.RecordEncoreFinish("level02", 11f + 15f / 60f);     // and the scorcher's, 11:15
             flow.DebugShowMap();
             yield return new WaitForSeconds(1.5f);
             yield return Shot("e1_map");
