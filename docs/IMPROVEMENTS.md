@@ -1456,3 +1456,128 @@ that a round-6 save loads with its stamps and no scorcher best.
 - Real phones, Safari, controllers, audio by ear and Encore difficulty still need people or the
   owner. R7-3 gives a skilled player something to beat, but doesn't retune the Encores.
 - Hosting, releases and tags, the trailer, licences and Windows Build Support are the owner's.
+
+## Round 7 results
+
+Implemented on `improvements-7`, one commit per item, plus a touch fix the portrait checks turned
+up. Screenshots are in [`docs/media/improvements/round7/`](media/improvements/round7/). Every tool
+run used a throwaway config folder in `Recordings/`. The machine's load average was 15 to 51 during
+the round; input-driven runs are noted with their load.
+
+The full self-test passed on a Linux build of the final code (started at load 21, ended at 16):
+- validator and loop seams
+- keyboard 39, gamepad 26 and touch 21 checks
+- the UI audit at eight sizes (360x800 added), 21 checks each
+- the AutoPilot campaign 12/12 with 11/12 delights (the wedding bouquet catch, the bot's known
+  weakness; Day 6's rainbow covered Rosa), no exceptions
+- prefs in the game's own folder
+
+`web_smoke` passed on a web build of the final code in all six modes (Chrome desktop, `--mouse`,
+`--phone` and `--portrait`; `--firefox` and `--firefox --phone`) with 0 console errors. The
+up-front download is still 20.9 MB. `--firefox --portrait` had never been run. It passed every
+check except the "turn sideways" card: Firefox here can't pose as a touch phone, so the page
+treats it as a desktop. It drew the narrow menus at 0.440 CSS px per design unit at 2 px per CSS
+px, and played Day 1 from the narrow postcard. The real prefs files' `pw.` entries were
+identical before the self-test and at the end of the round (the snapshot was taken mid-round;
+every earlier run was sandboxed the same way).
+
+### R7-1. Menus on a phone held upright: done
+
+- Held upright, when the menus would draw under 0.44 CSS px per design unit, their canvas is scaled
+  up to reach it: at most 1.4x, and never so far that fewer than 840 design units fit across. That
+  is x1.35 at 390x844 and x1.40 at 360x800. Desktops, landscape phones (as in round 6) and 720x1280
+  are unaffected.
+- The narrow layouts:
+  - **title:** the logo is drawn at 0.7x, with its subtitle line set bigger to read the same.
+  - **map:** three cards a row, with the stamp pills side by side under the title.
+  - **postcard:** taller, with the story wrapping over more lines and the par line, best time,
+    stamps and buttons each on a row. Start sits in the middle until an Encore opens. A long needs
+    row (Day 12's seven) draws closer.
+  - **pause:** its controls line wraps in a narrower strip.
+  - **results card:** stamps closer and smaller, buttons in a row across the bottom.
+  - **sunset card and ending:** their lines wrap in narrower cards.
+  - **settings:** already fit, so it's unchanged.
+- Smallest menu text, measured by the UI audit on every menu screen:
+
+  | Screen size | Before | After |
+  | --- | --- | --- |
+  | 390x844 | 8.5 CSS px (title credit, ending credits); 9.1 to 9.8 elsewhere | 12.3 (pause, results, ending); 13.2 elsewhere |
+  | 360x800 | 7.8 (title credit, ending credits); 8.4 to 9.0 elsewhere | 11.8 |
+  | 844x390, 740x360 | 11.6 | 11.6 (unchanged) |
+  | 1600x900 | 21.7 | 21.7 (unchanged) |
+
+- The UI audit's 11.5 CSS px floor now covers phones held either way. It also fails if a
+  desktop-sized screen (short side 720 or more, 720x1280 included) scales its menus. It adds Day
+  12's postcard and an Encore's results card to the screens it checks. All 21 checks passed at
+  each of eight sizes (the seven before, plus 360x800).
+- Landscape is unchanged: 1600x900 and 844x390 captures of all nine menu screens differ from the
+  previous commit's by at most 0.41% of pixels (fuzz 8%; the title's and ending's animation).
+- `web_smoke --portrait` logged the menus at 0.440 CSS px per design unit (x1.35 on a 585x1266
+  canvas at 1.5 px per CSS px). It tapped the narrow postcard's Start and played Day 1, with 0
+  console errors. It now fails below 0.43 held either way.
+
+![portrait menus: before above, after below](media/improvements/round7/1-portrait-menus-before-after.jpg)
+
+![web portrait](media/improvements/round7/1-web-portrait-postcard-play-pause.jpg)
+
+Not judged: how the narrow menus feel on a real phone. The page still suggests turning sideways.
+
+### R7-2. Hints that always fit: done, with a HUD fix for 360-wide phones
+
+- A hint or toast is sized to its text on one line if the screen has room. Otherwise the text
+  shrinks (down to 75%), and as a last resort wraps onto two lines, leaving about 12 CSS px at
+  each side. Held upright, the hint sits above the touch buttons however tall it is.
+- **Before:** Day 5's mouse-worded hint filled a 390-wide screen edge to edge (99% of the width,
+  2 px from each edge). On a 360-wide screen both "(right-drag)" hints ran off it. At 390x844 the
+  delight toast "A rainbow for Rosa and Tom" also touched both edges.
+- **After:** the widest caption is 88% of a 390-wide screen and 87% of a 360-wide one, at 0.84x
+  and 0.75x of its usual size. None needed two lines. Landscape captions are unchanged (the widest
+  is 44% of an 844-wide screen).
+- The UI audit shows every hint in every device's words (34) and the 16 longest toasts. It fails
+  if one is off screen or within 4 CSS px of its edges, runs out of its pill, shrinks below 75% or
+  meets the touch buttons. Run on the old code it failed at 390x844 and 360x800; now it passes at
+  all eight sizes.
+- **Found on the way:** at 360x800, a common Android size, the HUD's top bar stopped at its 1.5x
+  cap, so the pause button was 41.4 px. The cap is now 1.6x, and the pause button is 44.2 px. The
+  self-test now runs the UI audit at 360x800 as well.
+
+![hints](media/improvements/round7/2-hints-fit-before-after.jpg)
+
+### R7-3. Encores keep their own best time: done
+
+- An Encore records its own best finishing hour. A new save field, which a save from before this
+  round reads as "none yet".
+- The Encore postcard shows "Scorcher best: 11:15", and nothing until an Encore is saved; before,
+  it showed the ordinary day's best. Its results card says "a new best!" or what the best is, as
+  ordinary days do.
+- The keyboard test (39 checks, was 35) gives Day 1 a best of 10:30, then saves its Encore through
+  the real celebration. It checks that the scorcher's best is recorded and shown on the Encore
+  postcard, that the day's own best is untouched and still shown on its postcard, and that a
+  round-6 save parses with its stamps and no scorcher best.
+
+![encore best](media/improvements/round7/3-encore-best-times.jpg)
+
+### Also changed: flicks on a phone held upright
+
+- The touch self-test failed its flick checks at 390x844 in 3 of 5 runs, on this round's code and
+  the round's starting point alike (load 20 to 26).
+- Logging each release showed why. Flick distance and speed were measured in units of the screen's
+  height, the long side of an upright phone, so the test's flick averaged 439 to 805 against a
+  threshold of 700. A real flick held upright had to be about twice as long in pixels as the same
+  flick on the same phone held sideways.
+- They're now measured by the short side, which leaves landscape exactly as it was. The same flick
+  measures about 2.2x more, and the test passed 4 runs out of 4 at 390x844 (load 16 to 19, lower
+  than the failing runs). The still-finger test that starts rain uses the same unit, so it now
+  matches landscape too.
+
+### Found along the way, not fixed
+
+- `web_smoke --firefox --portrait` can't check the "turn sideways" card, for the same reason
+  `--firefox --phone` can't check fullscreen. Only Chrome's phone emulation exercises both.
+- The bot still misses the wedding bouquet in some campaigns (11/12 delights this round).
+- Not looked at again: the Encores' difficulty, which still needs people.
+
+### Decisions for the owner (unchanged)
+
+Hosting the web build, a new release zip (v0.1.0 predates all seven rounds), the trailer,
+licences, signing and Windows Build Support.

@@ -257,7 +257,7 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     await shot("w02_after_title");
     // a phone's first tap on the game asks for fullscreen; desktops stay as they are
     fullscreen = await evaluate("document.fullscreenElement ? document.fullscreenElement.id || document.fullscreenElement.tagName : ''");
-    await tap(...ui(-739, 151));                   // map's Day 1 card, for builds that show the map first (harmless on the postcard)
+    if (!narrow) await tap(...ui(-739, 151));      // map's Day 1 card, for builds that show the map first (harmless on the postcard)
     await sleep(3000);
     await shot("w03_postcard");
     await tap(...(narrow ? ui(0, -395) : ui(300, -220)));   // postcard: Start
