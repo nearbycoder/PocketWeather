@@ -427,7 +427,7 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, three improvement rounds (see
+every input method. Since then, four improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
@@ -443,6 +443,12 @@ every input method. Since then, three improvement rounds (see
 - touch wording in the very first hint on phones and tablets
 - a web download that no longer waits for the music (21 MB up front instead of 28.8 MB)
 - self-tests and bots that keep their settings changes away from the real prefs
+- Linux prefs in the game's own folder, and a launcher that starts on Wayland
+- a web smoke test in Firefox as well as Chrome
+- rain notes that follow the music's chords on the web too (before, they all came from each
+  track's first chord)
+- a title prompt in the words of the device in use ("Click to play" with a mouse)
+- met and problem marks on the needs tray that don't depend on telling green from red
 
 None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
@@ -460,9 +466,9 @@ None of it is in a release yet. What has been verified (on the Linux build unles
   real Input System. The UI audit runs at five window shapes, two of them portrait. The
   once-flaky "rain waters the bed" check now lines Pip up first; both keyboard and gamepad tests
   passed 10 runs out of 10.
-- **Web, in headless Chrome:**
+- **Web, in headless Chrome and Firefox 157:**
   - The build plays with real browser touch events and a clean console on desktop and phone
-    emulation.
+    emulation in Chrome, and with mouse and touch actions in Firefox.
   - The download before the title screen is 21.0 MB, down from 28.8 MB in round 2 and 32.6 MB
     for v0.1.0. The music (7.9 MB) arrives afterwards; the title's track plays 1 to 2 s after the
     title appears, even at 8 Mbps.
@@ -470,7 +476,10 @@ None of it is in a release yet. What has been verified (on the Linux build unles
     same runs), and about 14 s at 20 Mbps (18.0 s), with the machine busy.
   - The page's "turn sideways" card for phones held upright works in phone emulation.
   - The first hint says "Drag to fly" on an emulated phone, held either way, and "Point to fly"
-    in a browser without a touchscreen.
+    in a browser without a touchscreen. The title says "Tap to play" and "Click to play" to
+    match.
+  - The clock the rain's notes take their chords from now runs with the browser's audio clock
+    (10.0 to 10.3 s, 10 s into a track); before, Unity reported the music's position as 0.00 s.
   - Auto graphics remembers dropping to Low on the next visit.
 - Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
   off, 99% of frames under 17 ms, on both OpenGL Core (the default) and Vulkan
@@ -515,9 +524,15 @@ Rough edges, honestly:
   prefs before reading the game's name). Launched normally it uses the right folder, and
   `Tools/play.sh` no longer passes that flag. Progress saved in the old place by earlier
   `Tools/play.sh` runs is brought over once on first launch; settings aren't.
-- **The web build has only run in headless Chrome.** That includes the music now arriving after
-  boot, which the browser downloads and decodes itself. Safari (iPhone, iPad, Mac) and Firefox
-  haven't been tried, and if a track can't be fetched the game plays on without it.
+- **The web build has only run in headless Chrome and headless Firefox** (desktop Firefox 157;
+  its phone mode can't fake a phone's coarse pointer, so the touch wording before the first
+  touch is checked in Chrome only). Safari (iPhone, iPad, Mac) hasn't been tried: Playwright's
+  WebKit needs system libraries that aren't installed here. If a track can't be fetched the game
+  plays on without it.
+- **Colour blindness was checked by simulation only.** Under simulated protanopia and
+  deuteranopia, a bed's just-right and soggy rings turn the same beige; the soggy bubble also
+  swaps its icon for a puddle and its fill runs past the notch, so it should still read, but
+  nobody colour-blind has tried it.
 - **The web build isn't hosted anywhere yet.** See [docs/HOSTING.md](docs/HOSTING.md).
 - **No license has been chosen yet.** Until a `LICENSE` file is added, the default copyright
   rules apply to the code and assets (the fonts remain under the OFL).

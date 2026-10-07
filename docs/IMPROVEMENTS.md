@@ -893,3 +893,114 @@ plus the fix and its screenshots if one was needed.
   9 to 11 CSS px and the pause button about 36 CSS px. It's readable in emulation, but whether it's
   comfortable needs a real phone before redesigning the HUD for it.
 - Encore tuning, audio by ear, real phones and controllers still need people.
+
+## Round 4 results
+
+Implemented on `improvements-4`, one commit per item, plus a web audio bug that the browser runs
+turned up. Screenshots are in [`docs/media/improvements/round4/`](media/improvements/round4/).
+The full self-test passed on a Linux build with every change:
+- validator and loop seams
+- keyboard 35, gamepad 26 and touch 21 checks (the new title-prompt checks included)
+- the UI audit at five sizes, 17 checks each
+- the AutoPilot campaign 12/12 with 12/12 delights, no exceptions
+- the new "prefs in the game's own folder" check
+
+`web_smoke` passed on the final web build (HEAD) in all six modes (Chrome desktop, `--phone`,
+`--portrait` and `--mouse`; `--firefox` and `--firefox --phone`) with 0 console errors. The up-front
+download is 20.9 MB, as in round 3.
+
+The real prefs files' `pw.` entries were the same before and after every run this round (and
+the game's own prefs file was byte-identical). All tool runs used throwaway config folders in
+`Recordings/`. The machine's load average was 14 to 38 during the round.
+
+### R4-1. Settings and progress under the game's own name: done
+
+- The cause was one flag. Given `-screen-fullscreen`, the Unity player opens its prefs before it
+  has read `app.info`, so they go to `unity3d/unknown/unknown/`. `-screen-width` and
+  `-screen-height` are harmless, and so is a launch with no arguments. Unity's own
+  `-window-mode windowed` is ignored on Linux, and `boot.config` can't help.
+- `Tools/play.sh` no longer passes the flag. Tool runs start windowed because their sandbox's
+  prefs are seeded with `Screenmanager Fullscreen mode` = 3 (and its `Default` key, which must
+  match the project's `fullscreenMode` or Unity resets it). The UI audit's logs show no
+  fullscreen requests at any of the five sizes, and its checks pass at each size.
+- On first start under the right name, the Linux player imports progress from the old file if
+  it has none of its own. In a sandbox seeded with an old save of three stamped days, one launch
+  logged "imported progress … 3 days with stamps" and the title opened on Day 4. The old file
+  was byte-identical afterwards, and a second launch didn't import again. Settings stay behind:
+  on this machine the old file's `pw.` settings are leftovers from pre-round-3 self-tests.
+- Started with `-screen-fullscreen`, the game logs a warning saying where its prefs went.
+
+### R4-2. A Linux launcher that starts on Wayland: done
+
+`Tools/linux/PocketWeather.sh` is copied next to every Linux build. On this machine the binary
+alone selected the X11 backend and hadn't booted after 30 s; the launcher selected Wayland and
+booted in about 1 s. Dry runs show it adds `-force-wayland` only when `WAYLAND_DISPLAY` is set,
+and `PW_X11=1` skips it. Not tried: X11 sessions, GNOME and other compositors. The v0.1.0 zip
+doesn't have it, and re-cutting the release is the owner's call.
+
+### R4-3. The web build in Firefox: done, and it found a bug in every browser
+
+- `node Tools/web_smoke.mjs --firefox` drives Firefox 157 over WebDriver BiDi with no npm
+  packages: the same play-through as in Chrome, with mouse actions, or with touch actions under
+  `--phone`. The build boots in 3 to 4 s on the machine's GPU, plays and gets its music, with
+  0 console errors.
+- Firefox 157 has no BiDi touch override, so its phone mode can't report a coarse pointer
+  before the first touch. There the test checks that the hint switches to "Drag to fly" after
+  the first touch; it does, and the touch buttons appear.
+- WebKit couldn't be tried: Playwright's cached WebKit needs libicu74, libflite and libbacktrace,
+  which aren't installed.
+
+![firefox](media/improvements/round4/3-4-firefox-and-title-prompt.jpg)
+
+**The bug: on the web, rain notes all came from each track's first chord.** Both browsers log
+"getFrequency() is not supported for compressed sound". A one-off log line showed that ten seconds
+into a track Unity reported the music source's position as 0.00 s, in all 8 Chrome runs and 1 of
+4 Firefox runs. The rain's notes, mote arpeggios and chimes take their pitches from the chord at
+that position, so on the web they never followed the progression. The web player now counts the
+track's time from when it started, on the audio clock; desktop players still read the source,
+which was correct (10.01 to 10.07 s in the self-test's 16 log lines). In all six browser modes
+the chords' clock now reads 10.0 to 10.3 s, matching the audio clock. `web_smoke` fails if it
+falls behind. Nobody has heard the difference.
+
+### R4-4. A title prompt that matches the device: done
+
+The title said "Tap to play" everywhere. It now starts from the same guess as the first hints
+and follows the device used next: "Tap to play", "Click to play", "Press Enter to play" or
+"Press A to play". A tap's synthesised mouse movement doesn't count as a mouse. The keyboard,
+gamepad and touch self-tests check the wording after their first input. `web_smoke` checks it
+before any input: "Tap" on emulated phones and touch desktops, "Click" with a mouse in Chrome and
+Firefox.
+
+### R4-5. Colour-blind check: one fix needed, one judged acceptable
+
+The state colours were simulated for protanopia, deuteranopia and tritanopia (Machado, Oliveira
+and Fernandes 2009, full severity), with the CIELAB difference between states measured:
+
+| States (dE76) | normal | protanopia | deuteranopia | tritanopia |
+| --- | --- | --- | --- | --- |
+| ring: thirsty / just right | 62.3 | 57.8 | 55.1 | 11.3 |
+| ring: just right / soggy | 92.6 | 18.3 | 16.8 | 99.7 |
+| tray: met / problem tint | 35.6 | **6.9** | **3.5** | 36.6 |
+
+- **The needs tray was the problem.** For red-green colour blindness the met and problem tints
+  are nearly the same colour, so the tick and "!" over the item's edge had to carry the meaning.
+  They were faint: 21 to 26 L* of contrast against the tint. They now sit on a white disc with an
+  ink edge, a shade deeper, for 40 to 51 L* in both simulations (measured on the Day 2 band
+  capture). The tints stay.
+- **The bed ring is acceptable as it is.** Just right and soggy look alike in both red-green
+  simulations, but a soggy bed's fill runs past the notch and its icon becomes a puddle. Thirsty
+  and just right differ least for tritanopia (11.3), which is rare, and the fill's position
+  against the band still tells them apart.
+- This was checked by simulation, not by colour-blind players.
+
+![tray](media/improvements/round4/5-tray-status-colour-blind-before-after.jpg)
+
+### Found along the way, not fixed
+
+- **A double-clicked Linux release hangs on this machine** for the reason R4-2 works around, and
+  the v0.1.0 zip has no launcher. Releasing a new zip is the owner's decision.
+- **Phone landscape legibility** (from planning): at 844x390 the HUD draws at 0.36x, so the
+  smallest text is about 9 to 11 CSS px and the pause button about 36 CSS px. That needs a real
+  phone before redesigning.
+- Unity's WebGL player also logs "Trying to get length of sound which is not loaded yet" at
+  boot and on scene changes, in both browsers. No missing sound was traced to it.
