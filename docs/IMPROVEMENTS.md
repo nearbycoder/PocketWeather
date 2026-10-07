@@ -1581,3 +1581,93 @@ Not judged: how the narrow menus feel on a real phone. The page still suggests t
 
 Hosting the web build, a new release zip (v0.1.0 predates all seven rounds), the trailer,
 licences, signing and Windows Build Support.
+
+## Round 8 scope
+
+Planned 2026-10-07 on `improvements-8`, from `main` at `c3c89bf` (round 7 merged, `main` equal to
+`origin/main`). Seven rounds made the game fit for phones and the web. This round turns to things
+any player meets, on any device. Before planning I measured three of them:
+
+- **The finale's bouquet gives a player nothing to go on.** "The bouquet!" appears as it's
+  thrown, and it's in the air for 2.4 s. It flies about 2 units towards the camera, at a random
+  angle of up to 40° either side, and counts only if it passes within 1.25 cloud radii of Pip in
+  3D. Its arc rises well above Pip and comes down through Pip's height near the end. Nothing on
+  screen shows where that will be, and from the tilted camera "on top of Pip" on screen isn't the
+  same as on top of Pip in the world. A geometry check of the current rule (`Recordings/r8/bouquet_sim.py`)
+  shows a still Pip catches it only within a patch of 2 to 9 square units, depending on how full
+  Pip is. The expert bot, which computes the arc exactly, caught it in 5 of 6 runs of Day 12 on
+  round 7's build (load 18 to 33), and it's the delight the bot has missed in recent campaigns.
+- **One tap on Restart or Map throws away the day.** On a phone held sideways, the pause menu's
+  2x2 grid puts Restart right beside Resume and Map right below it. Neither asks first, so a
+  stray tap two minutes into the wedding sends you back to the start.
+- **The web download is mostly meshes and ambience.** Round 7's web build is 21.0 MB before the
+  title appears. Unity's build report puts meshes at 9.8 MB uncompressed (the twelve island
+  terrains are 0.47 to 0.54 MB each) and sounds at 4.5 MB, of which the four ambience loops are
+  2.4 MB. Ogg doesn't compress further, so those 2.4 MB arrive as they are. No model uses Unity's
+  mesh compression.
+
+### R8-1. A bouquet you can catch
+
+**What:**
+- When the bride cheers (1.2 s before the throw), the toast says "The bouquet! Catch it!", and a
+  ring appears on the ground where the bouquet will come down through Pip's height. The ring stays
+  until the bouquet lands.
+- The bouquet also counts as caught once it's falling (past the top of its arc) inside Pip's
+  shadow and no higher than Pip's top, so dropping into Pip from above is a catch.
+- The game logs how close the bouquet came to Pip, so a miss can be traced.
+
+**Acceptance:**
+- The keyboard self-test throws the bouquet three times at fixed angles (left, straight, right)
+  with an empty cloud (the smallest Pip), parked on the ring each time. It fails unless all three
+  are caught. It throws a fourth with Pip parked 2.5 units from the ring, and fails if that's
+  caught.
+- The bot heads for the ring (what a player sees) instead of computing the arc. It catches the
+  bouquet in 6 of 6 runs of Day 12 (5 of 6 before).
+- The full AutoPilot campaign finds the wedding delight.
+
+**Verify:** the keyboard test, six bot runs of Day 12 before and after, the full self-test, and a
+capture of the ring in flight.
+
+### R8-2. Restart and Map ask first
+
+**What:** once a day has been played for 5 s or more, Restart and Map on the pause menu need a
+second press. The first turns the button's label to "Sure?", as Settings' "Reset progress" does.
+Pressing another button, moving the selection away or closing the menu puts it back. Under 5 s
+there's nothing to lose, so one press still does it.
+
+**Acceptance:** the keyboard self-test presses Restart once well into a day and fails unless the
+game is still paused, on the same hour, with the button saying "Sure?"; a second Enter restarts the
+day. It also checks that Map, pressed early in a fresh day, leaves at once. The touch self-test
+taps Restart once and fails if the day restarts, then taps again and fails if it doesn't. The UI
+audit checks the "Sure?" label fits its button at all eight sizes.
+
+**Verify:** the keyboard, gamepad and touch self-tests, and the UI audit.
+
+### R8-3. A smaller web download
+
+**What:**
+- The ambience loops leave the up-front download and arrive afterwards, as the music has since
+  round 3. The web fetches the current scene's loop first and fades it in when it arrives. Desktop
+  players open them from disk, as they do the music.
+- The models use Unity's mesh compression if captures can't tell the difference.
+
+**Acceptance:**
+- The web download before the title is 17.5 MB or less (21.0 MB now).
+- `web_smoke` passes in all six modes with 0 console errors, and logs that the title's ambience
+  arrived and started.
+- Captures of all twelve days at 1600x900 are reviewed against round 7's by eye, with the pixel
+  difference measured. Mesh compression is left out if it shows (banding on the terrain, gaps,
+  props floating or sinking).
+- The AutoPilot campaign still passes 12/12, since ground heights come from the terrain meshes.
+- On the Linux build, the ambience plays from its bundle (logged).
+
+**Verify:** the web build's size report, web smoke in six modes, before/after captures, and the
+full self-test.
+
+### Not in this round
+
+- Real phones, Safari, controllers, audio by ear and the Encores' difficulty still need people or
+  the owner.
+- Splitting each island's terrain into its own download (it would take most of the remaining
+  meshes off the up-front download) needs the levels moved out of `Resources`. Left as a lead.
+- Hosting, releases and tags, the trailer, licences and Windows Build Support are the owner's.
