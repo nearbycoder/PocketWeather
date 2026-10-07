@@ -76,8 +76,24 @@
         // drawing a black screen until its canvas changes size, so after a fullscreen change it's
         // nudged by a pixel for a couple of frames when the page comes back.
         var fullscreenChanged = false;
-        document.addEventListener("fullscreenchange", function () { fullscreenChanged = true; });
+        // Fullscreen that ends because the page was hidden is asked for again at the next tap (see
+        // the bottom); leaving it with the game showing (back gesture, Esc, Settings) sticks. Chrome
+        // ends fullscreen before the page is hidden but reports it only once the page is back, so
+        // the page goes by the last state it was told about.
+        var askedFullscreen = false, wasFullscreen = false, fullscreenAtHide = false, shownAt = -1e9;
+        document.addEventListener("fullscreenchange", function () {
+          fullscreenChanged = true;
+          wasFullscreen = !!document.fullscreenElement;
+          // a browser that still reported fullscreen when the page came back, and ends it now
+          if (!wasFullscreen && !document.hidden && fullscreenAtHide && performance.now() - shownAt < 1500) askedFullscreen = fullscreenAtHide = false;
+        });
         document.addEventListener("visibilitychange", function () {
+          if (document.hidden) {
+            fullscreenAtHide = wasFullscreen || !!document.fullscreenElement;
+          } else {
+            shownAt = performance.now();
+            if (fullscreenAtHide && !document.fullscreenElement) askedFullscreen = fullscreenAtHide = false;
+          }
           audioContexts.forEach(function (c) {
             if (document.hidden) {
               if (c.state === "running") { c.pwHidden = true; c.suspend(); }
@@ -145,8 +161,8 @@
         canvas.addEventListener("pointerdown", function () { canvas.focus(); });
         // On a phone, the first tap on the game asks for fullscreen: held sideways, the browser's
         // own bars take a good share of a short screen. Once a visit, so leaving fullscreen (or
-        // Settings → Fullscreen) sticks. Browsers without it (iPhone Safari) are left alone.
-        var askedFullscreen = false;
+        // Settings → Fullscreen) sticks, unless it ended while the page was hidden (switching
+        // apps): then the next tap asks again. Browsers without it (iPhone Safari) are left alone.
         canvas.addEventListener("pointerup", function (e) {
           if (askedFullscreen || !phone || e.pointerType !== "touch") return;
           askedFullscreen = true;

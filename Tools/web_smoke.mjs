@@ -20,7 +20,8 @@
 // collects the game's console log, then uses real browser touch events: tap the title, tap the
 // first level card, tap Start, drag Pip and hold to rain, then hide the page behind another tab for
 // 3 s (the game's audio must stop while it's hidden). A phone must go fullscreen at its first tap
-// on the game, a desktop must not. Screenshots at each step; exits non-zero if
+// on the game, and again at the first tap after the page comes back (but not after leaving
+// fullscreen on purpose); a desktop never. Screenshots at each step; exits non-zero if
 // the game never boots, logs exceptions or fails a check.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync, readdirSync, statSync } from "node:fs";
@@ -131,6 +132,7 @@ async function tap(x, y) { await touch("touchStart", x, y); await sleep(90); awa
 // the page suspends the game's audio contexts while hidden and resumes them when it's back
 let quiet = { ok: true, note: "not checked" };
 let fullscreen = "";
+let refullscreen = null;   // fullscreen when the page came back, after the next tap, and after leaving it on purpose and tapping
 // mean brightness (0 to 1) of a screenshot, worked out by the browser itself
 async function brightness(png) {
   return await evaluate(`new Promise((done) => { const i = new Image(); i.onload = () => { const c = document.createElement("canvas"); c.width = 64; c.height = 32;
@@ -266,6 +268,25 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     await shot("w06_after");
     await waitLog(/\[PW\] music clock /, 20000);   // logged 10 s into a track
     quiet = await hiddenCheck();
+    // coming back from another app: a phone whose fullscreen ended while hidden is asked again at
+    // its next tap; leaving fullscreen with the page showing sticks. The taps land beside the pause
+    // menu (play paused itself while hidden), on its dimmed backdrop.
+    const fsNow = async () => await evaluate("document.fullscreenElement ? document.fullscreenElement.id || document.fullscreenElement.tagName : ''");
+    const backdrop = ui(-cw / 2 + 120, 0);
+    const lost = await fsNow();
+    await tap(...backdrop);
+    await sleep(1200);
+    const again = await fsNow();
+    let kept = "";
+    if (again) {
+      await evaluate("document.exitFullscreen().then(() => 'left')");
+      await sleep(800);
+      await tap(...backdrop);
+      await sleep(1200);
+      kept = await fsNow();
+    }
+    refullscreen = { lost, again, kept };
+    await shot("w08_after_return_tap");
   }
   console.log(`hidden page: ${quiet.note}`);
   // a phone's HUD is drawn at least 0.47 CSS px per design unit (44 px pause button), whatever
@@ -278,6 +299,11 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   const fsChecked = !(PHONE && !coarse);
   const fsOk = !booted || !fsChecked || (PHONE ? fullscreen === "pw-page" : fullscreen === "");
   console.log(`fullscreen after the first tap: ${fullscreen || "no"}${!fsChecked ? " (not checked: this browser can't pose as a touch-screen phone)" : fsOk ? "" : PHONE ? " (a phone should go fullscreen)" : " (a desktop should NOT go fullscreen)"}`);
+  // after switching apps a phone asks again (desktops never go fullscreen); leaving on purpose sticks
+  const rf = refullscreen;
+  const rfOk = !booted || !fsChecked || !rf || (PHONE ? rf.lost === "" && rf.again === "pw-page" && rf.kept === "" : rf.again === "");
+  if (rf) console.log(`fullscreen after coming back: ${rf.lost || "no"}; after the next tap: ${rf.again || "no"}${PHONE ? `; left on purpose, then a tap: ${rf.kept || "no"}` : ""}` +
+    `${!fsChecked ? " (not checked)" : rfOk ? "" : PHONE ? " (a phone should ask again after coming back, but not after leaving on purpose)" : " (a desktop should NOT go fullscreen)"}`);
   // a machine that needed Auto graphics to drop to Low starts on Low next visit (headless Chrome's
   // software GPU always does): reload in the same profile and check the second boot's verdict
   let remembered = true;
@@ -315,5 +341,5 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
   await shutdown();
-  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && quiet.ok && fsOk && hudOk ? 0 : 1);
+  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && quiet.ok && fsOk && rfOk && hudOk ? 0 : 1);
 })().catch(async (e) => { console.error(e); await shutdown(); process.exit(2); });
