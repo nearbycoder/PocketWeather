@@ -305,7 +305,8 @@ machine:
   Firefox over WebDriver BiDi (a mouse desktop, or touch with `--phone`); `--dir` points it at
   another build, for comparisons. It fails unless a phone's first hint and the title's prompt speak
   touch ("Drag to fly", "Tap to play") and a mouse-only desktop's speak mouse, before anything has
-  been touched. It isn't part of `selftest.sh`, which tests the Linux build.
+  been touched, or if the clock the rain's notes take their chords from doesn't move with the
+  music. It isn't part of `selftest.sh`, which tests the Linux build.
 
 ### Rebuilding the trailer and README media
 

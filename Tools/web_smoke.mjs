@@ -214,6 +214,7 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     await touch("touchEnd", ex, ey);
     await sleep(1500);
     await shot("w06_after");
+    await waitLog(/\[PW\] music clock /, 20000);   // logged 10 s into a track
   }
   // a machine that needed Auto graphics to drop to Low starts on Low next visit (headless Chrome's
   // software GPU always does): reload in the same profile and check the second boot's verdict
@@ -240,11 +241,17 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   const hintOk = guessOk && (!booted || (PHONE ? (coarse ? firstHint === "Drag to fly" : log.some((l) => /\[PW\] hint: Drag to fly/.test(l))) : MOUSE ? firstHint === "Point to fly" : true));
   const wanted = PHONE && !coarse ? "switched to \"Drag to fly\" after the first touch" : PHONE ? "touch wording, as it should be on a phone" : MOUSE ? "mouse wording, as it should be without a touchscreen" : "";
   console.log(`first hint: "${firstHint || "none"}"${wanted ? (hintOk ? ` (${wanted})` : ` (NOT the ${wanted.split(",")[0]})`) : ""}`);
+  // the rain's notes follow the music's chords, so the game's idea of where the music is must move
+  // with real time (Unity can't read a compressed web source's position)
+  const clock = log.find((l) => /\[PW\] music clock /.test(l)) || "";
+  const cm = clock.match(/real ([\d.]+) s, chords follow ([\d.]+) s/);
+  const clockOk = !booted || (cm != null && Math.abs(parseFloat(cm[1]) - parseFloat(cm[2])) < 1.5);
+  console.log(`music clock: ${clock ? clock.replace(/.*music clock /, "") : "not logged"}${clockOk ? "" : " (the chords DON'T follow the music)"}`);
   writeFileSync(join(OUT, "console.txt"), log.join("\n"));
   const ex = log.filter((l) => /exception|error/i.test(l) && !/favicon/i.test(l));
   console.log(`console lines ${log.length}, error/exception lines ${ex.length}`);
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
   cleanup();
-  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk ? 0 : 1);
+  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk ? 0 : 1);
 })().catch((e) => { console.error(e); cleanup(); process.exit(2); });

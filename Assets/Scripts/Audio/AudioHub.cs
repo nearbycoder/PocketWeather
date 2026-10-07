@@ -264,6 +264,9 @@ namespace PocketWeather
             incoming.volume = 0;
             incoming.time = 0;
             if (clip != null) incoming.Play();
+            trackStartDsp = AudioSettings.dspTime;
+            trackStartReal = Time.realtimeSinceStartupAsDouble;
+            clockLogged = false;
             activeMusic = incoming;
             tracks.TryGetValue(track, out activeTrack);
             musicFade = 0;
@@ -293,7 +296,27 @@ namespace PocketWeather
             get
             {
                 if (activeMusic == null || activeTrack == null || activeMusic.clip == null) return Time.time * 1.5f;
-                return activeMusic.time / (60f / activeTrack.bpm);
+                return MusicTime / (60f / activeTrack.bpm);
+            }
+        }
+
+        // When the active track started, on the audio clock and the real-time clock.
+        double trackStartDsp, trackStartReal;
+        bool clockLogged;
+
+        /// <summary>Seconds into the active track's loop. Desktop players read the source's own
+        /// position. The web player's sources are the browser's (compressed audio), whose position
+        /// Unity can't report ("getFrequency() is not supported for compressed sound"), so it's
+        /// counted from when the track started: on the audio clock, which stops when the browser
+        /// suspends the page's audio, or on real time if that clock doesn't run.</summary>
+        float MusicTime
+        {
+            get
+            {
+                if (!FetchesMusic) return activeMusic.time;
+                double dsp = AudioSettings.dspTime - trackStartDsp;
+                double t = dsp > 0 ? dsp : Time.realtimeSinceStartupAsDouble - trackStartReal;
+                return (float)(t % Mathf.Max(0.01f, activeMusic.clip.length));
             }
         }
 
@@ -391,6 +414,12 @@ namespace PocketWeather
                 }
             }
             amb.volume = Mathf.MoveTowards(amb.volume, GameSettings.Ambience * 0.6f, dt * 0.5f);
+            // once per track, 10 s in: where each clock thinks the music is (the chords follow MusicTime)
+            if (!clockLogged && activeMusic != null && activeMusic.clip != null && Time.realtimeSinceStartupAsDouble - trackStartReal > 10.0)
+            {
+                clockLogged = true;
+                Debug.Log($"[PW] music clock {currentMusic}: source {activeMusic.time:0.00} s, audio clock {AudioSettings.dspTime - trackStartDsp:0.00} s, real {Time.realtimeSinceStartupAsDouble - trackStartReal:0.00} s, chords follow {MusicTime:0.00} s");
+            }
 
             var cloud = Cloud.Instance;
             float rainV = 0, drinkV = 0;
