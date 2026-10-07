@@ -18,6 +18,16 @@ namespace PocketWeather.EditorTools
             Build(BuildTarget.StandaloneLinux64, "Builds/Linux/PocketWeather.x86_64");
         }
 
+        /// <summary>The launcher players should start (Tools/linux/PocketWeather.sh): on a Wayland
+        /// desktop it picks Unity's Wayland backend, because the default X11 one can hang there.</summary>
+        static void AddLinuxLauncher(string playerPath)
+        {
+            string launcher = Path.Combine(Path.GetDirectoryName(playerPath), "PocketWeather.sh");
+            File.Copy("Tools/linux/PocketWeather.sh", launcher, true);
+            System.Diagnostics.Process.Start("chmod", $"755 \"{launcher}\"")?.WaitForExit();
+            Debug.Log($"[PW] launcher -> {launcher}");
+        }
+
         /// <summary>
         /// macOS player, universal (Intel and Apple Silicon), Mono. Built from Linux it is unsigned
         /// and not notarised, so Gatekeeper warns on first launch, and it has never been run on a Mac.
@@ -85,6 +95,7 @@ namespace PocketWeather.EditorTools
             bool ok = s.result == BuildResult.Succeeded;
             Debug.Log($"[PW] {target} build {s.result}: {s.totalSize / (1024 * 1024)} MB, {s.totalErrors} errors, {s.totalTime.TotalSeconds:0}s -> {path}");
             if (ok) ok = AddMusic(target, path);
+            if (ok && target == BuildTarget.StandaloneLinux64) AddLinuxLauncher(path);
             if (Application.isBatchMode)
                 EditorApplication.Exit(ok ? 0 : 1);
         }

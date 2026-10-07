@@ -205,7 +205,8 @@ Download the latest build from [**Releases**](https://github.com/nearbycoder/Poc
 
 - **Linux (x86_64):** unzip `PocketWeather-0.1.0-linux-x86_64.zip` and run `PocketWeather.x86_64`.
   On Wayland, add `-force-wayland` if the window doesn't appear (some compositors hang on the
-  XWayland path).
+  XWayland path). Builds from the current source include `PocketWeather.sh`, which does that for
+  you: start the game with it.
 - **Web:** unzip `PocketWeather-0.1.0-web.zip` and serve the folder over HTTP (browsers won't run
   it from `file://`), for example `python3 -m http.server 8080` inside it, then open
   `http://localhost:8080`. It's made for desktop and phone browsers alike, with touch controls
@@ -229,8 +230,8 @@ Tools/unity.sh build          # Builds/Linux/PocketWeather.x86_64
 Tools/unity.sh webgl          # Builds/WebGL (switches the editor's platform; slow the first time)
 Tools/unity.sh mac            # Builds/macOS/PocketWeather.app (universal, unsigned, untested)
 Tools/unity.sh                # open the editor
-Tools/play.sh                 # run the Linux build windowed at 1600x900 (bots, tests and captures
-                              # get throwaway prefs in Recordings/config, never your real ones)
+Tools/play.sh                 # run the Linux build at 1600x900 (bots, tests and captures get
+                              # throwaway prefs in Recordings/config and a window, never your real prefs)
 Tools/serve_web.sh            # serve the web build on :8080, with LAN addresses for a phone
 Tools/package_web.sh          # zip Builds/WebGL for a static host (docs/HOSTING.md)
 ```
@@ -346,6 +347,7 @@ Assets/
 ArtSource/       Blender generators: pw_lib (the kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
 Tools/           unity.sh, play.sh, selftest.sh, serve_web.sh, package_web.sh, web_smoke.mjs,
+                 linux/PocketWeather.sh (the launcher copied next to every Linux build),
                  make_levels.py, validate_levels.py, make_video.py, make_trailer.py,
                  make_web_template.py, audio/ (synth, sfx, music)
 docs/            PLAN.md (design and technical plan), BRIEF.md (the original brief),
@@ -494,9 +496,13 @@ Rough edges, honestly:
   "seaside" track.
 - **Weak GPUs are untested.** Auto graphics drops to Low when frame times stay high, but no real
   low-end GPU has been tried; under a pure software renderer the game ran at about 5 fps.
+- **The Linux binary on its own hangs at startup on some Wayland desktops.** On the development
+  machine (KDE Plasma, Wayland), Unity's default X11 backend stops before the window appears,
+  whatever the graphics API or window mode. `PocketWeather.sh` (in builds from the current source)
+  starts it with Unity's Wayland backend instead, as `Tools/play.sh` does. The v0.1.0 zip predates
+  it. X11 sessions and other compositors haven't been tried.
 - **The Linux player can crash at startup under Wayland.** Once in about 45 automated launches,
-  it crashed inside Unity's Wayland window backend (`Tools/play.sh` forces Wayland because the
-  XWayland path hangs on this machine). Relaunching works.
+  it crashed inside Unity's Wayland window backend. Relaunching works.
 - **Platforms:** Linux and web are tested. `Tools/unity.sh mac` builds a universal macOS app,
   but it has **never been run on a Mac**. It isn't signed with a Developer ID or notarised, so
   Gatekeeper warns on first launch. There's no Windows build: the entry point exists, but this
