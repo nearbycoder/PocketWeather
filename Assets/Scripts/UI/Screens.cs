@@ -595,6 +595,14 @@ namespace PocketWeather
         }
         public string ControlsText => controls.text;
 
+        /// <summary>The controller in use dropped out: the controls line says so instead.</summary>
+        public void SetControllerLost()
+        {
+            controls.text = ControllerLostLine;
+            PlaceStrip();
+        }
+        public const string ControllerLostLine = "Controller disconnected: reconnect it, or carry on with the mouse, keys or touch";
+
         public void SetDelight(LevelDef def, bool found)
         {
             if (def == null || def.delight == null || string.IsNullOrEmpty(def.delight.type)) { delight.text = ""; return; }

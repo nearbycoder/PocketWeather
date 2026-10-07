@@ -190,6 +190,43 @@ namespace PocketWeather
             yield return new WaitForSecondsRealtime(0.5f);
             Check("B resumes", Now == GameFlow.State.Playing, Now.ToString());
 
+            // --- the controller drops out mid-flight: the day pauses and the menu says why; a pad
+            // coming back puts its controls back, and B on it resumes
+            Stick(new Vector2(1f, 0f));
+            yield return new WaitForSeconds(0.3f);
+            float hourAtDrop = L.Hour;
+            InputSystem.RemoveDevice(pad);
+            yield return new WaitForSecondsRealtime(0.4f);
+            var pauseMenu = GameObject.Find("PauseScreen")?.GetComponent<PauseMenu>();
+            Check("a controller dropping out mid-flight pauses the day", Now == GameFlow.State.Paused && GameFlow.I.PadLost, $"{Now}, pad lost {GameFlow.I.PadLost}");
+            Check("the pause menu says the controller dropped out", pauseMenu != null && pauseMenu.ControlsText == PauseMenu.ControllerLostLine, pauseMenu?.ControlsText ?? "no menu");
+            yield return new WaitForSecondsRealtime(0.6f);
+            Check("the day stays paused while it's away", Now == GameFlow.State.Paused && Mathf.Abs(L.Hour - hourAtDrop) < 0.01f, $"{Now}, hour {L.Hour:0.000} (was {hourAtDrop:0.000})");
+            pad = InputSystem.AddDevice<Gamepad>();
+            state = new GamepadState();
+            Apply();
+            yield return new WaitForSecondsRealtime(0.4f);
+            Check("a controller coming back puts its controls back on the menu", pauseMenu != null && pauseMenu.ControlsText.Contains("hold A"), pauseMenu?.ControlsText ?? "no menu");
+            yield return Press(GamepadButton.East);
+            yield return new WaitForSecondsRealtime(0.5f);
+            Check("B on the controller that came back resumes", Now == GameFlow.State.Playing, Now.ToString());
+
+            // --- flying with the keys, an idle pad dropping out leaves the day alone
+            var keys = InputSystem.AddDevice<Keyboard>();
+            InputSystem.QueueStateEvent(keys, new KeyboardState(Key.LeftArrow));
+            yield return new WaitForSeconds(0.3f);
+            InputSystem.QueueStateEvent(keys, new KeyboardState());
+            yield return new WaitForSeconds(0.2f);
+            var flying = C.Input.LastDevice;
+            InputSystem.RemoveDevice(pad);
+            yield return new WaitForSecondsRealtime(0.4f);
+            Check("an idle pad dropping out under the keys doesn't pause", flying == CloudInput.Device.Keys && Now == GameFlow.State.Playing, $"flying with {flying}, {Now}");
+            InputSystem.RemoveDevice(keys);
+            pad = InputSystem.AddDevice<Gamepad>();
+            state = new GamepadState();
+            Apply();
+            yield return new WaitForSeconds(0.3f);
+
             // --- level 4: gust the boat with X, aimed by the right stick
             GameFlow.I.DebugStart(3, true);
             yield return new WaitForSeconds(1.0f);

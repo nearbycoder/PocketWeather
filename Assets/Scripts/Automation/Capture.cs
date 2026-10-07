@@ -363,6 +363,7 @@ namespace PocketWeather
             f.DebugStart(11, false); f.DebugShowPostcard(); yield return new WaitForSeconds(1.6f); yield return Shot("m04b_postcard_day12");
             f.DebugStart(0, true); yield return new WaitForSeconds(1.2f);
             f.DebugPause(); yield return new WaitForSecondsRealtime(1.0f); yield return Shot("m05_pause");
+            GameObject.Find("PauseScreen").GetComponent<PauseMenu>().SetControllerLost(); yield return new WaitForSecondsRealtime(0.3f); yield return Shot("m05b_pause_controller_lost");
             f.DebugSettings(); yield return new WaitForSecondsRealtime(1.0f); yield return Shot("m06_settings");
             f.DebugCloseSettings(); yield return new WaitForSecondsRealtime(0.5f);
             f.DebugResume(); yield return new WaitForSecondsRealtime(0.5f);

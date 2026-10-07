@@ -366,6 +366,7 @@ namespace PocketWeather
             f.DebugBeginPlay(); yield return Settle(); Audit("hud"); CheckTopBar("hud top bar, day 1");
             f.DebugPause(); yield return Settle(); Audit("pause");
             GameObject.Find("PauseScreen").GetComponent<PauseMenu>().DebugArmRestart(); yield return Settle(0.3f); Audit("pause, Restart asking Sure?");
+            GameObject.Find("PauseScreen").GetComponent<PauseMenu>().SetControllerLost(); yield return Settle(0.3f); Audit("pause, controller disconnected");
             f.DebugSettings(); yield return Settle(); Audit("settings");
             f.DebugCloseSettings(); yield return Settle(0.6f);
             f.DebugResume(); yield return Settle(0.6f);

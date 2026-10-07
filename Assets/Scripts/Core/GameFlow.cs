@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 
 namespace PocketWeather
@@ -468,9 +469,39 @@ namespace PocketWeather
             Debug.Log("[PW] paused: the game lost focus");
         }
 
+        // a controller that drops out (flat battery, sleep timer, cable) while it's flying Pip pauses
+        // the day, as losing focus does; the pause menu says why, and a pad coming back puts its
+        // controls back on the menu. An idle pad dropping out under a mouse or keys player is ignored.
+        void OnEnable() => InputSystem.onDeviceChange += DeviceChanged;
+        void OnDisable() => InputSystem.onDeviceChange -= DeviceChanged;
+        bool padLost;
+        /// <summary>The day was paused, or its pause menu told, because the controller in use dropped out.</summary>
+        public bool PadLost => padLost;
+
+        void DeviceChanged(InputDevice device, InputDeviceChange change)
+        {
+            if (!(device is Gamepad) || Level == null) return;
+            bool usingPad = Level.Cloud.Input.LastDevice == CloudInput.Device.Pad;
+            if (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected)
+            {
+                if (!usingPad || (Current != State.Playing && Current != State.Paused)) return;
+                padLost = true;
+                if (Current == State.Playing) Pause();
+                pause.SetControllerLost();
+                Debug.Log($"[PW] controller disconnected ({device.displayName}): the day is paused");
+            }
+            else if ((change == InputDeviceChange.Added || change == InputDeviceChange.Reconnected) && padLost)
+            {
+                padLost = false;
+                if (Current == State.Paused) pause.SetControls(CloudInput.Device.Pad);
+                Debug.Log($"[PW] controller connected ({device.displayName})");
+            }
+        }
+
         public void Resume()
         {
             if (Current != State.Paused) return;
+            padLost = false;
             pauseToggleFrame = Time.frameCount;
             pause.Close();
             if (settings.IsOpen) settings.Close();
