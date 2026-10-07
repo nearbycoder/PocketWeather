@@ -995,6 +995,11 @@ and Fernandes 2009, full severity), with the CIELAB difference between states me
 
 ![tray](media/improvements/round4/5-tray-status-colour-blind-before-after.jpg)
 
+### Also changed
+
+- `web_smoke` now waits for the browser to exit before deleting its throwaway profile. Before,
+  most Chrome runs left a `Recordings/chrome-profile-*` folder behind.
+
 ### Found along the way, not fixed
 
 - **A double-clicked Linux release hangs on this machine** for the reason R4-2 works around, and
