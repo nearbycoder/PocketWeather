@@ -147,7 +147,7 @@ namespace PocketWeather
         {
             var lvl = L;
             var script = lvl.GetComponent<LevelScript>();
-            if (delights && script != null && script.BouquetFlying) { Recorder.Mark("bouquet"); yield return CatchBouquet(script); yield break; }
+            if (delights && script != null && script.BouquetComing) { Recorder.Mark("bouquet"); yield return CatchBouquet(script); yield break; }
             var needs = lvl.Needs.Where(n => n.Required && !n.Met).ToList();
             if (needs.Count == 0) { yield return Hover(C.GroundPoint, 0.3f); yield break; }
             // order: fires first, then things that drink water, by distance
@@ -215,7 +215,7 @@ namespace PocketWeather
             p = C.ClampToBounds(Sloppy(p));
             C.Input.Virtual(p, false);
             float t = 0;
-            while (t < timeout && GameFlow.I.Current == GameFlow.State.Playing)
+            while (t < timeout && GameFlow.I.Current == GameFlow.State.Playing && !BouquetDue)
             {
                 t += Time.deltaTime;
                 var cp = C.transform.position;
@@ -228,8 +228,27 @@ namespace PocketWeather
         {
             C.Input.Virtual(C.ClampToBounds(p), rain);
             float t = 0;
-            while (t < seconds && GameFlow.I.Current == GameFlow.State.Playing) { t += Time.deltaTime; yield return null; }
+            while (t < seconds && GameFlow.I.Current == GameFlow.State.Playing && !BouquetDue) { t += Time.deltaTime; yield return null; }
             C.Input.Virtual(C.ClampToBounds(p), false);
+        }
+
+        /// <summary>The bouquet's ring has appeared: drop whatever's going on and go, as a player
+        /// would (Step then sends Pip to the ring).</summary>
+        bool BouquetDue => delights && L != null && L.GetComponent<LevelScript>() is { BouquetComing: true };
+
+        // whatever routine is running (some, like shading, have loops of their own), the ring wins:
+        // this runs after the coroutines each frame, so Pip heads there from the moment it shows
+        bool headingToRing;
+        void LateUpdate()
+        {
+            bool due = BouquetDue && GameFlow.I.Current == GameFlow.State.Playing;
+            if (due)
+            {
+                var spot = L.GetComponent<LevelScript>().BouquetCatchSpot;
+                if (!headingToRing && verbose) Debug.Log($"[AutoPilot]   bouquet: the ring is up, heading to {spot}");
+                C.Input.Virtual(C.ClampToBounds(spot), false);
+            }
+            headingToRing = due;
         }
 
         IEnumerator Wait(float s) { yield return Hover(C.GroundPoint, s); }
@@ -416,12 +435,10 @@ namespace PocketWeather
 
         IEnumerator CatchBouquet(LevelScript s)
         {
-            // where the arc comes down through Pip's flying height
-            float h = C.transform.position.y - s.BouquetStart.y;
-            float k = 1f - Mathf.Asin(Mathf.Clamp01(h / LevelScript.BouquetArc)) / Mathf.PI;
-            var p = Vector3.Lerp(s.BouquetStart, s.BouquetLand, k);
-            if (verbose) Debug.Log($"[AutoPilot]   bouquet: heading to {p} (k {k:0.00})");
-            while (s.BouquetFlying) { C.Input.Virtual(C.ClampToBounds(p), false); yield return null; }
+            // go and wait on the ring, as a player would
+            var p = s.BouquetCatchSpot;
+            if (verbose) Debug.Log($"[AutoPilot]   bouquet: heading to the ring at {p}");
+            while (s.BouquetComing) { C.Input.Virtual(C.ClampToBounds(p), false); yield return null; }
         }
 
         IEnumerator Douse(FireNeed f)

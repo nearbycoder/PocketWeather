@@ -284,6 +284,33 @@ namespace PocketWeather
                       (dayBest > 90f ? !TextShowing("Your best") : TextShowing("Your best: " + Postcard.FormatHour(dayBest))), $"day best {dayBest:0.00}");
             }
 
+            // --- the wedding bouquet: the smallest Pip, waiting on the ring, catches it whichever way
+            // it's thrown; a Pip away from the ring doesn't
+            GameFlow.I.DebugCloseMenus();
+            GameFlow.I.DebugStart(11, true);
+            yield return new WaitForSeconds(1.0f);
+            var script = L.GetComponent<LevelScript>();
+            var throws = new (float angle, float off)[] { (-40f, 0f), (0f, 0f), (40f, 0f), (0f, 2.5f) };
+            foreach (var (angle, off) in throws)
+            {
+                C.SetWater(0);
+                LevelScript.DebugThrowAngle = angle;
+                script.DebugToss();
+                yield return WaitFor(() => script.BouquetComing, 3f);
+                var spot = script.BouquetCatchSpot + Vector3.right * off;
+                for (float w = 0; script.BouquetComing && w < 6f; w += Time.deltaTime)
+                {
+                    C.SetWater(0);
+                    C.Input.Virtual(spot, false);
+                    yield return null;
+                }
+                string detail = $"thrown at {angle:0}°, Pip {off:0.0} from the ring, radius {C.Radius:0.00}";
+                if (off == 0) Check($"Pip on the ring catches the bouquet ({angle:0}°)", script.LastCatch == true, detail);
+                else Check("Pip away from the ring doesn't catch it", script.LastCatch == false, detail);
+                yield return new WaitForSeconds(1.0f);
+            }
+            C.Input.VirtualMode = false;
+
             // --- a save from before Encore best times (round 6) loads with its stamps and none
             var old = SaveData.DebugParse("{\"levels\":[{\"id\":\"level01\",\"stamps\":15,\"bestHour\":10.5,\"plays\":3}],\"seenTitle\":true}");
             Check("a round-6 save loads with its stamps and no scorcher best", old != null && old.Count == 1 && old[0].stamps == 15 && Mathf.Approximately(old[0].bestHour, 10.5f) && !old[0].HasEncoreBest,

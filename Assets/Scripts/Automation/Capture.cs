@@ -43,6 +43,7 @@ namespace PocketWeather
                 case "framing": yield return Framing(); break;
                 case "phonehud": yield return PhoneHud(); break;
                 case "menus": yield return Menus(); break;
+                case "bouquet": yield return BouquetShots(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -329,6 +330,27 @@ namespace PocketWeather
 
         /// <summary>Every menu screen, for checking layouts at a window size (-pwFreshSave keeps the
         /// stamps the same from run to run).</summary>
+        /// <summary>The wedding bouquet: the ring at the bride's cheer, and the throw coming down
+        /// on Pip waiting there.</summary>
+        IEnumerator BouquetShots()
+        {
+            GameFlow.I.DebugStart(11, true);
+            yield return new WaitForSeconds(1.5f);
+            var s = L.GetComponent<LevelScript>();
+            LevelScript.DebugThrowAngle = 25f;
+            s.DebugToss();
+            while (!s.BouquetComing) yield return null;
+            yield return new WaitForSeconds(0.3f);
+            yield return Shot("b01_ring");
+            var spot = s.BouquetCatchSpot;
+            while (!s.BouquetFlying) { C.Input.Virtual(spot, false); yield return null; }
+            for (float t = 0; t < 1.75f && s.BouquetComing; t += Time.deltaTime) { C.Input.Virtual(spot, false); yield return null; }
+            yield return Shot("b02_coming_down");
+            while (s.BouquetComing) { C.Input.Virtual(spot, false); yield return null; }
+            yield return new WaitForSeconds(0.4f);
+            yield return Shot("b03_caught");
+        }
+
         IEnumerator Menus()
         {
             var f = GameFlow.I;
