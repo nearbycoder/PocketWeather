@@ -455,7 +455,9 @@ namespace PocketWeather
         void OnApplicationPause(bool paused) { if (paused) AutoPause(); }
         void AutoPause()
         {
-            if (Current == State.Playing && !GameRoot.Automated) Pause();
+            if (Current != State.Playing || GameRoot.Automated) return;
+            Pause();
+            Debug.Log("[PW] paused: the game lost focus");
         }
 
         public void Resume()
@@ -483,8 +485,15 @@ namespace PocketWeather
             if (returnAfterSettings != null) returnAfterSettings.Open();
         }
 
+        bool? wasFullscreen;
+
         void Update()
         {
+            if (wasFullscreen != Screen.fullScreen)
+            {
+                if (wasFullscreen != null) Debug.Log($"[PW] fullscreen: {(Screen.fullScreen ? "on" : "off")}");
+                wasFullscreen = Screen.fullScreen;
+            }
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
             if (Current == State.Playing && Time.frameCount != pauseToggleFrame)   // the press that resumed mustn't re-pause

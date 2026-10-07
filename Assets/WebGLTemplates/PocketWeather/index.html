@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" href="TemplateData/icon-180.png">
     <link rel="stylesheet" href="TemplateData/style.css">
   </head>
-  <body>
+  <body id="pw-page">
     <canvas id="unity-canvas" tabindex="-1"></canvas>
     <div id="pw-loader">
       <div id="pw-card">
@@ -60,6 +60,37 @@
         window.addEventListener("resize", checkRotate);
         window.addEventListener("orientationchange", checkRotate);
         checkRotate();
+        // A hidden page (another tab in front, or a phone switched to another app) stops the game's
+        // frames but not its audio, so the music, ambience and any rain would loop on. Keep hold
+        // of the audio contexts the game makes and suspend them while the page is hidden.
+        var audioContexts = window.pwAudioContexts = [];
+        ["AudioContext", "webkitAudioContext"].forEach(function (name) {
+          var Base = window[name];
+          if (!Base) return;
+          var Tracked = function (options) { var c = new Base(options); audioContexts.push(c); return c; };
+          Tracked.prototype = Base.prototype;
+          Object.setPrototypeOf(Tracked, Base);
+          window[name] = Tracked;
+        });
+        // Fullscreen ending as the page is hidden (a phone switching apps does that) leaves the game
+        // drawing a black screen until its canvas changes size, so after a fullscreen change it's
+        // nudged by a pixel for a couple of frames when the page comes back.
+        var fullscreenChanged = false;
+        document.addEventListener("fullscreenchange", function () { fullscreenChanged = true; });
+        document.addEventListener("visibilitychange", function () {
+          audioContexts.forEach(function (c) {
+            if (document.hidden) {
+              if (c.state === "running") { c.pwHidden = true; c.suspend(); }
+            } else if (c.pwHidden) {
+              c.pwHidden = false;
+              c.resume();
+            }
+          });
+          if (document.hidden || !fullscreenChanged) return;
+          fullscreenChanged = false;
+          canvas.style.width = Math.max(1, canvas.clientWidth - 1) + "px";
+          requestAnimationFrame(function () { requestAnimationFrame(function () { canvas.style.width = ""; }); });
+        });
         var probe = document.createElement("canvas");
         if (!probe.getContext("webgl2")) {
           fail("This browser doesn't have WebGL 2 switched on, which the game needs. Try a current Chrome, Edge, Firefox or Safari, and check that hardware acceleration is enabled.");
@@ -89,6 +120,8 @@
           productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
           productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
           devicePixelRatio: dpr,
+          // Settings → Fullscreen takes the whole page, as the first tap on a phone does (below)
+          fullscreenElementID: "pw-page",
           showBanner: function (msg, type) { if (type === "error") console.error(msg); else console.warn(msg); },
         };
         var script = document.createElement("script");
@@ -110,6 +143,17 @@
         document.body.appendChild(script);
         // keyboard players: clicking or tapping the game gives it the keys
         canvas.addEventListener("pointerdown", function () { canvas.focus(); });
+        // On a phone, the first tap on the game asks for fullscreen: held sideways, the browser's
+        // own bars take a good share of a short screen. Once a visit, so leaving fullscreen (or
+        // Settings → Fullscreen) sticks. Browsers without it (iPhone Safari) are left alone.
+        var askedFullscreen = false;
+        canvas.addEventListener("pointerup", function (e) {
+          if (askedFullscreen || !phone || e.pointerType !== "touch") return;
+          askedFullscreen = true;
+          if (!document.fullscreenEnabled || document.fullscreenElement || !document.body.requestFullscreen) return;
+          var asked = document.body.requestFullscreen({ navigationUI: "hide" });
+          if (asked && asked.catch) asked.catch(function () {});
+        });
       })();
     </script>
   </body>

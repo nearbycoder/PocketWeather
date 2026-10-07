@@ -339,7 +339,9 @@ namespace PocketWeather
                 }, k => Ease.OutBack(k), 0, null, knob);
             }
             Visual(value, false);
-            t.onValueChanged.AddListener(v => { Visual(v, true); Sfx.Ui("ui_tick"); onChange(v); });
+            var sync = root.gameObject.AddComponent<ToggleSync>();
+            sync.toggle = t; sync.shown = value; sync.show = on => Visual(on, false);
+            t.onValueChanged.AddListener(v => { sync.shown = v; Visual(v, true); Sfx.Ui("ui_tick"); onChange(v); });
             return t;
         }
 
@@ -480,6 +482,21 @@ namespace PocketWeather
         {
             var want = Ui.Portrait ? new Vector2(Ui.PortraitWidth, 1080) : new Vector2(1920, 1080);
             if (scaler != null && scaler.referenceResolution != want) scaler.referenceResolution = want;
+        }
+    }
+
+    /// <summary>Moves a toggle's knob when its value is set without a notification (a setting that
+    /// changed somewhere else, such as fullscreen).</summary>
+    public class ToggleSync : MonoBehaviour
+    {
+        public UnityEngine.UI.Toggle toggle;
+        public bool shown;
+        public Action<bool> show;
+        void LateUpdate()
+        {
+            if (toggle == null || toggle.isOn == shown) return;
+            shown = toggle.isOn;
+            show?.Invoke(shown);
         }
     }
 

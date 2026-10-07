@@ -18,8 +18,10 @@
 //
 // Serves Builds/WebGL on localhost, opens it in a throwaway Chrome profile with touch emulation,
 // collects the game's console log, then uses real browser touch events: tap the title, tap the
-// first level card, tap Start, drag Pip and hold to rain. Screenshots at each step; exits non-zero
-// if the game never boots or logs exceptions.
+// first level card, tap Start, drag Pip and hold to rain, then hide the page behind another tab for
+// 3 s (the game's audio must stop while it's hidden). A phone must go fullscreen at its first tap
+// on the game, a desktop must not. Screenshots at each step; exits non-zero if
+// the game never boots, logs exceptions or fails a check.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -89,7 +91,7 @@ async function shutdown() {
 
 async function json(url) { for (let i = 0; i < 50; i++) { try { return await (await fetch(url)).json(); } catch { await sleep(200); } } throw new Error("no CDP"); }
 
-let ws, nextId = 1, ctx, coarse = !FIREFOX;   // coarse: the page reports a finger as its main pointer when PHONE   // ctx: the BiDi browsing context (Firefox)
+let ws, nextId = 1, ctx, pageId, coarse = !FIREFOX;   // coarse: the page reports a finger as its main pointer when PHONE   // ctx: the BiDi browsing context (Firefox)
 const pending = new Map();
 function send(method, params = {}) {
   const id = nextId++;
@@ -97,8 +99,8 @@ function send(method, params = {}) {
   return new Promise((res, rej) => pending.set(id, { res, rej: (e) => rej(new Error(`${method}: ${e.message}`)) }));
 }
 async function evaluate(expression) {
-  if (!FIREFOX) return (await send("Runtime.evaluate", { expression, returnByValue: true })).result.value;
-  const r = await send("script.evaluate", { expression, target: { context: ctx }, awaitPromise: false });
+  if (!FIREFOX) return (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result.value;
+  const r = await send("script.evaluate", { expression, target: { context: ctx }, awaitPromise: true });
   return r.result?.value;
 }
 
@@ -106,6 +108,7 @@ async function shot(name) {
   const { data } = FIREFOX ? await send("browsingContext.captureScreenshot", { context: ctx }) : await send("Page.captureScreenshot", { format: "png" });
   writeFileSync(join(OUT, name + ".png"), Buffer.from(data, "base64"));
   console.log("shot", name);
+  return data;
 }
 async function touch(type, x, y) {
   if (FIREFOX) {
@@ -124,6 +127,40 @@ async function touch(type, x, y) {
   await send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y, radiusX: 4, radiusY: 4, force: 1, id: 1 }] });
 }
 async function tap(x, y) { await touch("touchStart", x, y); await sleep(90); await touch("touchEnd", x, y); }
+// A hidden page (another tab in front; a phone does the same when it switches apps) must go quiet:
+// the page suspends the game's audio contexts while hidden and resumes them when it's back
+let quiet = { ok: true, note: "not checked" };
+let fullscreen = "";
+// mean brightness (0 to 1) of a screenshot, worked out by the browser itself
+async function brightness(png) {
+  return await evaluate(`new Promise((done) => { const i = new Image(); i.onload = () => { const c = document.createElement("canvas"); c.width = 64; c.height = 32;
+    const g = c.getContext("2d"); g.drawImage(i, 0, 0, 64, 32); const d = g.getImageData(0, 0, 64, 32).data; let s = 0;
+    for (let k = 0; k < d.length; k += 4) s += d[k] + d[k + 1] + d[k + 2]; done(s / (d.length / 4) / 765); }; i.onerror = () => done(-1); i.src = "data:image/png;base64,${png}"; })`);
+}
+async function hiddenCheck() {
+  const audio = async () => JSON.parse(await evaluate("JSON.stringify([document.visibilityState, (window.pwAudioContexts || []).map((c) => [c.state, c.currentTime])])"));
+  const [, before] = await audio();
+  if (!before.length) return { ok: false, note: "no audio context found (window.pwAudioContexts is empty)" };
+  let other;
+  if (FIREFOX) other = (await send("browsingContext.create", { type: "tab", background: false })).context;
+  else other = (await send("Target.createTarget", { url: "about:blank", background: false })).targetId;
+  await sleep(500);
+  const [vis, start] = await audio();
+  await sleep(3000);
+  const [, end] = await audio();
+  if (FIREFOX) { await send("browsingContext.activate", { context: ctx }); await send("browsingContext.close", { context: other }); }
+  else { await send("Target.activateTarget", { targetId: pageId }); await send("Target.closeTarget", { targetId: other }); }
+  await sleep(2500);
+  const [back, after] = await audio();
+  // the page draws again (fullscreen ending while hidden once left the game's canvas black)
+  const lum = await brightness(await shot("w07_back"));
+  const paused = log.some((l) => /\[PW\] paused: the game lost focus/.test(l));
+  if (vis !== "hidden") return { ok: !FIREFOX ? false : true, note: `the page didn't report itself hidden (${vis}), so nothing was checked` };
+  const hiddenRun = Math.max(...end.map((c, i) => c[1] - start[i][1]));
+  const backRun = Math.min(...after.map((c, i) => c[1] - end[i][1]));
+  const ok = hiddenRun < 0.3 && back === "visible" && backRun > 1 && lum > 0.15;
+  return { ok, note: `audio clock moved ${hiddenRun.toFixed(2)} s in 3 s hidden (${end.map((c) => c[0]).join(", ")}), ${backRun.toFixed(2)} s in 2.5 s after coming back (${after.map((c) => c[0]).join(", ")}); play ${paused ? "paused itself" : "did NOT pause"}; brightness on return ${lum.toFixed(2)}${lum > 0.15 ? "" : " (BLACK)"}${ok ? "" : " (it should be quiet while hidden and play again after)"}` };
+}
 async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (log.slice(from).some((l) => re.test(l))) return true; await sleep(250); } return false; }
 
 (async () => {
@@ -135,6 +172,7 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   } else {
     const targets = await json(`http://127.0.0.1:${CDP}/json/list`);
     const page = targets.find((t) => t.type === "page");
+    pageId = page.id;
     ws = new WebSocket(page.webSocketDebuggerUrl);
     await new Promise((r) => (ws.onopen = r));
   }
@@ -209,6 +247,8 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     await tap(...at(0.5, 0.5));                    // title: tap anywhere (a fresh profile goes straight to Day 1's postcard)
     await sleep(3500);
     await shot("w02_after_title");
+    // a phone's first tap on the game asks for fullscreen; desktops stay as they are
+    fullscreen = await evaluate("document.fullscreenElement ? document.fullscreenElement.id || document.fullscreenElement.tagName : ''");
     await tap(...ui(-739, 151));                   // map's Day 1 card, for builds that show the map first (harmless on the postcard)
     await sleep(3000);
     await shot("w03_postcard");
@@ -225,7 +265,19 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     await sleep(1500);
     await shot("w06_after");
     await waitLog(/\[PW\] music clock /, 20000);   // logged 10 s into a track
+    quiet = await hiddenCheck();
   }
+  console.log(`hidden page: ${quiet.note}`);
+  // a phone's HUD is drawn at least 0.47 CSS px per design unit (44 px pause button), whatever
+  // the canvas's pixel ratio
+  const hs = (log.find((l) => /\[PW\] HUD scale: /.test(l)) || "").match(/HUD scale: ([\d.]+) CSS px per design unit, top bar x([\d.]+) at (\S+) \(([\d.]+) px/);
+  const hudCss = hs ? parseFloat(hs[1]) * parseFloat(hs[2]) : 0;
+  const hudOk = !booted || !PHONE || hudCss >= 0.47;
+  console.log(`HUD scale: ${hs ? `${hudCss.toFixed(3)} CSS px per design unit (canvas ${hs[3]}, ${hs[4]} px per CSS px, top bar x${hs[2]})` : "not logged (a desktop-sized screen isn't scaled)"}${hudOk ? "" : " (too small for a phone)"}`);
+  // (Firefox without BiDi's touch override reports no touch points, so the page can't tell it's a phone)
+  const fsChecked = !(PHONE && !coarse);
+  const fsOk = !booted || !fsChecked || (PHONE ? fullscreen === "pw-page" : fullscreen === "");
+  console.log(`fullscreen after the first tap: ${fullscreen || "no"}${!fsChecked ? " (not checked: this browser can't pose as a touch-screen phone)" : fsOk ? "" : PHONE ? " (a phone should go fullscreen)" : " (a desktop should NOT go fullscreen)"}`);
   // a machine that needed Auto graphics to drop to Low starts on Low next visit (headless Chrome's
   // software GPU always does): reload in the same profile and check the second boot's verdict
   let remembered = true;
@@ -263,5 +315,5 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
   await shutdown();
-  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk ? 0 : 1);
+  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && quiet.ok && fsOk && hudOk ? 0 : 1);
 })().catch(async (e) => { console.error(e); await shutdown(); process.exit(2); });

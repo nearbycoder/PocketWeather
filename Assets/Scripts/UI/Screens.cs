@@ -458,6 +458,7 @@ namespace PocketWeather
         public Action OnClose;
         JuicyButton resetBtn, gfxButton, touchButton;
         UnityEngine.UI.Slider musicSlider;
+        UnityEngine.UI.Toggle fullscreenToggle;
         bool confirmReset;
 
         static string TouchButtonsLabel() => GameSettings.TouchButtons switch { 1 => "On", 2 => "Off", _ => "Auto" };
@@ -501,7 +502,7 @@ namespace PocketWeather
             }, null, null, 30, "TouchButtons");
             y -= 78;
             Ui.Toggle(p.transform, "Tap to rain (no holding)", GameSettings.RainToggle, new Vector2(0, y), v => GameSettings.RainToggle = v, 640); y -= 72;
-            Ui.Toggle(p.transform, "Fullscreen", UnityEngine.Screen.fullScreen, new Vector2(0, y), v =>
+            fullscreenToggle = Ui.Toggle(p.transform, "Fullscreen", UnityEngine.Screen.fullScreen, new Vector2(0, y), v =>
             {
                 UnityEngine.Screen.fullScreenMode = v ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
             }, 640);
@@ -524,6 +525,7 @@ namespace PocketWeather
             gfxButton.SetLabel(GraphicsLabel());
             touchButton.SetLabel(TouchButtonsLabel());
             musicSlider.SetValueWithoutNotify(GameSettings.Music);   // M may have muted it since
+            fullscreenToggle.SetIsOnWithoutNotify(UnityEngine.Screen.fullScreen);   // and the browser, a phone's first tap or Esc may have changed this
         }
 
         void Update()
