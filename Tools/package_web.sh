@@ -16,6 +16,7 @@ ZIP="$ROOT/Builds/PocketWeather-$VERSION-web.zip"
 rm -f "$ZIP"
 chmod -R a+rX "$WEB"   # Unity writes the compressed files owner-only; web servers must be able to read them
 [ -d "$WEB/StreamingAssets/Music" ] || { echo "Builds/WebGL has no StreamingAssets/Music (the music); rebuild it." >&2; exit 1; }
+[ -d "$WEB/StreamingAssets/Ambience" ] || { echo "Builds/WebGL has no StreamingAssets/Ambience (the ambience loops); rebuild it." >&2; exit 1; }
 (cd "$WEB" && python3 -m zipfile -c "$ZIP" index.html Build TemplateData StreamingAssets)   # python's zip: no extra tools needed
 echo "Download sizes (what a player fetches on the first visit, before the title screen):"
 (cd "$WEB" && find index.html Build TemplateData -type f -printf '%s %p\n' | sort -k2 |

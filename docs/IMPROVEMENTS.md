@@ -1671,3 +1671,120 @@ full self-test.
 - Splitting each island's terrain into its own download (it would take most of the remaining
   meshes off the up-front download) needs the levels moved out of `Resources`. Left as a lead.
 - Hosting, releases and tags, the trailer, licences and Windows Build Support are the owner's.
+
+## Round 8 results
+
+Implemented on `improvements-8`, one commit per item. Screenshots are in
+[`docs/media/improvements/round8/`](media/improvements/round8/). Every tool run used a throwaway
+config folder in `Recordings/`. The machine's load average was 15 to 74 during the round
+(other sessions' builds); input-driven runs are noted with their load.
+
+The full self-test passed on a Linux build of the final code (started at load 20, ended at 16):
+- validator and loop seams (the ambience loops checked from their new folder)
+- keyboard 45, gamepad 26 and touch 23 checks; the touch test also passed in 844x390 and
+  390x844 windows (load 15 and 12)
+- the UI audit at eight sizes, 22 checks each
+- the AutoPilot campaign 12/12 with **12/12 delights**, the wedding bouquet included (caught at
+  13:37), no exceptions
+- prefs in the game's own folder
+
+`web_smoke` passed on a web build of the final code in all six modes (Chrome desktop, `--mouse`,
+`--phone` and `--portrait`; `--firefox` and `--firefox --phone`) with 0 console errors, at load 15
+to 74. Each run checked that the ambience arrived and played. The real prefs files' `pw.` entries
+were identical before the round's first tool run and after the last.
+
+### R8-1. A bouquet you can catch: done
+
+- The throw is now decided when the bride cheers, 1.2 s before the bouquet leaves her hands. A pink
+  ring then marks the ground where its arc comes down through Pip's height, until it lands. The
+  toast says "The bouquet! Catch it!" at the cheer, not at the throw. That gives a player 3.6 s
+  to get there, where before they had 2.4 s and no idea where to go.
+- It also counts as caught once it's falling into Pip from above: past the top of its arc,
+  inside Pip's shadow and no higher than Pip's top. In the geometry check that adds 1 to 20% to
+  the area a still Pip can catch it from. The ring and the extra warning are the main change.
+- The game logs where the ring is and how close the bouquet came, so a miss can be traced.
+- **Keyboard test:** with an empty cloud (the smallest Pip, radius 0.62) waiting on the ring,
+  throws at -40°, 0° and 40° were all caught. A throw with Pip parked 2.5 units off the ring was
+  not.
+- **The bot** now waits on the ring, as a player would, instead of computing the arc. The first
+  six runs caught 5 of 6. The miss, like round 7's baseline miss, came when the throw happened
+  during one of the bot's own routines (shading a guest), so it never looked at the ring. Every
+  routine now gives way to the ring, as a player would drop what they're doing. After that the
+  bot caught it in **6 of 6** Day 12 runs (load 20 to 24): four of them in that early case, and
+  one caught only by the new drop-in rule.
+
+  | Day 12, six bot runs | Caught |
+  | --- | --- |
+  | Round 7 build (bot computes the arc) | 5 of 6 (load 18 to 33) |
+  | Ring, bot waits on it | 5 of 6 (load 18 to 38) |
+  | Ring, bot drops what it's doing when it appears | 6 of 6 (load 20 to 24) |
+
+- `-pwCapture <dir> -pwScript bouquet` shoots the ring and the catch.
+
+![bouquet: the ring at the cheer, and the catch](media/improvements/round8/1-bouquet-ring-and-catch.jpg)
+
+Not judged: whether a person sees the ring in time and finds 3.6 s enough. That needs people.
+
+### R8-2. Restart and Map ask first: done
+
+- Once a day has run 5 s, the first press on Restart or Map in the pause menu turns its label to
+  "Sure?", as Settings' "Reset progress" does, and only a second press goes. Moving the selection
+  off it, or reopening the menu, takes the question back. In the first 5 s one press still does
+  it.
+- **Keyboard test** (45 checks, was 39): one Enter on Restart 5.6 s into Day 4 left the day paused
+  on the same hour, with the button saying "Sure?". Up took it back to "Restart", and two Enters
+  restarted the day. Map 0.5 s into a fresh day left at once.
+- **Touch test** (23 checks, was 21): one tap on Restart asked, the second restarted the day.
+- **UI audit:** the pause menu with "Sure?" showing passed every check at all eight sizes (22
+  checks each, was 21).
+
+### R8-3. A smaller web download: done
+
+- The four ambience loops moved out of `Resources` to `Assets/Ambience`, and each is built into
+  its own asset bundle in `StreamingAssets/Ambience`, as the music has been since round 3.
+  - The web fetches them after boot: the title's music first, then the meadow loop under it,
+    then the rest. A loop fades in when it arrives, and its decoded samples are freed when
+    another loop replaces it.
+  - Desktop players open them from disk. On the Linux build every day's ambience logged
+    "playing" in the screenshot tour.
+- Every model now uses Unity's mesh compression (Medium).
+  - 1600x900 captures of all twelve days, the title, map, postcard, pause, settings, sunset card
+    and ending differ from the uncompressed build by 0.00 to 0.64% of pixels (fuzz 8%).
+  - Mapped out on Day 7, the largest, all of the difference is animation: grass sway, water, the
+    windmill's sails, the hint and the pointer hand. There's no banding on the terrain, and no
+    props shifted or floating.
+  - The keyboard test and the AutoPilot campaign, which depend on ground heights from the
+    terrain meshes, still pass.
+
+  | Web build | Round 7 | Round 8 |
+  | --- | --- | --- |
+  | Before the title (Unity's build report) | 21.0 MB | **17.0 MB** |
+  | `Build/` folder, bytes | 21,894,837 | 17,611,158 |
+  | of which the data file | 15.1 MB | 10.8 MB (about 2.4 MB of ambience and 1.8 MB of meshes) |
+  | Fetched after boot | 7.9 MB of music | 7.9 MB of music, 2.4 MB of ambience |
+
+- In `web_smoke` the meadow loop arrived 0.1 to 3.6 s after it was asked for (localhost, load 15
+  to 74), and all four loops arrived in every mode.
+
+- Booting on an emulated link (`web_smoke --throttle`, a fresh profile each run) took **19.8 s
+  at 8 Mbps** (load 11) and **12.5 s at 20 Mbps** (load 15 at the start, 56 by the end).
+  Earlier rounds recorded about 23.5 s and 14 s, but in other runs at other loads, and round 7's
+  web build was overwritten before it could be timed alongside. 4.3 MB less is about 4.3 s less
+  at 8 Mbps. The title's music arrived 1.9 s and 5.2 s after it was asked for, and the meadow
+  loop 1.5 s and 3.3 s.
+
+![mesh compression: before left, after right](media/improvements/round8/3-mesh-compression-before-after.jpg)
+
+### Found along the way, not fixed
+
+- In round 7's build, the bot's bouquet misses came when the throw happened while it was busy.
+  A player doing something else when the bride cheers is in the same position. The ring and the
+  earlier toast are meant for exactly that, but only people can say whether they're enough.
+- The Linux build has a `proto` level's terrain (0.5 MB uncompressed) in `Resources`, used only by
+  `-pwLevel proto`. It's in the web download too. Not removed, since tools still use it.
+
+### Decisions for the owner (unchanged)
+
+Hosting the web build, a new release zip (v0.1.0 predates all eight rounds), the trailer (it was
+staged before the bouquet's ring and new toast, so a re-cut would show them), licences, signing and
+Windows Build Support.

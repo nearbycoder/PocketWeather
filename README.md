@@ -219,8 +219,8 @@ Download the latest build from [**Releases**](https://github.com/nearbycoder/Poc
   (see the known issues for what has and hasn't been tested).
 
 The current source builds a web version that's ready for a static host: the game fills the
-window, loads behind its own loading card (about 21 MB; the music follows in the background once
-the game is running) and needs no server configuration (see [docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet, and the v0.1.0 downloads above
+window, loads behind its own loading card (about 17 MB; the music and ambience follow in the
+background once the game is running) and needs no server configuration (see [docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet, and the v0.1.0 downloads above
 predate it and the other changes listed in [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md).
 
 ## Build from source
@@ -287,11 +287,14 @@ machine:
 - **Audio loop seams** (`Tools/.venv/bin/python Tools/audio/check_loops.py`): no click or level
   jump where any looping clip wraps.
 - **Keyboard, gamepad and touch self-tests** (`-pwKeyTest`, `-pwPadTest`, `-pwTouchTest`): virtual
-  devices drive the real Input System from the title screen through menus and play (39, 26 and
-  21 checks), including a new player's first tap going straight to Day 1, the pause menu's
-  controls line, hints hiding behind pause, the Touch buttons Off setting, best times, the hint on
-  each day that brings in a new idea, and opening an Encore from its postcard, saving it, and
-  finding its own best time there (and the ordinary day's left alone).
+  devices drive the real Input System from the title screen through menus and play (45, 26 and
+  23 checks), including a new player's first tap going straight to Day 1, the pause menu's
+  controls line, Restart asking "Sure?" well into a day, hints hiding behind pause, the Touch
+  buttons Off setting, best times, the hint on each day that brings in a new idea, and opening an
+  Encore from its postcard, saving it, and
+  finding its own best time there (and the ordinary day's left alone). The keyboard test also
+  throws the wedding bouquet four times: the smallest Pip waiting on the ring must catch three
+  throws at different angles, and must miss one when parked 2.5 units off it.
 - **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen (the Encore
   postcard and results, and Day 12's postcard, included) must receive a tap at its centre and sit
   fully on screen, at 16:9, 20:9, 4:3, two phones held sideways (844x390 and 740x360) and three
@@ -325,7 +328,8 @@ machine:
   running, doesn't come back, or the screen is black on return. A phone must go fullscreen at its
   first tap and again at the first tap after coming back, but not after leaving fullscreen itself
   (a desktop never goes fullscreen). A phone's HUD must be at least 0.47 CSS px per design unit,
-  and its menus, held either way, at least 0.43.
+  and its menus, held either way, at least 0.43. The ambience, fetched after boot, must arrive and
+  play.
   It isn't part of `selftest.sh`, which tests the Linux build.
 
 ### Rebuilding the trailer and README media
@@ -365,6 +369,7 @@ Assets/
   Resources/     Levels/*.json, Models/*.fbx, Audio/, Icons/, Fonts/
   Music/         the music tracks, one asset bundle each (StreamingAssets/Music in a build), so the
                  web build can fetch them after it starts
+  Ambience/      the four ambience loops, streamed the same way (StreamingAssets/Ambience)
   Plugins/WebGL/ a small jslib (asks the browser whether it's a touch device)
 ArtSource/       Blender generators: pw_lib (the kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
@@ -405,10 +410,11 @@ docs/            PLAN.md (design and technical plan), BRIEF.md (the original bri
 - **Tilt-shift that survives a push-in.** Bokeh depth of field focuses between the island and
   Pip's flying height; when the camera pushes in, the aperture stops down with the square of the
   zoom so the miniature blur stays the same instead of smearing the subject.
-- **Music that doesn't hold up the web build.** Each track is its own asset bundle in
-  `StreamingAssets`. Desktop players open one from disk when it's first played; the web build
-  starts without them, downloads them one at a time in the background, and decodes a track only
-  when it's about to play (browsers keep decoded audio as raw samples, 15–20 MB a track).
+- **Music that doesn't hold up the web build.** Each track and ambience loop is its own asset
+  bundle in `StreamingAssets`. Desktop players open one from disk when it's first played; the web
+  build starts without them, downloads them one at a time in the background, and decodes one only
+  when it's about to play (browsers keep decoded audio as raw samples, 15–20 MB a track). The
+  models use Unity's mesh compression, which takes about 1.8 MB more off the first download.
 - **Bots that play it.** The AutoPilot plays every level through the same input intents as a
   player, which is how par times, delights and regressions are checked without a human.
 
@@ -447,7 +453,7 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, seven improvement rounds (see
+every input method. Since then, eight improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
@@ -480,6 +486,11 @@ every input method. Since then, seven improvement rounds (see
 - touch flicks that measure the same on a phone held either way (upright, a flick had to be twice
   as long)
 - a best time of its own for each Encore, shown on its postcard and results
+- a wedding bouquet you can catch: a ring shows where it will come down, from the moment the
+  bride cheers
+- Restart and Map in the pause menu ask "Sure?" once a day is 5 s old
+- a smaller web download (17.0 MB before the title, from 21.0 MB): the ambience follows after
+  boot like the music, and the models are mesh-compressed
 
 None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
@@ -490,12 +501,14 @@ None of it is in a release yet. What has been verified (on the Linux build unles
     in 7 of 8 runs in round 1, and 6 of 6 in round 7 (each rainbow centred about 0.5 units from
     Rosa). The misses seen in full campaigns came under heavy machine load; the game now logs where
     each rainbow lands and whom it covers, so a future miss can be traced.
-  - Catching the wedding bouquet: the bot is clumsy at it, though the bouquet now always flies.
+  - Catching the wedding bouquet: since round 8 a ring shows where it will come down, and the
+    bot, waiting on the ring as a player would, caught it in 6 of 6 runs of Day 12 (5 of 6
+    before).
 - The newcomer bot also saves all twelve days before par; its closest margins are Day 9 (1.2
   game-hours inside par) and Day 5 (1.5).
 - Both bots save all twelve Encores before sundown. The newcomer's tightest were Becalmed (66 of
   105 s) and the Heatwave (78 of 135 s).
-- Keyboard (39 checks), gamepad (26), touch (21) and UI-reachability self-tests pass through the
+- Keyboard (45 checks), gamepad (26), touch (23) and UI-reachability self-tests pass through the
   real Input System; the touch test also passes in 844x390 and 390x844 windows. The UI audit runs
   at eight window shapes: two landscape phones and three portrait. On the phone sizes it checks a
   44 px pause button, a 15 px or larger clock and tray items no smaller than before (the HUD is
@@ -508,11 +521,12 @@ None of it is in a release yet. What has been verified (on the Linux build unles
 - **Web, in headless Chrome and Firefox 157:**
   - The build plays with real browser touch events and a clean console on desktop and phone
     emulation in Chrome, and with mouse and touch actions in Firefox.
-  - The download before the title screen is 21.0 MB, down from 28.8 MB in round 2 and 32.6 MB
-    for v0.1.0. The music (7.9 MB) arrives afterwards; the title's track plays 1 to 2 s after the
-    title appears, even at 8 Mbps.
-  - Booting on an emulated 8 Mbps link takes about 23.5 s (32.0 s for round 2's build in the
-    same runs), and about 14 s at 20 Mbps (18.0 s), with the machine busy.
+  - The download before the title screen is 17.0 MB, down from 21.0 MB in round 7, 28.8 MB in
+    round 2 and 32.6 MB for v0.1.0. The music (7.9 MB) and the ambience (2.4 MB) arrive
+    afterwards; the title's track plays 1 to 2 s after the title appears, even at 8 Mbps.
+  - Booting on an emulated 8 Mbps link took 19.8 s in round 8 (about 23.5 s for round 7's
+    larger build and 32.0 s for round 2's, in earlier runs), and 12.5 s at 20 Mbps (about 14 s
+    and 18.0 s), with the machine busy.
   - The page's "turn sideways" card for phones held upright works in phone emulation.
   - The first hint says "Drag to fly" on an emulated phone, held either way, and "Point to fly"
     in a browser without a touchscreen. The title says "Tap to play" and "Click to play" to
