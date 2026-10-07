@@ -802,3 +802,94 @@ retries twice and plays on silently.
 - The web smoke test's localhost fetch of the title's track once took 19 s with the machine's
   load average around 50 (1.3 to 2.5 s otherwise). Under that load SwiftShader starves the main
   thread; it says nothing about a real browser, but it was the slowest case seen.
+
+## Round 4 scope
+
+Planned 2026-10-06 on `improvements-4`, from `main` at `645c52a` (round 3 merged, `main` equal to
+`origin/main`). Before planning I probed the Linux player in throwaway config folders
+(`XDG_CONFIG_HOME` under `Recordings/r4/`), and the web build in the browsers this machine has:
+
+- **The `unknown/unknown` prefs folder is caused by one command-line flag.** Launched with
+  `-screen-fullscreen 0`, the Unity player opens its prefs before it has read the game's name and
+  creates `unity3d/unknown/unknown/prefs`. With only `-screen-width`/`-screen-height`, or with no
+  arguments at all (a player double-clicking the release), it uses
+  `unity3d/Pocketvale Studio/Pocket Weather/prefs`. `Tools/play.sh` always passed the flag, so
+  every tool run, and every player who followed the README's "run it with `Tools/play.sh`", saved
+  into the folder another game shares. Released builds launched normally were never affected.
+- **A double-clicked Linux build hangs on this machine (KDE Plasma, Wayland).** Without
+  `-force-wayland`, Unity picks its X11 backend and stops after "Could not fetch DPI for display",
+  before graphics start, windowed or fullscreen, OpenGL or Vulkan. Nothing in `boot.config` can
+  pick the backend.
+- **Firefox 157 (installed system-wide) runs the web build:** it boots in about 4 s on the
+  machine's GPU and fetches the music, driven over WebDriver BiDi. **WebKit can't run here:**
+  Playwright's cached WebKit needs system libraries that aren't installed (libicu74, libflite,
+  libbacktrace), and installing them is the owner's call.
+
+### R4-1. Settings and progress under the game's own name
+
+**What:** `Tools/play.sh` stops passing `-screen-fullscreen 0`. For tool runs (which always get a
+sandbox config) it starts the window windowed by seeding Unity's window-mode keys in the
+sandbox's prefs; a plain `Tools/play.sh` plays with the player's own fullscreen setting, like a
+double-clicked release. On first start under the right name, the Linux player imports **progress
+only** (`pw.save.v1`) from the old `unknown/unknown` file if it finds one there and has none of its
+own. It never writes to the old file, which another game shares. Settings aren't imported: on
+this machine the old file's `pw.` settings are leftovers from self-tests run before round 3's
+sandbox. The game logs a warning if it's started with `-screen-fullscreen`.
+
+**Acceptance:**
+- After a full `selftest.sh`, its sandbox holds `unity3d/Pocketvale Studio/Pocket Weather/prefs`
+  and no `unity3d/unknown`; `selftest.sh` fails otherwise.
+- The UI audit still passes at all five window sizes (the windows really are those sizes,
+  windowed).
+- A sandbox seeded with an old-location save shows that save's stamps after one launch (logged),
+  and the old file is byte-identical afterwards.
+- The real prefs files (`unknown/unknown` and `Pocketvale Studio/Pocket Weather`) have the same
+  `pw.` entries before and after the round's runs.
+
+### R4-2. A Linux launcher that starts on Wayland
+
+**What:** every Linux build gets `PocketWeather.sh` next to the binary. It adds `-force-wayland`
+when the session is Wayland (and passes any other arguments through), otherwise it starts the
+binary as is. The README's "Play it" says to start it that way. The release zip is the owner's
+to re-cut.
+
+**Acceptance:** on this machine the binary alone doesn't boot within 30 s, and `PocketWeather.sh`
+boots to the title (`GameRoot booted` in its log). With `WAYLAND_DISPLAY` unset the script adds no
+flag (checked with a dry run). Not verifiable: X11 sessions and other compositors.
+
+### R4-3. The web build in Firefox
+
+**What:** `Tools/web_smoke.mjs --firefox` runs the same play-through in Firefox, over WebDriver
+BiDi with no npm packages: boot, title, postcard, fly, rain, music arriving, reload remembering
+Auto graphics, and the first hint's wording. Both a mouse desktop and touch input, if Firefox's
+BiDi touch actions reach the game. Anything Firefox-specific it turns up gets fixed.
+
+**Acceptance:** `web_smoke --firefox` (and `--firefox --touch` if supported) passes with 0 game
+exceptions and logs the title's track starting; Chrome's four modes still pass. Screenshots in
+`docs/media/improvements/round4/`. Not verifiable: Safari, Firefox on Android, real phones.
+
+### R4-4. A title prompt that matches the device
+
+**What:** the title says "Tap to play" on touch-first devices and "Click to play" elsewhere, and
+switches to the device actually used (for example "Press A to play" once a gamepad is touched,
+"Press Enter to play" for a keyboard).
+
+**Acceptance:** the keyboard, gamepad and touch self-tests check the title's wording after their
+first input, and `web_smoke` checks it before any input ("Tap" on a phone, "Click" with a mouse).
+
+### R4-5. Colour-blind check of the bubbles (fix only if needed)
+
+**What:** simulate protanopia, deuteranopia and tritanopia on the band-ring, badge and tray
+screenshots, and measure whether thirsty, just right and soggy stay distinguishable without
+colour. If they don't, add a shape cue.
+
+**Acceptance:** a short write-up with the simulated images and the colour differences measured,
+plus the fix and its screenshots if one was needed.
+
+### Not in this round
+
+- WebKit/Safari testing needs the owner to install WebKit's system libraries (or a Mac).
+- Phone landscape legibility: at 844x390 the HUD draws at 0.36x, so the smallest text is about
+  9 to 11 CSS px and the pause button about 36 CSS px. It's readable in emulation, but whether it's
+  comfortable needs a real phone before redesigning the HUD for it.
+- Encore tuning, audio by ear, real phones and controllers still need people.
