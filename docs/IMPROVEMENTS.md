@@ -1202,3 +1202,74 @@ without saving, so nothing was changed.
 - On desktops the needs tray still shrinks on Days 10 to 12 (to 0.86 at 1600x900), because the
   sun track stays centred there. Moving it left as on phones would let the tray keep full size,
   but that changes the desktop layout, which this round left alone.
+
+## Round 6 scope
+
+Planned 2026-10-07 on `improvements-6`, from `main` at `b08a7aa` (round 5 merged, `main` equal to
+`origin/main`). Round 5 left three things open that a player would notice, and each can be
+checked here. Before planning I captured the round 5 build's menus at 844x390 and 740x360 (phones
+on their side; the Linux window stands in for CSS px) and Day 12 at 1600x900:
+
+- **Menus on a phone held sideways are small.** The menu canvas draws at 0.36x (844x390) and 0.33x
+  (740x360), so its smallest text (26 to 30 design units) is 8.7 to 10.8 CSS px, while two thirds
+  of the screen's width is empty beside the panels. Settings (1060 units tall) and pause (panel plus
+  controls strip) already fill the height, so they can't simply be drawn bigger.
+- **On a desktop, Day 12's needs tray is drawn at 0.86x** (and Days 10 and 11 shrink too), because
+  the sun track stays centred. On phones round 5 moves it left as far as the tray needs.
+- **A phone that switches apps loses fullscreen for the rest of the visit.** The page asks once
+  per visit, so after coming back the browser's bars stay until Settings → Fullscreen.
+
+### R6-1. The desktop tray keeps its full size
+
+**What:** in landscape on every screen size, the sun track moves left (never closer than the gauge)
+as far as the tray needs to fit at full size, as it already does on phones. Days with few needs keep
+the centred sun track.
+
+**Acceptance:** the UI audit fails if the tray is shrunk on Day 12 at 1600x900, 1600x720 or
+1200x900 (it logs 0.86 today), and its overlap checks still pass at all seven sizes. Days 1 and 4
+keep a centred sun track (1600x900 before/after captures differ only by animation).
+
+**Verify:** the UI audit at seven sizes, before/after captures of Days 1 and 12 at 1600x900.
+
+### R6-2. Fullscreen comes back after switching apps
+
+**What:** on a phone in the browser, if fullscreen ended while the page was hidden (switching apps,
+the lock screen), the next tap on the game asks for it again. Leaving fullscreen on purpose (the
+back gesture, Esc, or Settings → Fullscreen) while the game is showing still sticks for the visit.
+
+**Acceptance:** `web_smoke --phone` (and `--portrait`) hides the page for 3 s as before, then taps
+the game and fails unless the page is fullscreen again; then it leaves fullscreen with the page
+showing, taps again, and fails if the page goes back to fullscreen. Desktop and `--mouse` runs
+still never go fullscreen. Not verifiable here: real Android browsers, iPhone Safari (no page
+fullscreen at all).
+
+### R6-3. Menus readable on a phone held sideways
+
+**What:** in landscape, when the menu canvas would draw under 0.44 CSS px per design unit, it's
+scaled up to reach that (at most 1.35x), like round 5's HUD; desktop windows keep 1x. The design
+area then shrinks to about 820 to 890 units tall, so the screens that don't fit get a short layout:
+settings in two columns, pause with its four buttons in a 2x2 grid, the map's grid a little smaller
+with its corner buttons lower, and the ending's card higher. The postcard, results, sunset card and
+title fit as they are. Text under 28 units goes up to 28 in the short layout. Portrait is left as
+it is this round (its menus would need re-laying out for a narrower width too) and reported.
+
+**Acceptance:**
+- The UI audit measures every visible menu text on every screen (title, map, postcard, Encore
+  postcard, pause, settings, results, sunset, ending) and, on a phone-sized landscape screen, fails
+  if any is under 11.5 CSS px. It also fails if any text or control sits off screen, or if two
+  controls overlap, at all seven sizes.
+- At 1600x900, 1600x720 and 1200x900 the menu scale is 1 (logged), and before/after captures of
+  every menu differ only by animation.
+- `web_smoke --phone` logs the menu canvas's scale in CSS px and fails below 0.43.
+- The keyboard, gamepad and touch self-tests (which drive the menus) pass at their usual size, and
+  the touch test passes at 844x390 too.
+
+**Verify:** the UI audit at seven sizes, before/after captures of every menu at 844x390, 740x360 and
+1600x900, reviewed by eye, and web smoke on desktop and phone.
+
+### Not in this round
+
+- Portrait menus (8.5 to 9.8 CSS px text at 390x844): they need a narrower layout as well as a
+  shorter one. The page already suggests turning the phone sideways.
+- Real phones, Safari, controllers, audio by ear and Encore tuning still need people or the owner.
+- Hosting, releases and tags, the trailer, licences and Windows Build Support are the owner's.
