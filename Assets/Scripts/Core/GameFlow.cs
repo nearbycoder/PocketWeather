@@ -25,6 +25,8 @@ namespace PocketWeather
 
         GameRoot root;
         TitleScreen title;
+        /// <summary>The title's "... to play" prompt (for the self-tests).</summary>
+        public string TitlePrompt => title != null ? title.Prompt : null;
         MapScreen map;
         Postcard postcard;
         PauseMenu pause;

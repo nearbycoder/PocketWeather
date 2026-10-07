@@ -63,6 +63,11 @@ namespace PocketWeather
             yield return WaitFor(() => GameFlow.I != null && Now == GameFlow.State.Title, 20f);
             yield return new WaitForSecondsRealtime(1.0f);
 
+            // --- the title's prompt speaks mouse on a desktop, until a key is pressed
+            Check("the title says click on a desktop", GameFlow.I.TitlePrompt == "Click to play", GameFlow.I.TitlePrompt);
+            yield return Press(Key.LeftShift);
+            Check("after a key, the title says press Enter", GameFlow.I.TitlePrompt == "Press Enter to play", GameFlow.I.TitlePrompt);
+
             // --- a brand-new player's first press goes straight to Day 1
             SaveData.Reset();
             yield return Press(Key.Enter);

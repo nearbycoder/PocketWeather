@@ -106,6 +106,7 @@ namespace PocketWeather
             if (done != null) yield return Tap(UiCenter(done));
             yield return new WaitForSecondsRealtime(0.6f);
             Check("closing settings returns to the title", GameFlow.I.Current == GameFlow.State.Title && FindLabel("Done") == null);
+            Check("after a touch, the title says tap", GameFlow.I.TitlePrompt == "Tap to play", GameFlow.I.TitlePrompt);
 
             // --- level 1: drag, hold-to-rain, drag-while-raining
             GameFlow.I.DebugStart(0, true);

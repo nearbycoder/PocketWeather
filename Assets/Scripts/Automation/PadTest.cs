@@ -85,6 +85,8 @@ namespace PocketWeather
 
             // --- menus
             Check("game boots to the title", Now == GameFlow.State.Title, Now.ToString());
+            yield return Press(GamepadButton.North);
+            Check("after a pad button, the title says press A", GameFlow.I.TitlePrompt == "Press A to play", GameFlow.I.TitlePrompt);
             SaveData.RecordPlay("level01");   // a returning player: A goes to the map (a brand-new one goes to Day 1, see KeyTest)
             yield return Press(GamepadButton.South);
             yield return WaitFor(() => Now == GameFlow.State.Map, 5f);

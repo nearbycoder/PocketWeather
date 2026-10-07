@@ -86,8 +86,9 @@ namespace PocketWeather
             var subPill = Ui.Panel(logo, new Vector2(860, 64), new Vector2(60, -178), Ui.Paper, null, 32f);
             subPill.raycastTarget = false;
             Ui.Label(subPill.transform, "a tiny cloud helps a miniature world through its day", 34, Ui.Ink, new Vector2(840, 60), Vector2.zero, false, TextAnchor.MiddleCenter);
-            tap = Ui.Label(safe, "Tap to play", 58, Color.white, new Vector2(800, 90), new Vector2(0, 150), true, TextAnchor.MiddleCenter, new Vector2(0.5f, 0));
+            tap = Ui.Label(safe, PromptFor(Platform.TouchFirst ? CloudInput.Device.Touch : CloudInput.Device.Mouse), 58, Color.white, new Vector2(800, 90), new Vector2(0, 150), true, TextAnchor.MiddleCenter, new Vector2(0.5f, 0));
             Ui.Outlined(tap, Res.Hex("6C7FCC"), 3);
+            Debug.Log($"[PW] title prompt: {tap.text}");
             var hit = Ui.Image(root, null, new Color(0, 0, 0, 0), Vector2.zero, Vector2.zero, null, "Hit");
             hit.rectTransform.anchorMin = Vector2.zero; hit.rectTransform.anchorMax = Vector2.one;
             hit.raycastTarget = true;
@@ -110,9 +111,43 @@ namespace PocketWeather
             Ui.PopIn(logo, 0.1f, 0.7f);
         }
 
+        /// <summary>The "... to play" prompt, in the words of the device in use.</summary>
+        public string Prompt => tap.text;
+
+        static string PromptFor(CloudInput.Device d) => d switch
+        {
+            CloudInput.Device.Touch => "Tap to play",
+            CloudInput.Device.Keys => "Press Enter to play",
+            CloudInput.Device.Pad => "Press A to play",
+            _ => "Click to play",
+        };
+
+        float lastTouch = -10f;
+
+        /// <summary>Starts as a guess (a finger on phones and tablets, a mouse elsewhere) and follows
+        /// whatever the player touches next.</summary>
+        void FollowDevice()
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            var pad = UnityEngine.InputSystem.Gamepad.current;
+            var ts = UnityEngine.InputSystem.Touchscreen.current;
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            CloudInput.Device? d = null;
+            if (ts != null && ts.primaryTouch.press.isPressed) { d = CloudInput.Device.Touch; lastTouch = Clock.UnscaledTime; }
+            else if (kb != null && kb.anyKey.wasPressedThisFrame) d = CloudInput.Device.Keys;
+            else if (pad != null && (pad.wasUpdatedThisFrame && (pad.leftStick.ReadValue().magnitude > 0.5f || pad.dpad.ReadValue().magnitude > 0.5f ||
+                     pad.buttonSouth.isPressed || pad.buttonEast.isPressed || pad.buttonWest.isPressed || pad.buttonNorth.isPressed || pad.startButton.isPressed)))
+                d = CloudInput.Device.Pad;
+            // browsers move the mouse pointer after a tap, so a finger doesn't count as a mouse
+            else if (mouse != null && (mouse.delta.ReadValue().sqrMagnitude > 9f || mouse.leftButton.wasPressedThisFrame) && Clock.UnscaledTime - lastTouch > 1f)
+                d = CloudInput.Device.Mouse;
+            if (d != null && tap.text != PromptFor(d.Value)) { tap.text = PromptFor(d.Value); Debug.Log($"[PW] title prompt: {tap.text}"); }
+        }
+
         void Update()
         {
             if (!IsOpen || JustOpened) return;
+            FollowDevice();
             float t = Clock.UnscaledTime;
             tap.color = new Color(1, 1, 1, 0.65f + 0.35f * Mathf.Sin(t * 3f));
             tap.rectTransform.localScale = Vector3.one * (1 + 0.04f * Mathf.Sin(t * 3f));
