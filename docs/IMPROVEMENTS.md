@@ -1273,3 +1273,106 @@ it is this round (its menus would need re-laying out for a narrower width too) a
   shorter one. The page already suggests turning the phone sideways.
 - Real phones, Safari, controllers, audio by ear and Encore tuning still need people or the owner.
 - Hosting, releases and tags, the trailer, licences and Windows Build Support are the owner's.
+
+## Round 6 results
+
+Implemented on `improvements-6`, one commit per item. Screenshots are in
+[`docs/media/improvements/round6/`](media/improvements/round6/). The machine's load average was
+6 to 83 during the round (other sessions' builds); runs are noted with their load where it
+matters.
+
+The full self-test passed on a Linux build with all three items (load 14 to 21 while it ran):
+- validator and loop seams
+- keyboard 35, gamepad 26 and touch 21 checks
+- the UI audit at seven sizes, 19 checks each (with this round's new text, overlap and tray
+  checks folded into them)
+- the AutoPilot campaign 12/12 with 11/12 delights (Day 6's rainbow, the timing-dependent one), no
+  exceptions
+- prefs in the game's own folder
+
+`web_smoke` passed on a fresh web build of the final code in all six modes (Chrome desktop,
+`--mouse`, `--phone` and `--portrait`; `--firefox` and `--firefox --phone`) with 0 console errors,
+at load 17 to 66. The up-front download is still 20.9 MB. The phone runs first failed because the
+test's own taps missed the bigger Start button: web_smoke maps design units to page pixels itself,
+and now reads the menu scale the game logs. Every tool run used a throwaway config folder in
+`Recordings/`. The real prefs files' `pw.` entries were identical from before the full self-test to
+the end of the round (the snapshot was taken mid-round, after the first audits and captures, which
+were sandboxed the same way).
+
+### R6-1. The desktop tray keeps its full size: done
+
+- In landscape, the sun track now moves left (never closer than the gauge) whenever the tray needs
+  the room, on every screen size; before, only phone-sized screens did. Days with few needs keep it
+  centred.
+- Day 12's tray at 1600x900 and 1200x900 is drawn at x1.00 (it was x0.86); at 1600x720 it was
+  already full size. The UI audit now fails if a desktop-sized landscape screen shrinks the tray.
+- 1600x900 captures of Day 1 differ from round 5's by 0.1% of pixels (fuzz 8%, animation); Day 12
+  by 0.5%, the moved sun track.
+
+![tray](media/improvements/round6/1-desktop-tray-before-after.jpg)
+
+### R6-2. Fullscreen comes back after switching apps: done
+
+- If fullscreen ended while the page was hidden, the next tap on the game asks for it again.
+  Leaving fullscreen with the game showing (back gesture, Esc, Settings → Fullscreen) still sticks
+  for the visit.
+- The first try didn't work, and web_smoke caught it: Chrome ends fullscreen before the page is
+  hidden but fires `fullscreenchange` only once the page is showing again, so at the moment of
+  hiding the page seemed never to have been fullscreen. The page now goes by the last state it was
+  told about.
+- `web_smoke --phone` and `--portrait`: after 3 s behind another tab the page came back windowed;
+  the next tap made it fullscreen again; after `document.exitFullscreen()` with the page showing,
+  a tap left it windowed. Chrome desktop (touch and mouse) and Firefox never went fullscreen.
+  Firefox's phone mode can't pose as a touch-screen phone, so it reports the check as not run.
+- Not verifiable here: whether real Android browsers order these events the same way, and iPhone
+  Safari, which has no page fullscreen.
+
+### R6-3. Menus readable on a phone held sideways: done, landscape only
+
+- In landscape, when the menus would draw under 0.44 CSS px per design unit, their canvas is scaled
+  up to reach it, at most 1.35x and never so far that fewer than 1600 design units fit across. That
+  is x1.22 at 844x390 and x1.32 at 740x360; desktops (1280x720 and up) and portrait stay at x1.00.
+- The shorter design area (820 to 890 units tall) gets short layouts, switched whenever the scale
+  changes: settings in two columns, pause with its buttons in a 2x2 grid and the controls line just
+  under it, the map without its subtitle, its cards at 0.88x and its corner buttons a little lower,
+  the ending's card higher with the button and credits below the couple's rainbow, and 26-unit text
+  up to 28. The title, postcards, results and sunset card fit as they were.
+- Smallest menu text, measured by the UI audit on every menu screen:
+
+  | Screen size | Before | After |
+  | --- | --- | --- |
+  | 844x390 | 9.4 CSS px (title, ending credits); 10.1 to 10.8 elsewhere | 11.6 (map cards); 12.3 to 13.2 elsewhere |
+  | 740x360 | 8.7 to 10.0 (computed from the same sizes) | 11.6 (map cards); 12.3 to 13.2 elsewhere |
+  | 1600x900 | 21.7 | 21.7 (unchanged) |
+  | 390x844 (portrait) | 8.5 to 9.8 | 8.5 to 9.8 (not changed this round) |
+
+- The UI audit gained checks that run on every screen at every size: no two controls overlap, no
+  menu text is off screen or runs into a control it isn't part of, the smallest text is 11.5 CSS
+  px or more on a phone held sideways, and desktop menus aren't scaled. Run against round 5's
+  layout (the scale switched off), they failed only on text size at 844x390, and passed at
+  1600x900.
+- 1600x900 captures of all nine menu screens differ from the round 5 layout's by at most 0.6% of
+  pixels (fuzz 8%; the title's and ending's animation).
+- The touch self-test, which taps through the title, settings and pause menus, passed 21/21 in an
+  844x390 window too.
+- A new `-pwScript menus` capture shoots every menu screen at any window size.
+
+![menus](media/improvements/round6/3-phone-menus-before-after.jpg)
+
+In the browser, `web_smoke --phone` logged the menus at 0.440 CSS px per design unit (x1.22 on a
+1266x585 canvas at 1.5 px per CSS px), and Firefox's phone window the same at 2 px per CSS px.
+Below: the pause menu on the emulated phone, after the page came back from another tab and the
+next tap made it fullscreen again (R6-2).
+
+![web phone](media/improvements/round6/2-3-web-phone-pause-after-coming-back.jpg)
+
+Not judged: whether the bigger menus feel right in the hand on a real phone. Held upright, the
+menus' smallest text is still 8.5 to 9.8 CSS px; they'd need a narrower layout as well as a shorter
+one.
+
+### Found along the way, not fixed
+
+- The Unity editor rewrites `~/.config/unity3d/Pocketvale Studio/Pocket Weather/prefs` on every
+  batch build: that's where the editor keeps the project's player prefs too, and it stores two keys
+  of its own there (`unity.cloud_userid`, `UnityGraphicsQuality`), no game settings or progress. A
+  player who builds from source on the machine they play on shares that file with the editor.

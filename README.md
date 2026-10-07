@@ -67,9 +67,11 @@ Auto (shown once you touch the screen), On or Off. The game pauses itself when t
 focus or a phone sends it to the background. It's laid out for landscape, but a phone held upright
 gets a bigger, rearranged interface and a closer view that follows Pip from side to side (and, in
 the browser, a nudge to turn sideways). On a phone the HUD is drawn larger than its design scale so
-the pause button and clock stay finger- and eye-sized. In a phone's browser the first tap on the
-game goes fullscreen (Settings → Fullscreen turns it off), and the game goes quiet whenever its
-tab is hidden.
+the pause button and clock stay finger- and eye-sized, and held sideways the menus are drawn larger
+too, with settings in two columns and the pause menu in a grid. In a phone's browser the first tap
+on the game goes fullscreen, and so does the first tap after coming back from another app
+(Settings → Fullscreen turns it off, and leaving fullscreen yourself sticks). The game goes quiet
+whenever its tab is hidden.
 
 ## Features
 
@@ -291,10 +293,12 @@ machine:
 - **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen (the Encore
   postcard included) must receive a tap at its centre and sit fully on screen, at 16:9, 20:9, 4:3,
   two phones held sideways (844x390 and 740x360) and two portrait sizes (720x1280 and a 390x844
-  phone). The HUD's gauge, sun track, needs tray and pause button must not overlap, the UI must be
-  drawn at its design scale, and on a phone-sized screen the pause button must be at least 44 px,
-  the clock's text 15 px and the tray's items no smaller than the old layout drew them. A long
-  hint must stay clear of the touch buttons. It checks the
+  phone). No two controls may overlap, and no menu text may run off screen or into a control it
+  isn't part of. The HUD's gauge, sun track, needs tray and pause button must not overlap, the UI
+  must be drawn at its design scale, a desktop's tray must keep its full size (Day 12 included),
+  and on a phone-sized screen the pause button must be at least 44 px, the clock's text 15 px and
+  the tray's items no smaller than the old layout drew them. Held sideways, a phone's smallest menu
+  text must be 11.5 CSS px or more. A long hint must stay clear of the touch buttons. It checks the
   camera too: landscape framing unchanged, portrait at least 1.5x closer on a phone, and Pip and
   every thought bubble on screen with Pip at either end of the island. It also loads all twelve
   days and fails if any need is missing its "what helps" badge.
@@ -313,8 +317,10 @@ machine:
   touch ("Drag to fly", "Tap to play") and a mouse-only desktop's speak mouse, before anything has
   been touched, or if the clock the rain's notes take their chords from doesn't move with the
   music. It also hides the page behind another tab for 3 s and fails if the game's audio keeps
-  running, doesn't come back, or the screen is black on return; a phone must go fullscreen at its
-  first tap (a desktop mustn't), and a phone's HUD must be at least 0.47 CSS px per design unit.
+  running, doesn't come back, or the screen is black on return. A phone must go fullscreen at its
+  first tap and again at the first tap after coming back, but not after leaving fullscreen itself
+  (a desktop never goes fullscreen). A phone's HUD must be at least 0.47 CSS px per design unit,
+  and held sideways its menus at least 0.43.
   It isn't part of `selftest.sh`, which tests the Linux build.
 
 ### Rebuilding the trailer and README media
@@ -436,7 +442,7 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, five improvement rounds (see
+every input method. Since then, six improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
@@ -460,7 +466,9 @@ every input method. Since then, five improvement rounds (see
 - met and problem marks on the needs tray that don't depend on telling green from red
 - a HUD sized for phones (a 44 px pause button and a 16 px clock, where they were 33 and 12 px)
 - a web game that goes quiet when its tab is hidden (before, its music played on)
-- fullscreen at the first tap on a phone in the browser
+- fullscreen at the first tap on a phone in the browser, and again after switching apps
+- menus drawn larger on a phone held sideways (the smallest text 12 CSS px, where it was 9 to 11)
+- a needs tray that keeps its full size on desktops on Days 10 to 12
 
 None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
@@ -475,9 +483,12 @@ None of it is in a release yet. What has been verified (on the Linux build unles
 - Both bots save all twelve Encores before sundown. The newcomer's tightest were Becalmed (66 of
   105 s) and the Heatwave (78 of 135 s).
 - Keyboard (35 checks), gamepad (26), touch (21) and UI-reachability self-tests pass through the
-  real Input System. The UI audit runs at seven window shapes: two landscape phones and two
-  portrait. On the phone sizes it checks a 44 px pause button, a 15 px or larger clock and tray
-  items no smaller than before (the HUD is scaled up 1.33x to 1.48x there; desktops 1x). The
+  real Input System; the touch test also passes in an 844x390 window. The UI audit runs at seven
+  window shapes: two landscape phones and two portrait. On the phone sizes it checks a 44 px pause
+  button, a 15 px or larger clock and tray items no smaller than before (the HUD is scaled up 1.33x
+  to 1.48x there; desktops 1x). Held sideways, the menus are scaled up 1.22x (844x390) and 1.32x
+  (740x360), so their smallest text is 11.6 to 12.3 CSS px (it was 9.4 to 10.8); desktop menus
+  are unchanged. The
   once-flaky "rain waters the bed" check now lines Pip up first; both keyboard and gamepad tests
   passed 10 runs out of 10.
 - **Web, in headless Chrome and Firefox 157:**
@@ -498,8 +509,10 @@ None of it is in a release yet. What has been verified (on the Linux build unles
   - Hidden behind another tab for 3 s, the game's audio stops (its clock moved 0.00 s; before,
     the music played on) and comes back with the page. Play pauses itself, and the screen isn't
     left black. Checked in all six browser modes.
-  - An emulated phone goes fullscreen at its first tap, held either way; desktops don't. The
-    phone's HUD draws at 0.48 CSS px per design unit (a 44 px pause button).
+  - An emulated phone goes fullscreen at its first tap, held either way, and again at its first
+    tap after the page was hidden; after leaving fullscreen itself, a tap doesn't bring it back.
+    Desktops never go fullscreen. The phone's HUD draws at 0.48 CSS px per design unit (a 44 px
+    pause button), and held sideways its menus at 0.44.
 - Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
   off, 99% of frames under 17 ms, on both OpenGL Core (the default) and Vulkan
   (`-force-vulkan`).
@@ -512,15 +525,17 @@ Rough edges, honestly:
   band and badges help can only be judged by people.
 - **No real touchscreen or controller testing.** Touch and gamepad have only been exercised
   through virtual devices and emulated browser touch. There's no native Android or iOS build, and
-  phone-browser performance is untested. The phone-sized HUD, going fullscreen at the first tap
-  and going quiet in a hidden tab were checked in headless Chrome's phone emulation (and Firefox
-  for the last), not on a phone. A phone that leaves fullscreen when it switches apps comes back
-  without it (the game asks only once a visit; Settings → Fullscreen brings it back).
+  phone-browser performance is untested. The phone-sized HUD and menus, going fullscreen at the
+  first tap (and again after switching apps) and going quiet in a hidden tab were checked in
+  headless Chrome's phone emulation (and Firefox for the last), not on a phone. Whether the bigger
+  menus feel right in the hand, and how real Android browsers order their fullscreen and
+  visibility events, can only be judged on a phone.
 - **Portrait works, but landscape is better.** Held upright, the interface is bigger and the
   camera frames about 60% of the island and follows Pip, which makes the island 1.56x bigger on a
   20:9 phone. The rest of the island is a pan away, and needs out of frame wait at the screen's
   edge. Whether edge-scrolling under a finger feels right hasn't been tried on a real phone. The
-  web page still suggests turning sideways.
+  web page still suggests turning sideways. Held upright, the menus' smallest text is still 8.5 to
+  9.8 CSS px: they need a narrower layout as well as a shorter one, which hasn't been done.
 - **Encore balance is judged by bots only.** Both finish every Encore with time to spare, so
   skilled players may find them gentle.
 - **The audio has never been heard by a person.** It was balanced by measurement (loudness,
