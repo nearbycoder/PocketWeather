@@ -301,10 +301,11 @@ machine:
   WebGL build in headless Chrome and plays it with real browser touch events, then reloads to
   check that a downgraded Auto graphics setting is remembered. `--throttle 20` emulates a 20 Mbps
   connection and screenshots the loading card; `--portrait` holds the phone upright and checks the
-  "turn sideways" card; `--mouse` is a desktop with no touchscreen; `--dir` points it at another
-  build, for comparisons. It fails unless a phone's first hint speaks touch ("Drag to fly") and a
-  mouse-only desktop's speaks mouse, before anything has been touched. It isn't part of
-  `selftest.sh`, which tests the Linux build.
+  "turn sideways" card; `--mouse` is a desktop with no touchscreen; `--firefox` runs it all in
+  Firefox over WebDriver BiDi (a mouse desktop, or touch with `--phone`); `--dir` points it at
+  another build, for comparisons. It fails unless a phone's first hint and the title's prompt speak
+  touch ("Drag to fly", "Tap to play") and a mouse-only desktop's speak mouse, before anything has
+  been touched. It isn't part of `selftest.sh`, which tests the Linux build.
 
 ### Rebuilding the trailer and README media
 
