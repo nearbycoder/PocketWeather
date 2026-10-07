@@ -1097,3 +1097,108 @@ a save.
   them means re-laying out every screen for a shorter canvas. That needs a real phone to judge.
 - Safari/WebKit, real phones and controllers, audio by ear, Encore tuning: these need people or
   the owner.
+
+## Round 5 results
+
+Implemented on `improvements-5` in two commits: the phone-sized HUD (R5-1), then the web page's
+changes (R5-2 and R5-3 together, because they share the page and its smoke test). Screenshots are
+in [`docs/media/improvements/round5/`](media/improvements/round5/). The machine's load average
+was 17 to 64 during the round (other sessions' builds); runs are noted with their load below.
+
+The full self-test passed on the final Linux build (load average 20 to 40 while it ran):
+- validator and loop seams
+- keyboard 35, gamepad 26 and touch 21 checks
+- the UI audit at seven sizes, 19 checks each (two new landscape phone sizes, 844x390 and
+  740x360)
+- the AutoPilot campaign 12/12 with 11/12 delights (the wedding bouquet catch, as before), no
+  exceptions
+- prefs in the game's own folder
+
+`web_smoke` passed on a fresh web build of the final code in all six modes (Chrome desktop,
+`--mouse`, `--phone` and `--portrait`; `--firefox` and `--firefox --phone`) with 0 console errors.
+The up-front download is still 20.9 MB. The real prefs files' `pw.` entries were identical before
+and after the round, and the game's own prefs file was byte-identical.
+
+### R5-1. A HUD sized for phones: done, both orientations
+
+- The top bar (gauge, sun track, tray, pause), the hint and the toast now sit in one container,
+  scaled up together until the HUD is 0.48 CSS px per design unit, at most 1.5x. On the web, a
+  plugin reports the canvas's pixels per CSS pixel (1.5 on an emulated phone, 2 in Firefox's).
+  Desktops keep 1x.
+- On a phone-sized top bar the sun track is shorter (420 instead of 620 units), and it moves left
+  only as far as the tray needs to fit at full size. Held upright, the tray takes a third row.
+- Bubbles grow up to 1.2x. A bubble of a need at the back of the island now waits just below the
+  top bar instead of under it (the scaled bar covered Day 12's boat in the first try).
+- Held upright, the hint now sits above the touch buttons. A long hint already ran into the gust
+  button at 390x844 before this round.
+- Measured by the UI audit (the Linux window stands in for CSS px; load 22 to 26):
+
+  | Screen | Top bar | Pause button | Clock | Tray items, Day 12 (old layout) |
+  | --- | --- | --- | --- | --- |
+  | 844x390 | x1.33 | 44.2 px (was 33) | 16.3 px (was 12) | 40.3 px (30.3) |
+  | 740x360 | x1.44 | 44.2 px | 16.3 px | 34.6 px (28.0) |
+  | 390x844 | x1.48 | 44.2 px | 16.3 px | 40.3 px (27.3) |
+  | 1600x900, 1600x720, 1200x900, 720x1280 | x1.00 | unchanged | unchanged | unchanged |
+
+- The audit fails on a phone-sized screen (short side 500 CSS px or less) if the pause button is
+  under 44 px, the clock under 15 px, or any tray item smaller than the old layout drew it, worked
+  out from the old numbers. It also fails if a desktop-sized screen gets scaled, and it checks
+  Days 1, 4 and 12 and a long hint against the touch buttons. 19 checks pass at each of seven
+  sizes.
+- At 1600x900, captures of the old and new code differ by 0.1 to 0.5% of pixels on the HUD
+  screens (fuzz 8%). The postcard differs by 2.7%, because the capture caught its slide-in at
+  another moment.
+- `web_smoke --phone` logged 0.480 CSS px per design unit (canvas 1266x585 at 1.5 px per CSS px),
+  `--portrait` 0.481, and Firefox's phone window 0.480 at 2 px per CSS px.
+
+![phone HUD](media/improvements/round5/1-phone-hud-before-after.jpg)
+
+Not judged: whether 44 px feels right under a real thumb, and whether the bigger top bar in
+portrait (three rows, about a fifth of the screen) crowds the island on a real phone.
+
+### R5-2. The web game goes quiet when it's hidden: done
+
+- The page keeps hold of the audio contexts the game creates, by wrapping `AudioContext` before
+  Unity's loader runs, and suspends them while the page is hidden.
+- In every browser mode, `web_smoke` hid the page behind another tab for 3 s. The audio clock
+  moved 0.00 s (before the fix, 6.0 s in 6 s), was running again within 2.5 s of coming back, and
+  the game logged that play had paused itself. That covers Chrome desktop, touch desktop, phone and
+  portrait, and Firefox mouse and phone.
+- It turned up a bug of its own. Hiding the page ends fullscreen (R5-3), and Unity then drew a
+  black screen on return until the canvas changed size. So after a fullscreen change, the page
+  nudges the canvas by a pixel for two frames when it's shown again. `web_smoke` now measures
+  the screenshot taken on return and fails if it's black: brightness 0.00 before the nudge, 0.59
+  to 0.63 after.
+
+![web](media/improvements/round5/2-3-web-phone-fullscreen-and-hidden.jpg)
+
+### R5-3. Fullscreen on phones in the browser: done
+
+- On a phone, the first touch on the game asks for fullscreen of the whole page, once a visit.
+  The page's existing phone test is the same one the "turn sideways" card uses. Unity's Settings →
+  Fullscreen now targets the same element (`fullscreenElementID`). The toggle shows the real state
+  each time the settings open; before, it showed the state at boot.
+- `web_smoke --phone` and `--portrait`: the page is fullscreen after the first tap, and the game
+  logs "fullscreen: on". It then plays on: postcard, play and rain. Chrome desktop (touch and
+  mouse) and Firefox stay windowed. Firefox's phone mode can't report touch points here, so the
+  page treats it as a desktop, and the test says so instead of checking.
+- Leaving the tab ends fullscreen, and the game doesn't ask again in that visit. Settings →
+  Fullscreen brings it back.
+- Not verifiable here: real Android Chrome (whether `navigationUI: "hide"` gives the full
+  height), Samsung Internet, and iPhone Safari, which has no fullscreen for pages and should just
+  carry on.
+
+### R5-4. Settings that stick on the web: not needed
+
+Reading the code showed that the mute key already saves (`GameSettings.ToggleMusicMute` calls
+`Save`), and the settings screen saves on Done, Esc and B. Nothing outside it writes a setting
+without saving, so nothing was changed.
+
+### Found along the way, not fixed
+
+- The web build's "Trying to get length of sound which is not loaded yet" warnings come at music
+  changes. A Web Audio probe showed every kind of sound starting, so they look harmless, but which
+  call raises them wasn't pinned down.
+- On desktops the needs tray still shrinks on Days 10 to 12 (to 0.86 at 1600x900), because the
+  sun track stays centred there. Moving it left as on phones would let the tray keep full size,
+  but that changes the desktop layout, which this round left alone.
