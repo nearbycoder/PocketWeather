@@ -190,6 +190,11 @@ namespace PocketWeather
         }
 
         // ------------------------------------------------------------------ touch
+        /// <summary>Touch distances and speeds are judged in units of 1/1080 of the screen's short
+        /// side, so a flick or a still finger measures the same on a phone held either way (by the
+        /// long side, an upright phone needed a flick twice as long as the same phone on its side).</summary>
+        static float TouchUnit => 1080f / Mathf.Max(1, Mathf.Min(Screen.width, Screen.height));
+
         void TickTouch(float dt, ref bool rain)
         {
             var ts = Touchscreen.current;
@@ -227,7 +232,7 @@ namespace PocketWeather
             {
                 // released: flick?
                 float dur = Time.unscaledTime - touchStart;
-                float px = 1080f / Mathf.Max(1, Screen.height);
+                float px = TouchUnit;
                 float speed = touchVel.magnitude * px;
                 // short flicks span only a few frames, so also judge them by their average speed
                 Vector2 travel = touchLastPos - touchStartPos;
@@ -250,7 +255,7 @@ namespace PocketWeather
             Vector2 delta = pos - touchLastPos;
             touchLastPos = pos;
             touchVel = Vector2.Lerp(touchVel, delta / Mathf.Max(dt, 1e-3f), 0.5f);
-            float scale = 1080f / Mathf.Max(1, Screen.height);
+            float scale = TouchUnit;
             bool still = delta.magnitude * scale < 3.5f;
             stillTimer = still ? stillTimer + dt : Mathf.Max(0, stillTimer - dt * 3f);
             if (!touchRaining)
