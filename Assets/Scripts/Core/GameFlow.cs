@@ -112,6 +112,8 @@ namespace PocketWeather
 
         public void Boot()
         {
+            // what the save holds as the game starts (the web smoke test checks a reload kept it)
+            Debug.Log($"[PW] save: {SaveData.DaysPlayed} days played, {SaveData.TotalStamps()} stamps, {SaveData.EncoreStamps()} Encore stamps");
             string direct = GameRoot.Arg("-pwLevel");
             if (direct != null)
             {

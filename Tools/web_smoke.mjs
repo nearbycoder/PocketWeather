@@ -23,8 +23,12 @@
 // on the game, and again at the first tap after the page comes back (but not after leaving
 // fullscreen on purpose); a desktop never. A phone held sideways must draw its HUD and menus
 // big enough (0.47 and 0.43 CSS px per design unit). The ambience, fetched after boot like the
-// music, must arrive and start. Screenshots at each step; exits non-zero if
-// the game never boots, logs exceptions or fails a check.
+// music, must arrive and start. Last, the page's reload card: an error event from another script
+// must show nothing, losing the WebGL context must show the card within 1 s and its Reload must
+// boot the game again with its progress (the boot's save line), and an error from the game's own
+// files must show the card, whose "Try to carry on" closes it. No browser dialog (alert) may open
+// at any point. Screenshots at each step; exits non-zero if the game never boots, logs exceptions
+// or fails a check.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -133,6 +137,59 @@ async function tap(x, y) { await touch("touchStart", x, y); await sleep(90); awa
 // A hidden page (another tab in front; a phone does the same when it switches apps) must go quiet:
 // the page suspends the game's audio contexts while hidden and resumes them when it's back
 let quiet = { ok: true, note: "not checked" };
+const dialogs = [];
+// The page's reload card (see the header). Returns where the checks began and where the reloaded
+// game's log starts: the console in between (a lost context, a pretend crash) isn't held against it.
+async function crashCheck() {
+  // (an older page has no card: then these say it's hidden, and the Reload step is skipped)
+  const visible = async () => !!(await evaluate("!!document.getElementById('pw-crash') && !document.getElementById('pw-crash').hidden"));
+  const title = async () => (await evaluate("(document.getElementById('pw-crash-title') || {}).textContent || ''")) || "";
+  const carryOn = async () => !!(await evaluate("!!document.getElementById('pw-crash-carry-on') && !document.getElementById('pw-crash-carry-on').hidden"));
+  const tapButton = async (id) => {
+    const b = JSON.parse((await evaluate(`JSON.stringify(document.getElementById('${id}')?.getBoundingClientRect() ?? null)`)) || "null");
+    if (b) await tap(b.x + b.width / 2, b.y + b.height / 2);
+  };
+  const start = log.length;
+  // another script's error is left alone
+  await evaluate("window.dispatchEvent(new ErrorEvent('error', { message: \"TypeError: someone else's bug\", filename: location.origin + '/extension.js', lineno: 3 })), true");
+  await sleep(600);
+  const stray = await visible();
+  const strayLogged = log.slice(start).some((l) => /\[page\] left alone a problem from another script: TypeError: someone else's bug/.test(l));
+  // losing the picture shows the card, with Reload only
+  const t0 = Date.now();
+  const lost = await evaluate("(() => { const gl = document.getElementById('unity-canvas').getContext('webgl2'); const x = gl && gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); return !!x; })()");
+  let lostMs = -1;
+  for (let i = 0; i < 30 && lost; i++) { if (await visible()) { lostMs = Date.now() - t0; break; } await sleep(100); }
+  const lostTitle = await title(), lostCarry = await carryOn();
+  await shot("w09_lost_card");
+  // Reload boots the game again, with the progress it had (Day 1 was started above)
+  const reload = log.length;
+  await tapButton("pw-crash-reload");
+  // (the save line comes a moment after the graphics line that marks a boot)
+  const rebooted = lostMs >= 0 && await waitLog(/\[PW\] graphics/, 300000, reload) && await waitLog(/\[PW\] save: /, 20000, reload);
+  const save = log.slice(reload).find((l) => /\[PW\] save: /.test(l)) || "";
+  const played = parseInt((save.match(/save: (\d+) days played/) || [0, "0"])[1]);
+  await sleep(4000);
+  const cardAfter = await visible();
+  // the game's own failure (a pretend WebAssembly trap from its framework file) shows the card,
+  // and "Try to carry on" closes it
+  const crash = log.length;
+  await evaluate("window.dispatchEvent(new ErrorEvent('error', { message: 'RuntimeError: unreachable (web_smoke pretends)', filename: location.origin + '/Build/WebGL.framework.js', lineno: 1 })), true");
+  await sleep(600);
+  const stopped = await visible(), stoppedTitle = await title(), stoppedCarry = await carryOn();
+  await shot("w10_stopped_card");
+  if (stopped && stoppedCarry) await tapButton("pw-crash-carry-on");
+  await sleep(500);
+  const closed = !(await visible());
+  const ok = !stray && strayLogged && lost && lostMs >= 0 && lostMs <= 1000 && /lost sight/.test(lostTitle) && !lostCarry &&
+    rebooted && played >= 1 && !cardAfter && stopped && /got lost/.test(stoppedTitle) && stoppedCarry && closed && dialogs.length === 0;
+  const note = `another script's error: ${stray ? "SHOWED THE CARD" : "nothing shown"}${strayLogged ? "" : " (not logged as left alone)"}; ` +
+    `lost context: ${!lost ? "COULDN'T LOSE IT" : lostMs < 0 ? "NO CARD" : `card in ${lostMs} ms ("${lostTitle}", carry-on ${lostCarry ? "SHOWN" : "hidden"})`}; ` +
+    `Reload: ${rebooted ? `booted again, ${save.replace(/.*save: /, "").trim() || "no save line"}` : "DIDN'T BOOT"}${cardAfter ? ", card STILL UP" : ""}; ` +
+    `game error: ${stopped ? `card ("${stoppedTitle}", carry-on ${stoppedCarry ? "shown" : "MISSING"})${closed ? ", closed by Try to carry on" : ", NOT CLOSED"}` : "NO CARD"}; ` +
+    `browser dialogs ${dialogs.length}${dialogs.length ? `: "${dialogs[0].split("\n")[0].slice(0, 90)}"` : ""}`;
+  return { ok, note, start, rebootLog: reload, crashLog: crash };
+}
 let fullscreen = "";
 let refullscreen = null;   // fullscreen when the page came back, after the next tap, and after leaving it on purpose and tapping
 // mean brightness (0 to 1) of a screenshot, worked out by the browser itself
@@ -186,11 +243,15 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     if (m.method === "Runtime.consoleAPICalled") log.push(m.params.args.map((a) => a.value ?? a.description ?? "").join(" "));
     if (m.method === "Runtime.exceptionThrown") log.push("EXCEPTION " + (m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text));
     if (m.method === "log.entryAdded") log.push((m.params.type === "javascript" ? "EXCEPTION " : "") + (m.params.text || ""));
+    // a browser dialog (Unity's alert() for an unhandled error): note it and dismiss it, so the page
+    // isn't left blocked
+    if (m.method === "Page.javascriptDialogOpening") { dialogs.push(m.params.message); send("Page.handleJavaScriptDialog", { accept: true }).catch(() => {}); }
+    if (m.method === "browsingContext.userPromptOpened") { dialogs.push(m.params.message); send("browsingContext.handleUserPrompt", { context: m.params.context, accept: true }).catch(() => {}); }
   };
   if (FIREFOX) {
     const { capabilities } = await send("session.new", { capabilities: {} });
     console.log(`Firefox ${capabilities.browserVersion}`);
-    await send("session.subscribe", { events: ["log.entryAdded"] });
+    await send("session.subscribe", { events: ["log.entryAdded", "browsingContext.userPromptOpened"] });
     // a fresh tab: the one Firefox opens with is a privileged page that can't be resized
     ctx = (await send("browsingContext.create", { type: "tab" })).context;
     await send("browsingContext.setViewport", { context: ctx, viewport: { width: W, height: H }, devicePixelRatio: PHONE ? 2 : 1 });
@@ -329,6 +390,9 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     remembered = again && /graphics: low \(Auto\)/.test(line);
     console.log(`second visit remembers Low: ${remembered ? "yes" : "NO"} (${line.slice(0, 60)})`);
   }
+  let crash = { ok: !booted, note: "not run (the game didn't boot)", start: log.length, rebootLog: log.length, crashLog: log.length };
+  if (booted) crash = await crashCheck();
+  console.log(`reload card: ${crash.note}${crash.ok ? "" : " (FAILED)"}`);
   // the title's prompt, before anything was touched: "Tap" on a phone, "Click" with a mouse
   const prompt = (log.find((l) => /\[PW\] title prompt: /.test(l)) || "").replace(/.*title prompt: /, "").trim();
   const promptOk = !booted || (PHONE ? !coarse || prompt === "Tap to play" : MOUSE ? prompt === "Click to play" : true);
@@ -354,10 +418,12 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   const ambOk = !booted || amb.length > 0;
   console.log(`ambience: ${amb.length ? `playing ${[...new Set(amb)].join(", ")}` : "never started"}; fetched ${ambFetched.join(", ") || "none"}${ambOk ? "" : " (the ambience should arrive and play)"}`);
   writeFileSync(join(OUT, "console.txt"), log.join("\n"));
-  const ex = log.filter((l) => /exception|error/i.test(l) && !/favicon/i.test(l));
+  // the console between losing the context and the reloaded game's boot, and after the pretend
+  // crash, belongs to the reload-card checks; the page's own "[page]" lines are expected
+  const ex = log.filter((l, i) => (i < crash.start || (i >= crash.rebootLog && i < crash.crashLog)) && /exception|error/i.test(l) && !/favicon/i.test(l) && !/^\[page\]/.test(l));
   console.log(`console lines ${log.length}, error/exception lines ${ex.length}`);
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
   await shutdown();
-  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && ambOk && quiet.ok && fsOk && rfOk && hudOk && menuOk ? 0 : 1);
+  process.exit(booted && ex.length === 0 && crash.ok && dialogs.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && ambOk && quiet.ok && fsOk && rfOk && hudOk && menuOk ? 0 : 1);
 })().catch(async (e) => { console.error(e); await shutdown(); process.exit(2); });

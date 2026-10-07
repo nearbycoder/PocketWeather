@@ -17,7 +17,7 @@ html, body {
   transition: opacity 0.6s ease;
 }
 #pw-loader.done { opacity: 0; pointer-events: none; }
-#pw-loader[hidden], #pw-error[hidden], #pw-rotate[hidden] { display: none; }
+#pw-loader[hidden], #pw-error[hidden], #pw-rotate[hidden], #pw-crash[hidden], #pw-crash [hidden] { display: none; }
 #pw-rotate {
   position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
   background: rgba(59, 58, 90, 0.35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
@@ -53,8 +53,30 @@ html, body {
 #pw-error-card img { width: 96px; }
 #pw-error-card h1 { font-size: 26px; margin: 8px 0; }
 #pw-error-card p { font-size: 17px; line-height: 1.45; margin: 0; }
+/* the game stopped (a crash) or the browser took its graphics back: a card over the game */
+#pw-crash {
+  position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+  background: rgba(59, 58, 90, 0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+#pw-crash-card {
+  width: min(400px, 84vw); background: #FFF8EC; color: #3B3A5A; border-radius: 28px; padding: 20px 24px 22px;
+  text-align: center; box-shadow: 0 10px 24px rgba(59, 58, 90, 0.25);
+}
+#pw-crash-card img { width: 84px; filter: drop-shadow(0 3px 4px rgba(59, 58, 90, 0.3)); }
+#pw-crash-card h1 { font-size: 22px; margin: 6px 0; }
+#pw-crash-card p { font-size: 16px; line-height: 1.4; margin: 0 0 16px; color: #6E6A8E; }
+#pw-crash-card button {
+  font: inherit; font-weight: 700; color: #fff; border: 0; border-radius: 22px; cursor: pointer; margin: 4px 6px;
+}
+#pw-crash-card button:focus { outline: none; }
+#pw-crash-card button:focus-visible { outline: 3px solid #5FB8E6; outline-offset: 3px; }
+#pw-crash-reload { font-size: 18px; background: #FF7A6B; padding: 10px 28px; box-shadow: 0 5px 0 #c85d52; }
+#pw-crash-carry-on { font-size: 15px; background: #A99BE0; padding: 8px 18px; box-shadow: 0 4px 0 #8577c0; }
 @keyframes pw-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @media (max-height: 420px) {   /* phones held landscape */
   #pw-logo { width: 70%; margin-bottom: 10px; }
   #pw-status { font-size: 16px; }
+  #pw-crash-card { width: min(460px, 84vw); padding: 14px 22px 16px; }
+  #pw-crash-card img { width: 56px; }
+  #pw-crash-card p { margin-bottom: 10px; }
 }

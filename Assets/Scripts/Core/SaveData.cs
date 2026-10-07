@@ -98,6 +98,9 @@ namespace PocketWeather
             return n;
         }
 
+        /// <summary>Days started at least once.</summary>
+        public static int DaysPlayed => Data.levels.FindAll(l => l.plays > 0).Count;
+
         /// <summary>Nobody has played a day yet (a brand-new player).</summary>
         public static bool IsFresh => Data.levels.TrueForAll(l => l.plays == 0 && l.stamps == 0);
 

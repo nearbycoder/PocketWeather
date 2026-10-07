@@ -40,6 +40,15 @@
         <p id="pw-error-text"></p>
       </div>
     </div>
+    <div id="pw-crash" hidden>
+      <div id="pw-crash-card" role="alertdialog" aria-labelledby="pw-crash-title" aria-describedby="pw-crash-text">
+        <img src="TemplateData/pip.png" alt="">
+        <h1 id="pw-crash-title"></h1>
+        <p id="pw-crash-text"></p>
+        <button id="pw-crash-reload" type="button">Reload</button>
+        <button id="pw-crash-carry-on" type="button">Try to carry on</button>
+      </div>
+    </div>
     <script>
       (function () {
         var canvas = document.getElementById("unity-canvas");
@@ -107,6 +116,38 @@
           canvas.style.width = Math.max(1, canvas.clientWidth - 1) + "px";
           requestAnimationFrame(function () { requestAnimationFrame(function () { canvas.style.width = ""; }); });
         });
+        // When the game stops (a crash) or the browser takes its graphics back (phones do that to
+        // save memory, and Unity can't rebuild them), a card says so and offers a reload: progress
+        // is saved as each stamp is earned, so a reload carries on from the map. Without this, Unity
+        // shows a developer's alert() for any error on the page, and a lost picture just freezes.
+        var crashCard = document.getElementById("pw-crash");
+        var crashKinds = {
+          stopped: ["Pip got lost in the clouds", "Something went wrong and the game stopped. Your stamps are saved, so reload to carry on from the map."],
+          lost: ["Pip lost sight of Pocketvale", "The browser took back the game's graphics, as phones sometimes do to save memory. Your stamps are saved, so reload to carry on from the map."],
+        };
+        function showCrash(kind, detail) {
+          if (!crashCard.hidden) return;
+          console.log("[page] " + (kind === "lost" ? "lost the picture (WebGL context)" : "the game stopped: " + String(detail).split("\n")[0]) + "; showing the reload card");
+          loader.hidden = true;
+          document.getElementById("pw-crash-title").textContent = crashKinds[kind][0];
+          document.getElementById("pw-crash-text").textContent = crashKinds[kind][1];
+          // without its graphics the game can't go on; after an error it sometimes can
+          document.getElementById("pw-crash-carry-on").hidden = kind === "lost";
+          crashCard.hidden = false;
+          if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
+          document.getElementById("pw-crash-reload").focus();
+        }
+        document.getElementById("pw-crash-reload").addEventListener("click", function () { location.reload(); });
+        document.getElementById("pw-crash-carry-on").addEventListener("click", function () { crashCard.hidden = true; canvas.focus(); });
+        canvas.addEventListener("webglcontextlost", function () { showCrash("lost"); });
+        // Unity hands every error and unhandled rejection on the page to this (and shows an alert()
+        // when nothing handles it). Only the game's own failures stop the game: a WebAssembly trap,
+        // an abort, running out of memory, or an error thrown from its Build/ files. Anything else
+        // (another script, a browser extension) is logged and left alone.
+        function gameStopped(message, filename) {
+          return /RuntimeError|abort\(|Aborted|out of memory|could not allocate|memory access out of bounds|unreachable/i.test(message) ||
+            /\/Build\/[^/]*\.(js|wasm)/.test(filename || "");
+        }
         var probe = document.createElement("canvas");
         if (!probe.getContext("webgl2")) {
           fail("This browser doesn't have WebGL 2 switched on, which the game needs. Try a current Chrome, Edge, Firefox or Safari, and check that hardware acceleration is enabled.");
@@ -139,6 +180,11 @@
           // Settings → Fullscreen takes the whole page, as the first tap on a phone does (below)
           fullscreenElementID: "pw-page",
           showBanner: function (msg, type) { if (type === "error") console.error(msg); else console.warn(msg); },
+          errorHandler: function (message, filename, lineno) {
+            if (gameStopped(String(message), filename)) showCrash("stopped", message);
+            else console.warn("[page] left alone a problem from another script: " + String(message).split("\n")[0].slice(0, 160) + " (" + (filename || "?") + ":" + (lineno || 0) + ")");
+            return true;   // handled: never Unity's alert()
+          },
         };
         var script = document.createElement("script");
         script.src = "Build/{{{ LOADER_FILENAME }}}";
