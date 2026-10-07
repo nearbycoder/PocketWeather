@@ -76,6 +76,16 @@ function cleanup() {
   try { rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch {}
 }
 process.on("exit", cleanup);
+// the browser keeps writing to its profile until it has exited, so wait for that before removing it
+async function shutdown() {
+  if (browser.exitCode === null && browser.signalCode === null) {
+    const gone = new Promise((r) => browser.once("exit", r));
+    try { browser.kill("SIGKILL"); } catch {}
+    await Promise.race([gone, sleep(5000)]);
+  }
+  await sleep(500);
+  cleanup();
+}
 
 async function json(url) { for (let i = 0; i < 50; i++) { try { return await (await fetch(url)).json(); } catch { await sleep(200); } } throw new Error("no CDP"); }
 
@@ -252,6 +262,6 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   console.log(`console lines ${log.length}, error/exception lines ${ex.length}`);
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
-  cleanup();
+  await shutdown();
   process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk ? 0 : 1);
-})().catch((e) => { console.error(e); cleanup(); process.exit(2); });
+})().catch(async (e) => { console.error(e); await shutdown(); process.exit(2); });
