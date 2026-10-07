@@ -188,8 +188,13 @@ namespace PocketWeather
                 Ui.Image(item, Ui.RingThin, new Color(Ui.Ink.r, Ui.Ink.g, Ui.Ink.b, 0.12f), new Vector2(84, 84), Vector2.zero, null, "Edge");
                 var ic = Ui.Icon(item, need.Icon, 60, new Vector2(0, 2));
                 WantBadge(item, need, new Vector2(-29, -27), 36f);
-                var badge = Ui.Icon(item, "check", 40, new Vector2(28, -26));
-                badge.gameObject.SetActive(false);
+                // met / problem: a tick or a "!" on a white disc, so it reads by shape and contrast, not
+                // only by the item's mint or coral tint (which red-green colour blindness merges)
+                var status = Ui.Rect("Status", item, new Vector2(0.5f, 0.5f), new Vector2(40, 40), new Vector2(29, -27));
+                Ui.Image(status, Ui.Circle, Color.white, new Vector2(40, 40), Vector2.zero, null, "Disc");
+                Ui.Image(status, Ui.RingThin, new Color(Ui.Ink.r, Ui.Ink.g, Ui.Ink.b, 0.35f), new Vector2(40, 40), Vector2.zero, null, "Edge");
+                var badge = Ui.Icon(status, "check", 34, new Vector2(0, 1));
+                status.gameObject.SetActive(false);
                 trayItems.Add((need, bg, ic, badge, false, false));
                 MakeBubble(need);
                 i++;
@@ -245,6 +250,8 @@ namespace PocketWeather
         }
 
         static readonly Color BandColor = Res.Hex("A6DFB4");
+        // the tray's tick and "!" a shade deeper than their icons, for contrast on the white disc
+        static readonly Color StatusTick = new Color(0.68f, 0.68f, 0.68f), StatusOops = new Color(0.82f, 0.82f, 0.82f);
 
         /// <summary>A small round badge saying what helps (rain, shade, gust, sun), crossed out for
         /// "keep the rain off".</summary>
@@ -478,10 +485,11 @@ namespace PocketWeather
                 bool problem = it.need.Problem;
                 if (met != it.met || problem != it.problem)
                 {
-                    it.badge.gameObject.SetActive(met || problem);
+                    it.badge.transform.parent.gameObject.SetActive(met || problem);
                     it.badge.sprite = Ui.IconSprite(met ? "check" : "oops");
+                    it.badge.color = met ? StatusTick : StatusOops;
                     it.bg.color = met ? Color.Lerp(Ui.Paper, Ui.Mint, 0.45f) : problem ? Color.Lerp(Ui.Paper, Ui.Coral, 0.35f) : Ui.Paper;
-                    Ui.PopIn(it.badge.transform, 0, 0.35f);
+                    Ui.PopIn(it.badge.transform.parent, 0, 0.35f);
                     Tween.Punch(it.bg.transform.parent, 0.25f, 0.4f);
                     trayItems[i] = (it.need, it.bg, it.icon, it.badge, met, problem);
                 }
