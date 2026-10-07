@@ -1788,3 +1788,103 @@ Not judged: whether a person sees the ring in time and finds 3.6 s enough. That 
 Hosting the web build, a new release zip (v0.1.0 predates all eight rounds), the trailer (it was
 staged before the bouquet's ring and new toast, so a re-cut would show them), licences, signing and
 Windows Build Support.
+
+## Round 9 scope
+
+Planned 2026-10-07 on `improvements-9`, from `main` at `a40f06d` (round 8 merged, `main` equal to
+`origin/main`). Eight rounds made the game fit for phones, the web and every input. This round
+looks at what happens when something goes wrong around the game: a controller that drops out, a
+crash, a lost picture, a feature nobody is told about. Before planning I built HEAD and probed it
+in a private, invisible KWin (`kwin_wayland --virtual`, its own socket, the real GPU), so no test
+window reached the shared desktop:
+
+- **The web page answers a crash with a developer's `alert()`.** Unity's loader listens for every
+  `error` and `unhandledrejection` on the page, and with no `errorHandler` in the page's config it
+  pops up "An error occurred running the Unity content on this page. See your browser JavaScript
+  console…", whatever raised it (another script or a browser extension included). The page passes
+  `showBanner`, which only logs.
+- **A lost WebGL context leaves a dead screen.** Phones drop a page's GPU context under memory
+  pressure or after a while in the background. Unity's framework has no `webglcontextlost`
+  handling (checked in the round 8 build's `framework.js`), so the game would stop drawing and
+  nothing would tell the player.
+- **A controller that drops out doesn't pause the day.** The game pauses when it loses focus, but
+  not when the gamepad in use disconnects (a wireless pad's battery or sleep timer), so the sun runs
+  on while the player reaches for a cable.
+- **Encores are never mentioned.** Saving a day opens its Encore, but the results card says nothing.
+  "Next day" leads to the next day's postcard, which has no Encore yet, so a player only finds one by
+  going back to a day they've saved.
+- **The Linux player's startup crash under Wayland** (about one launch in 45, a known issue since
+  round 1) exits with status 139: the player's crash handler prints a stack and re-raises SIGSEGV
+  (checked by sending one to a running build). The launcher can see that and try again.
+- Checked and fine: the UI audit passes all 22 checks at 2400x1000 (an ultrawide) and 1280x800 (the
+  Steam Deck's screen), sizes it doesn't normally run.
+
+### R9-1. Test windows in a private compositor
+
+**What:** `Tools/nested.sh <command>` starts a private KWin on a virtual screen (its own Wayland
+socket, nothing shown on the desktop), runs the command with that display and without `DISPLAY`,
+and stops the KWin it started afterwards. `Tools/play.sh` runs every tool run (any `-pw`
+automation flag) inside one when `kwin_wayland` is available, and `Tools/selftest.sh` runs all of
+its windows inside one. `PW_NESTED=0` opts out. A plain `Tools/play.sh` still opens a normal window.
+
+**Acceptance:** during a self-test the game's environment holds the private socket and no
+`DISPLAY`; afterwards the KWin is gone and its socket removed; the full self-test passes this way.
+
+### R9-2. A controller that drops out pauses the day
+
+**What:** if the gamepad Pip is being flown with disconnects during a day, the day pauses, and the
+pause menu's controls line says so ("Controller disconnected: reconnect it, or carry on with…").
+When a pad comes back, the line shows the pad's controls again. A player using the mouse, keys or
+touch isn't paused when an idle pad drops out.
+
+**Acceptance:** the gamepad self-test removes its virtual pad mid-flight and fails unless the day
+pauses with the message; adds one back and fails unless the line returns to the pad's controls and
+B resumes; then, flying with the keyboard, removes the pad and fails if the day pauses.
+
+### R9-3. Encores you can find
+
+**What:** the first time a day is saved, its results card says the day's Encore is open, with the
+Encore stamp: "Encore unlocked: play this day again on a scorcher, from its postcard." Later saves
+of the same day don't repeat it.
+
+**Acceptance:** the keyboard self-test saves a day for the first time and fails unless the note
+shows, then saves it again and fails if it does. The UI audit adds the first-save results card and
+must pass at all eight sizes (text on screen, inside the card, not touching the buttons, 11.5 CSS px
+or more on phones).
+
+### R9-4. A Linux launcher that tries again after a startup crash
+
+**What:** `PocketWeather.sh` no longer `exec`s the game. If the game dies of a signal within 20 s
+of starting, it starts it once more with the same arguments; any other exit, or a crash later in
+play, ends the launcher with the game's status. SIGTERM and SIGINT sent to the launcher reach the
+game.
+
+**Acceptance:** `Tools/linux/test_launcher.sh` (run by `selftest.sh`) drives the launcher with stub
+games: a crash at start is retried once with the arguments intact; two crashes stop after the
+second with status 139; a clean exit, an exit with status 1 and a crash after the window are not
+retried; a SIGTERM to the launcher ends the game. A real build boots through the launcher in the
+private KWin.
+
+### R9-5. The web page catches crashes and a lost picture
+
+**What:** the page gives Unity an `errorHandler`. An error from the game's own files (or a
+WebAssembly trap, abort or out-of-memory) shows a card in the game's style: "Pip got lost in the
+clouds", saying stamps are saved, with **Reload** and a smaller **Try to carry on**. Errors from
+anything else on the page are logged, not shown. Losing the WebGL context shows the same card with
+Reload only ("Pip lost sight of Pocketvale"). The game logs a summary of its save at boot so a
+reload can be checked.
+
+**Acceptance:** in all six `web_smoke` modes, no browser dialog opens; a stray error event from
+another script shows nothing; losing the context with `WEBGL_lose_context` shows the card within
+1 s, and its Reload button boots the game again with the progress it had (the boot log's save
+summary); an error event from the game's framework file shows the card. Screenshots of both cards.
+Not verifiable here: a real phone losing its context, and Safari.
+
+### Not in this round
+
+- Splitting each island's terrain into its own web download: the build report puts meshes at 4.7 MB
+  uncompressed of the 17 MB, so it would save perhaps 1.5 MB, for a level-loading change that
+  touches every screen. Still a lead.
+- Real phones, Safari, controllers, audio by ear and the Encores' difficulty still need people or
+  the owner. Hosting, releases and tags, the trailer, licences and Windows Build Support are the
+  owner's.
