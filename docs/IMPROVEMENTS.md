@@ -1009,3 +1009,91 @@ and Fernandes 2009, full severity), with the CIELAB difference between states me
   phone before redesigning.
 - Unity's WebGL player also logs "Trying to get length of sound which is not loaded yet" at
   boot and on scene changes, in both browsers. No missing sound was traced to it.
+
+## Round 5 scope
+
+Planned 2026-10-06 on `improvements-5`, from `main` at `9f8997c` (round 4 merged, `main` equal to
+`origin/main`). Rounds 1 to 4 made the web build ready to host and fit for phones, so the player
+this round has in mind is someone who opens a link on their phone. Before planning I measured
+the HUD at a phone's size and probed the web build in headless Chrome:
+
+- **The HUD is below phone guidelines in landscape.** At 844x390 CSS px (a typical phone on its
+  side) the HUD draws at 0.36x: the pause button is 33 px (Apple asks for 44 pt, Material for
+  48 dp), the clock's digits are 12 px, and the tray's items are 30 px with 13 px badges. Held
+  upright (390x844) it's smaller still, at 0.325x. Most of the screen's width is free beside the
+  island. Menus are better off: their smallest text is 28 to 30 design px (10 to 11 CSS px), and
+  their buttons are 33 px tall or more. So this round enlarges the HUD only.
+- **The web game keeps playing its music in a hidden tab.** With the game's tab hidden (another tab
+  in front, which is also what a phone does when you switch apps), the game freezes but its
+  AudioContext keeps running: its clock advanced 6.0 s in 6 s hidden, so the music and ambience
+  loop on, and if Pip was raining, so does the rain. Unity's WebGL audio has no visibility
+  handling.
+- **Not a bug:** round 4's "Trying to get length of sound which is not loaded yet" warnings. A
+  Web Audio probe showed the ambience, the three loops, the music and the rain notes all start in
+  Chrome. The warnings come at music changes.
+- **Not worth it:** a smaller download from the icons. Their uncompressed textures shrink to
+  1.5 MB under Brotli, less than the PNGs.
+
+### R5-1. A HUD sized for phones
+
+**What:** the HUD's pieces never draw smaller than about 0.48 CSS px per design unit while the
+screen has room for them. That makes the pause button 44 px. The gauge, sun track, tray, pause
+button, hint and toast are scaled together by a factor k (at most 1.4). k is worked out from the
+canvas's scale in CSS px: on the web, a small plugin reports the canvas's real pixels per CSS
+pixel; elsewhere it's 1. The tray still shrinks to fit between the sun track and the pause button,
+and the sun track gets shorter on small screens to leave it room. Bubbles grow less (at most
+1.2x), because they sit over the island. The touch buttons already measure 51 to 69 px and stay
+as they are. Desktop windows are untouched (k = 1 at 1280x720 and above). Held upright, the tray
+moves to a third row if it doesn't fit beside the gauge. If that turns out messy, portrait is left
+as it is and reported.
+
+**Acceptance:**
+- The UI audit runs at two more sizes, 844x390 and 740x360 (phones on their side, as the Linux
+  window stands in for CSS px). There, on Days 1, 4 and 12, it fails unless the pause button is at
+  least 43.5 px and the clock's text at least 15 px. It also fails if any tray item is smaller than
+  before this round, or if the HUD pieces overlap.
+- At 1600x900, 1600x720 and 1200x900 the audit logs k = 1. The landscape before/after screenshots
+  differ only by animation.
+- `web_smoke --phone` logs the HUD's scale in CSS px and fails below 0.47.
+- The full self-test passes.
+
+**Verify:** the UI audit at seven sizes, before/after screenshots at 844x390 (and 390x844), and
+web smoke on desktop and phone.
+
+### R5-2. The web game goes quiet when it's hidden
+
+**What:** the page suspends the game's audio when it's hidden and resumes it when it comes back.
+Play is paused by then anyway, by round 1's focus handling. The web music clock (round 4) already
+runs on the audio clock, so the rain's chords stay in step.
+
+**Acceptance:** `web_smoke` (Chrome) hides the page in the middle of play by opening a tab in front
+of it. It fails if the game's audio clock moves more than 0.3 s in 3 s hidden, if the clock doesn't
+run again after the page returns, or if the "music clock" check fails. Firefox runs the same check
+if WebDriver BiDi can hide a tab; otherwise that's reported.
+
+### R5-3. Fullscreen on phones in the browser
+
+**What:** on a phone in the browser, the first tap asks for fullscreen. Held sideways in Chrome on
+Android, the address bar takes about 56 of 390 CSS px. Settings → Fullscreen shows the real state
+and can turn it off. Desktops, and phones whose browser can't do it (iPhone Safari), are left
+alone.
+
+**Acceptance:** `web_smoke --phone` fails unless the page is fullscreen after the first taps and the
+game keeps playing (postcard, play, rain). `--mouse` and desktop runs must not go fullscreen.
+`--portrait` still shows the "turn sideways" card. Not verifiable here: real Android and iOS
+browsers.
+
+### R5-4. Small: settings that stick on the web
+
+**What:** the browser keeps PlayerPrefs only when the game asks it to save, so the music mute (M)
+is saved when it's toggled, as the settings screen's changes already are.
+
+**Verify:** by reading the code: every PlayerPrefs write outside the settings screen is followed by
+a save.
+
+### Not in this round
+
+- Menus at phone size (10 to 11 CSS px for the smallest text). They're readable, and enlarging
+  them means re-laying out every screen for a shorter canvas. That needs a real phone to judge.
+- Safari/WebKit, real phones and controllers, audio by ear, Encore tuning: these need people or
+  the owner.
