@@ -1376,3 +1376,83 @@ one.
   batch build: that's where the editor keeps the project's player prefs too, and it stores two keys
   of its own there (`unity.cloud_userid`, `UnityGraphicsQuality`), no game settings or progress. A
   player who builds from source on the machine they play on shares that file with the editor.
+
+## Round 7 scope
+
+Planned 2026-10-07 on `improvements-7`, from `main` at `3b7b827` (round 6 merged, `main` equal to
+`origin/main`). Before planning I built HEAD and captured every menu held upright at 390x844, and
+every day at 844x390 and 390x844 (the Linux window stands in for CSS px; throwaway config folders
+in `Recordings/r7/`). I also ran the Day 6 bot with a new log line saying where each rainbow lands
+and who it covers:
+
+- **Held upright, the menus are landscape cards shrunk to fit the width.** At 390x844 the menu
+  canvas draws at 0.325 CSS px per design unit, so the postcard's story is 11.7 px, its "Today,
+  help" and par line 9.8 to 10.4 px, and the pause menu's controls line 9.1 px, with half the
+  screen's height empty above and below. Round 6 left this because the screens need a narrower
+  layout, not only a shorter one.
+- **A hint can run off a narrow screen.** Day 5's "Blow the washing dry (right-drag)" is wider than
+  a 390-wide screen and loses both ends. The UI audit only tries the touch wording ("(flick)"),
+  which fits. The keyboard and gamepad wordings, and the mouse wording on a portrait tablet or a
+  narrow desktop window, don't.
+- **An Encore's postcard shows the ordinary day's best time.** Encores have no best time of their
+  own, so the scorcher's postcard says "Your best: 10:40" for a time set on the ordinary day, and
+  the Encore's results card never says whether you beat anything.
+- **Day 6's rainbow delight is not a game bug as far as I can tell.** Run alone, the bot found it
+  4 times in 4, and in 2 runs of Days 1 to 6 back to back, twice more. Each time the arc was centred
+  about 0.5 units from Rosa, covering her with 1.3 units to spare. Round 6's miss came in a full
+  campaign under load. The log line stays, so a future miss shows where the rainbow went.
+
+### R7-1. Menus on a phone held upright
+
+**What:** held upright, when the menus would draw under 0.44 CSS px per design unit, the menu
+canvas is scaled up to reach it (at most 1.4x), like round 6 did held sideways. On a 390-wide
+phone that leaves a design area about 890 units wide and 1900 tall, so the screens get narrow
+layouts:
+- the title's logo is smaller
+- the map has three cards a row, with the stamp pills under its title
+- the postcard is taller, with its rows stacked
+- the pause menu's controls line wraps in a narrower strip
+- the results card puts its stamps closer together
+- the sunset card and the ending wrap their lines
+
+Landscape layouts and larger portrait windows (720x1280 on a desktop) don't change.
+
+**Acceptance:**
+- The UI audit fails on any phone-sized screen held either way (short side 500 CSS px or less) if
+  any menu text is under 11.5 CSS px. At 390x844 it was 9.1 px.
+- The audit also fails, at all seven sizes, if any text or control is off screen, two controls
+  overlap, or text runs into a control.
+- The audit adds Day 12's postcard (the most needs in a row) and an Encore's results card.
+- At 1600x900, 1600x720, 1200x900 and 720x1280 the menus stay x1.00, and before/after captures
+  differ only by animation.
+- `web_smoke --portrait` logs the menus' scale and fails below 0.43 CSS px per design unit.
+- The touch self-test passes in a 390x844 window.
+
+**Verify:** the UI audit at seven sizes, before/after captures of every menu at 390x844 reviewed
+by eye, and web smoke on desktop, phone and portrait.
+
+### R7-2. Hints that always fit
+
+**What:** a hint caption never gets wider than the screen leaves it. Its text shrinks (no lower
+than about 70%) or wraps to a second line instead.
+
+**Acceptance:** the UI audit shows the longest wording of every hint for each device (mouse,
+keyboard, gamepad and touch), and fails if any caption is off screen or runs into the touch
+buttons, at all seven sizes. It fails on today's build at 390x844.
+
+### R7-3. Encores keep their own best time
+
+**What:** an Encore records its own best finishing time. The Encore postcard shows "Scorcher best"
+from Encores only (and nothing until one is saved), and the Encore's results card says "a new
+best!" or what the best is, as ordinary days do. A save from before this round loads unchanged,
+with no Encore best yet.
+
+**Acceptance:** the keyboard self-test saves an Encore and checks that the scorcher best is
+recorded and shown on its postcard. It also checks that the ordinary day's best is untouched, and
+that a round-6 save loads with its stamps and no scorcher best.
+
+### Not in this round
+
+- Real phones, Safari, controllers, audio by ear and Encore difficulty still need people or the
+  owner. R7-3 gives a skilled player something to beat, but doesn't retune the Encores.
+- Hosting, releases and tags, the trailer, licences and Windows Build Support are the owner's.
