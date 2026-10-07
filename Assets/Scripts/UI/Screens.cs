@@ -518,9 +518,9 @@ namespace PocketWeather
             buttons = new[]
             {
                 (RectTransform)r.transform,
-                (RectTransform)Ui.Button(panel, "Restart", Ui.Sky, new Vector2(420, 96), new Vector2(0, 40), () => OnRestart?.Invoke(), null, null, 42).transform,
+                (RectTransform)(restartBtn = Ui.Button(panel, "Restart", Ui.Sky, new Vector2(420, 96), new Vector2(0, 40), () => Confirm(restartBtn, OnRestart), null, null, 42)).transform,
                 (RectTransform)Ui.Button(panel, "Settings", Ui.Mint, new Vector2(420, 96), new Vector2(0, -76), () => OnSettings?.Invoke(), null, null, 42).transform,
-                (RectTransform)Ui.Button(panel, "Map", Ui.Lilac, new Vector2(420, 96), new Vector2(0, -192), () => OnMap?.Invoke(), null, null, 42).transform,
+                (RectTransform)(mapBtn = Ui.Button(panel, "Map", Ui.Lilac, new Vector2(420, 96), new Vector2(0, -192), () => Confirm(mapBtn, OnMap), null, null, 42)).transform,
             };
             delight = Ui.Label(panel, "", 30, Ui.InkSoft, new Vector2(560, 90), new Vector2(0, -300), false);
             strip = Ui.Panel(root, new Vector2(1500, 76), new Vector2(0, -425), new Color(1, 1, 1, 0.86f), null, 38f, false).rectTransform;
@@ -532,6 +532,34 @@ namespace PocketWeather
         RectTransform strip, panel, heading;
         RectTransform[] buttons;
         bool shortLayout;
+        JuicyButton restartBtn, mapBtn, armed;
+
+        /// <summary>Restart and Map throw away the day: once it's been played a while (set by
+        /// GameFlow as the menu opens), the first press asks "Sure?" and only the second goes.</summary>
+        public bool AskFirst;
+        public string RestartLabel => restartBtn.Label;
+
+        void Confirm(JuicyButton b, Action go)
+        {
+            if (AskFirst && armed != b) { Arm(b); return; }
+            Arm(null);
+            go?.Invoke();
+        }
+
+        /// <summary>Turns one of Restart and Map to "Sure?" (null puts both back).</summary>
+        public void Arm(JuicyButton b)
+        {
+            armed = b;
+            restartBtn.SetLabel(b == restartBtn ? "Sure?" : "Restart");
+            mapBtn.SetLabel(b == mapBtn ? "Sure?" : "Map");
+        }
+        public void DebugArmRestart()
+        {
+            EventSystem.current?.SetSelectedGameObject(restartBtn.gameObject);
+            Arm(restartBtn);
+        }
+
+        protected override void OnOpen() => Arm(null);
 
         /// <summary>Short: a wide panel with the four buttons in a 2x2 grid, and the controls line
         /// close under it.</summary>
@@ -576,6 +604,8 @@ namespace PocketWeather
         void Update()
         {
             if (!IsOpen || JustOpened) return;
+            // moving the selection off the button that asked "Sure?" takes the question back
+            if (armed != null && EventSystem.current != null && EventSystem.current.currentSelectedGameObject != armed.gameObject) Arm(null);
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
             if ((kb != null && (kb.escapeKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame)) || (pad != null && (pad.startButton.wasPressedThisFrame || pad.buttonEast.wasPressedThisFrame)))

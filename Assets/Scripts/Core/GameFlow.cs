@@ -448,11 +448,14 @@ namespace PocketWeather
             Level.Cloud.Input.Enabled = false;
             pause.SetControls(Level.Cloud.Input.LastDevice);
             pause.SetDelight(Level.Def, SaveData.Has(Level.Def.id, SaveData.StampDelight) || DelightFoundThisRun);
+            pause.AskFirst = Level.Elapsed >= RestartAsksAfter;
             pause.Open();
             AudioHub.I?.Duck(0.5f, 9999f);
         }
 
         int pauseToggleFrame = -1;
+        /// <summary>Seconds into a day after which the pause menu's Restart and Map ask "Sure?" first.</summary>
+        public const float RestartAsksAfter = 5f;
 
         // alt-tabbing away, a phone going to the background or a browser tab losing focus pauses the
         // day instead of letting the sun run on

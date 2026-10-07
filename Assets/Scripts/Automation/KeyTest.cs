@@ -190,15 +190,29 @@ namespace PocketWeather
             Check("E blows a gust", C.WaterUsed >= used0 + Cloud.GustCost - 0.01f, $"water used {C.WaterUsed - used0:0.0}");
             Check("the gust pushes the boat", boat.Velocity.magnitude > 0.2f || boat.Met, $"boat speed {boat.Velocity.magnitude:0.00}");
 
-            // --- pause menu: Restart, then Map; results: Next day (real selection + Enter)
+            // --- pause menu: Restart (which asks first, this far into the day), then Map early in a
+            // fresh day (which doesn't); results: Next day (real selection + Enter)
             yield return new WaitForSeconds(0.8f);
-            float hour0 = L.Hour;
+            yield return WaitFor(() => L.Elapsed > GameFlow.RestartAsksAfter + 0.5f, 10f);
             yield return Press(Key.Escape);
             yield return new WaitForSecondsRealtime(0.5f);
+            float hour0 = L.Hour;                                       // the clock has stopped
             yield return Press(Key.DownArrow);                          // Resume -> Restart
             yield return new WaitForSecondsRealtime(0.2f);
             var cur = EventSystem.current.currentSelectedGameObject;
             Check("arrows move through the pause menu", cur != null && cur.name == "Btn_Restart", cur != null ? cur.name : "none");
+            var pauseMenu = GameObject.Find("PauseScreen")?.GetComponent<PauseMenu>();
+            yield return Press(Key.Enter);
+            yield return new WaitForSecondsRealtime(0.6f);
+            Check("Restart asks first, well into a day", Now == GameFlow.State.Paused && L.Hour == hour0 && pauseMenu != null && pauseMenu.RestartLabel == "Sure?",
+                  $"{Now}, hour {L.Hour:0.00} (was {hour0:0.00}), label '{pauseMenu?.RestartLabel}', {L.Elapsed:0.0}s in");
+            yield return Press(Key.UpArrow);
+            yield return new WaitForSecondsRealtime(0.2f);
+            Check("moving off Restart takes the question back", pauseMenu != null && pauseMenu.RestartLabel == "Restart", $"label '{pauseMenu?.RestartLabel}'");
+            yield return Press(Key.DownArrow);
+            yield return new WaitForSecondsRealtime(0.2f);
+            yield return Press(Key.Enter);
+            yield return new WaitForSecondsRealtime(0.3f);
             yield return Press(Key.Enter);
             yield return WaitFor(() => Now == GameFlow.State.Intro || (Now == GameFlow.State.Playing && L.Hour < hour0 - 0.01f), 6f);
             Check("Restart reloads the day", L != null && L.Def.id == "level04" && L.Hour <= L.Def.startHour + 0.05f, $"{Now}, hour {L?.Hour:0.00}");
@@ -210,7 +224,7 @@ namespace PocketWeather
             for (int i = 0; i < 3; i++) { yield return Press(Key.DownArrow); yield return new WaitForSecondsRealtime(0.15f); }
             yield return Press(Key.Enter);
             yield return WaitFor(() => Now == GameFlow.State.Map, 6f);
-            Check("pause > Map goes to the map", Now == GameFlow.State.Map, Now.ToString());
+            Check("pause > Map early in a day goes straight to the map", Now == GameFlow.State.Map, Now.ToString());
 
             GameFlow.I.DebugStart(0, true);
             yield return new WaitForSeconds(1.0f);

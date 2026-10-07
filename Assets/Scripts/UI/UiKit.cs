@@ -408,6 +408,7 @@ namespace PocketWeather
         }
 
         public void SetLabel(string s) { if (label != null) label.text = s; }
+        public string Label => label != null ? label.text : "";
 
         public void OnPointerClick(PointerEventData e)
         {

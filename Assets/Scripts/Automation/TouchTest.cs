@@ -153,6 +153,23 @@ namespace PocketWeather
             yield return new WaitForSeconds(0.3f);
             Check("tapping UI doesn't move Pip", Dist2D(before, C.transform.position) < 0.3f);
 
+            // --- well into a day, one tap on Restart asks first; a second restarts
+            float waited = 0;
+            while (L.Elapsed < GameFlow.RestartAsksAfter + 0.5f && waited < 10f) { waited += Time.deltaTime; yield return null; }
+            yield return Tap(UiCenter(GameFlow.I.Hud.PauseButton.transform));
+            yield return new WaitForSecondsRealtime(0.5f);
+            float hour0 = L.Hour;
+            var restart = FindLabel("Restart");
+            if (restart != null) yield return Tap(UiCenter(restart));
+            yield return new WaitForSecondsRealtime(0.6f);
+            var sure = FindLabel("Sure?");
+            Check("one tap on Restart asks first", GameFlow.I.Current == GameFlow.State.Paused && L.Hour == hour0 && sure != null,
+                  $"{GameFlow.I.Current}, hour {L.Hour:0.00} (was {hour0:0.00}), 'Sure?' {(sure != null ? "showing" : "missing")}");
+            if (sure != null) yield return Tap(UiCenter(sure));
+            waited = 0;
+            while (!(GameFlow.I.Current == GameFlow.State.Intro || (GameFlow.I.Current == GameFlow.State.Playing && L.Hour < hour0 - 0.01f)) && waited < 6f) { waited += Time.unscaledDeltaTime; yield return null; }
+            Check("a second tap restarts the day", L != null && L.Hour <= L.Def.startHour + 0.05f, $"{GameFlow.I.Current}, hour {L?.Hour:0.00}");
+
             // --- level 4: flick to gust the boat
             GameFlow.I.DebugStart(3, true);
             yield return new WaitForSeconds(1.0f);
