@@ -122,8 +122,10 @@ namespace PocketWeather
             Rainbows.Init(this);
             Rainbows.OnRainbow += rb =>
             {
+                var covered = new List<string>();
                 foreach (var n in Needs)
-                    if (rb.Covers(n.transform.position)) { n.OnRainbow(rb); ReportDelight(n.Id, "rainbow_on"); }
+                    if (rb.Covers(n.transform.position)) { n.OnRainbow(rb); ReportDelight(n.Id, "rainbow_on"); covered.Add(n.Id); }
+                Debug.Log($"[PW] rainbow at ({rb.Center.x:0.00}, {rb.Center.z:0.00}) radius {rb.RadiusXZ:0.00} over: {(covered.Count > 0 ? string.Join(", ", covered) : "nobody")}");
             };
 
             Phase("maps");
