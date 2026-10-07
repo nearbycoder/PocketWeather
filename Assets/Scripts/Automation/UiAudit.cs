@@ -105,6 +105,18 @@ namespace PocketWeather
                 if (g.xMin < -1 || g.yMin < -1 || g.xMax > Screen.width + 1 || g.yMax > Screen.height + 1)
                     problems.Add($"text \"{label}\" off screen ({g.xMin:0},{g.yMin:0})-({g.xMax:0},{g.yMax:0})");
                 float unit = t.canvas.rootCanvas.scaleFactor;
+                // a text drawn on a card, pill or button stays inside it (a wrapped line once spilled
+                // out of the bottom of its pill); a settings row's label sits beside its switch or
+                // slider by design
+                var bg = t.transform.parent != null ? t.transform.parent.GetComponent<Image>() : null;
+                if (bg != null && bg.enabled && bg.GetComponent<Toggle>() == null && bg.GetComponent<Slider>() == null)
+                {
+                    var c = new Vector3[4];
+                    bg.rectTransform.GetWorldCorners(c);
+                    float slack = 2f * unit;
+                    if (g.xMin < c[0].x - slack || g.yMin < c[0].y - slack || g.xMax > c[2].x + slack || g.yMax > c[2].y + slack)
+                        problems.Add($"text \"{label}\" spills out of {Path(bg.transform)}");
+                }
                 foreach (var (sel, r) in controls)
                 {
                     if (t.transform.IsChildOf(sel.transform)) continue;
@@ -371,6 +383,9 @@ namespace PocketWeather
             f.DebugCloseSettings(); yield return Settle(0.6f);
             f.DebugResume(); yield return Settle(0.6f);
             f.DebugResults(); yield return Settle(1.6f); Audit("results");
+            f.DebugCloseMenus();
+            f.DebugStart(0, true); yield return Settle(1.2f);
+            f.DebugResults(true); yield return Settle(2.4f); Audit("results, first save (Encore note)");
             f.DebugCloseMenus();
             f.DebugStart(0, true, true); yield return Settle(1.2f);
             f.DebugEncoreResults(); yield return Settle(1.6f); Audit("encore results");

@@ -144,14 +144,17 @@ namespace PocketWeather
         public void DebugCloseSettings() => CloseSettings();
         public void DebugResume() => Resume();
         public void DebugSunset() => OnSunset();
-        public void DebugResults()
+        /// <param name="firstSave">as if the day had just been saved for the first time (the Encore note shows)</param>
+        public void DebugResults(bool firstSave = false)
         {
             if (Level == null) return;
             Level.Running = false;
             Current = State.Results;
             Hud.SetVisible(false, 0.2f);
-            results.Show(Level.Def, SaveData.StampSaved | SaveData.StampPar, 0, Level.Def.par - 1f, false, Level.Def.par - 1.5f);
+            results.Show(Level.Def, SaveData.StampSaved | SaveData.StampPar, firstSave ? SaveData.StampSaved | SaveData.StampPar : 0, Level.Def.par - 1f, false,
+                         firstSave ? 99f : Level.Def.par - 1.5f);
         }
+        public bool ResultsEncoreNote => results.EncoreNoteShown;
         public void DebugCloseMenus() => CloseAll();
         /// <summary>Saves the day as if its last need had just been met (the real celebration, records
         /// and results card).</summary>

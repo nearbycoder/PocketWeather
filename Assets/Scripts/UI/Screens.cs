@@ -770,31 +770,55 @@ namespace PocketWeather
             next = Ui.Button(card, "Next day", Ui.Coral, new Vector2(300, 104), new Vector2(270, -235), () => OnNext?.Invoke(), null, null, 46);
             buttons[2] = (RectTransform)next.transform;
             firstSelected = next.gameObject;
+            // the first time a day is saved, its Encore opens: say so, or a player only finds it by
+            // going back to a saved day's postcard
+            var nt = Ui.Image(card, Ui.Rounded, Res.Hex("FFEBD9"), new Vector2(980, 56), new Vector2(0, -160), null, "EncoreNote");
+            nt.pixelsPerUnitMultiplier = 52f / 24f;
+            note = nt.rectTransform;
+            noteIcon = Ui.Icon(note, "stamp_encore", 46, new Vector2(-415, 0)).rectTransform;
+            noteText = Ui.Label(note, EncoreNote, 28, Ui.Ink, new Vector2(800, 52), new Vector2(25, 0), false);
+            note.gameObject.SetActive(false);
         }
+
+        public const string EncoreNote = "Encore unlocked! Play this day as a scorcher from its postcard.";
+        RectTransform note, noteIcon;
+        Text noteText;
+        bool noteShown;
+        /// <summary>The Encore note is showing (for the self-tests).</summary>
+        public bool EncoreNoteShown => IsOpen && noteShown;
 
         /// <summary>Narrow: a taller card, its text wrapping, the stamps closer together and smaller,
         /// and the buttons in a row across the bottom.</summary>
         protected override void Layout(MenuForm form)
         {
             bool n = form == MenuForm.Narrow;
-            card.sizeDelta = n ? new Vector2(840, 760) : new Vector2(1060, 640);
-            banner.anchoredPosition = new Vector2(0, n ? 360 : 300);
+            // the Encore note makes the card 60 units taller: everything above it moves up 30, the
+            // buttons down 30, and the note sits between the stamps and the buttons
+            float dy = noteShown ? 30f : 0f;
+            card.sizeDelta = (n ? new Vector2(840, 760) : new Vector2(1060, 640)) + new Vector2(0, 2 * dy);
+            banner.anchoredPosition = new Vector2(0, (n ? 360 : 300) + dy);
             banner.sizeDelta = new Vector2(n ? 640 : 700, 120);
             subtitle.rectTransform.sizeDelta = n ? new Vector2(780, 100) : new Vector2(960, 50);
-            subtitle.rectTransform.anchoredPosition = new Vector2(0, n ? 235 : 200);
+            subtitle.rectTransform.anchoredPosition = new Vector2(0, (n ? 235 : 200) + dy);
             timeLine.rectTransform.sizeDelta = new Vector2(n ? 780 : 960, 40);
-            timeLine.rectTransform.anchoredPosition = new Vector2(0, n ? 165 : 158);
+            timeLine.rectTransform.anchoredPosition = new Vector2(0, (n ? 165 : 158) + dy);
             for (int i = 0; i < 3; i++)
             {
                 slots[i].sizeDelta = new Vector2(n ? 250 : 300, 260);
-                slots[i].anchoredPosition = new Vector2((i - 1) * (n ? 262 : 320), n ? 10 : 0);
+                slots[i].anchoredPosition = new Vector2((i - 1) * (n ? 262 : 320), (n ? 10 : 0) + dy);
                 plates[i].sizeDelta = Vector2.one * (n ? 170 : 190);
                 stamps[i].rectTransform.sizeDelta = Vector2.one * (n ? 160 : 180);
                 stampLabels[i].rectTransform.sizeDelta = new Vector2(n ? 250 : 300, 70);
             }
-            buttons[0].anchoredPosition = n ? new Vector2(-290, -285) : new Vector2(-330, -235);
-            buttons[1].anchoredPosition = n ? new Vector2(-40, -285) : new Vector2(-50, -235);
-            buttons[2].anchoredPosition = n ? new Vector2(245, -285) : new Vector2(270, -235);
+            buttons[0].anchoredPosition = n ? new Vector2(-290, -285 - dy) : new Vector2(-330, -235 - dy);
+            buttons[1].anchoredPosition = n ? new Vector2(-40, -285 - dy) : new Vector2(-50, -235 - dy);
+            buttons[2].anchoredPosition = n ? new Vector2(245, -285 - dy) : new Vector2(270, -235 - dy);
+            // narrow, the note wraps onto two lines in a taller pill
+            note.sizeDelta = n ? new Vector2(760, 96) : new Vector2(980, 56);
+            note.anchoredPosition = new Vector2(0, n ? -175 : -160);
+            noteIcon.anchoredPosition = new Vector2(n ? -322 : -450, 0);
+            noteText.rectTransform.sizeDelta = n ? new Vector2(640, 92) : new Vector2(900, 52);
+            noteText.rectTransform.anchoredPosition = new Vector2(n ? 35 : 20, 0);
             buttons[0].sizeDelta = new Vector2(n ? 190 : 230, 96);
             buttons[1].sizeDelta = new Vector2(n ? 210 : 250, 96);
             buttons[2].sizeDelta = new Vector2(n ? 260 : 300, 104);
@@ -806,9 +830,17 @@ namespace PocketWeather
             : $"Finished at {Postcard.FormatHour(finishHour)}  ·  your best is {Postcard.FormatHour(previousBest)}";
 
         /// <param name="previousBest">the best finishing hour before this run (99 if never finished)</param>
+        void ShowNote(bool show)
+        {
+            noteShown = show;
+            note.gameObject.SetActive(show);
+            Layout(Ui.MenuLayout);
+        }
+
         public void Show(LevelDef def, int stampsEarnedThisRun, int fresh, float finishHour, bool isLast, float previousBest = 99f)
         {
             title.text = "Day saved!";
+            ShowNote((fresh & SaveData.StampSaved) != 0);
             for (int i = 0; i < 3; i++) stamps[i].transform.parent.gameObject.SetActive(true);
             subtitle.text = string.IsNullOrEmpty(def.thanks) ? "Everyone is happy!" : def.thanks;
             timeLine.text = TimeLine(finishHour, previousBest);
@@ -858,6 +890,7 @@ namespace PocketWeather
         public void ShowEncore(LevelDef def, bool fresh, float finishHour, float previousBest = 99f)
         {
             title.text = "Encore saved!";
+            ShowNote(false);
             subtitle.text = "Even on a scorcher, everyone is happy!";
             timeLine.text = TimeLine(finishHour, previousBest);
             for (int i = 0; i < 3; i++) stamps[i].transform.parent.gameObject.SetActive(i == 1);

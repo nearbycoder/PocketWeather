@@ -253,6 +253,23 @@ namespace PocketWeather
             yield return new WaitForSeconds(9.5f);
             Check("campfire night follows up with the campfire", hud.HintText.Contains("campfire"), hud.HintText);
 
+            // --- the first time a day is saved, its results card says its Encore is open; the next
+            // time, it doesn't
+            SaveData.DebugForget("level03");
+            for (int round = 0; round < 2; round++)
+            {
+                GameFlow.I.DebugCloseMenus();
+                GameFlow.I.DebugStart(2, true);
+                yield return new WaitForSeconds(0.8f);
+                GameFlow.I.DebugSaveDay();
+                yield return WaitFor(() => Now == GameFlow.State.Results, 10f);
+                yield return new WaitForSecondsRealtime(0.8f);
+                bool note = GameFlow.I.ResultsEncoreNote && TextShowing("Encore unlocked");
+                if (round == 0) Check("a day's first save says its Encore is open", Now == GameFlow.State.Results && note && SaveData.EncoreUnlocked("level03"), $"{Now}, note {note}");
+                else Check("saving it again doesn't repeat the Encore note", Now == GameFlow.State.Results && !note, $"{Now}, note {note}");
+            }
+            GameFlow.I.DebugCloseMenus();
+
             // --- Encore: a saved day's postcard offers it, and it runs as a scorcher
             SaveData.Award("level01", SaveData.StampSaved);
             GameFlow.I.DebugStart(0, false);

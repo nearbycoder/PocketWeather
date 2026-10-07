@@ -369,6 +369,9 @@ namespace PocketWeather
             f.DebugResume(); yield return new WaitForSecondsRealtime(0.5f);
             f.DebugResults(); yield return new WaitForSeconds(2.5f); yield return Shot("m07_results");
             f.DebugCloseMenus();
+            f.DebugStart(0, true); yield return new WaitForSeconds(1.2f);
+            f.DebugResults(true); yield return new WaitForSeconds(3.0f); yield return Shot("m07c_results_first_save");
+            f.DebugCloseMenus();
             f.DebugStart(0, true, true); yield return new WaitForSeconds(1.2f);
             f.DebugEncoreResults(); yield return new WaitForSeconds(2.5f); yield return Shot("m07b_encore_results");
             f.DebugCloseMenus();

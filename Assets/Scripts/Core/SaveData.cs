@@ -134,6 +134,13 @@ namespace PocketWeather
         /// save in use.</summary>
         public static List<LevelSave> DebugParse(string json) => JsonUtility.FromJson<SaveFile>(json)?.levels;
 
+        /// <summary>For the self-tests: forgets one day, as if it had never been played.</summary>
+        public static void DebugForget(string id)
+        {
+            Data.levels.RemoveAll(l => l.id == id);
+            Save();
+        }
+
         public static void RecordPlay(string id)
         {
             Get(id).plays++;
