@@ -51,5 +51,10 @@ if [ "${1:-}" != "--quick" ]; then
   if [ -n "$done" ] && echo "$done" | grep -q " 0 failed" && [ "$ex" = 0 ]; then row "AutoPilot campaign" "PASS ($done, delights $delights/12)"; else row "AutoPilot campaign" "FAIL (${done:-no result}, exceptions $ex; see $log)"; fail=1; fi
 fi
 
+# every run above kept its prefs in the game's own folder of the sandbox, not unity3d/unknown/unknown
+appinfo="$ROOT/Builds/Linux/PocketWeather_Data/app.info"
+own="$PW_CONFIG/unity3d/$(sed -n 1p "$appinfo")/$(sed -n 2p "$appinfo")/prefs"
+if [ -f "$own" ] && [ ! -e "$PW_CONFIG/unity3d/unknown" ]; then row "prefs in the game's own folder" "PASS"; else row "prefs in the game's own folder" "FAIL ($(ls "$PW_CONFIG/unity3d" 2>/dev/null | tr '\n' ' '))"; fail=1; fi
+
 [ $fail = 0 ] && echo "all checks passed" || echo "SOME CHECKS FAILED"
 exit $fail

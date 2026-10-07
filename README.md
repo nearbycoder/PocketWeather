@@ -501,9 +501,12 @@ Rough edges, honestly:
   but it has **never been run on a Mac**. It isn't signed with a Developer ID or notarised, so
   Gatekeeper warns on first launch. There's no Windows build: the entry point exists, but this
   machine lacks Unity's Windows Build Support module.
-- **The Linux build keeps its prefs in `~/.config/unity3d/unknown/unknown/`** instead of a
-  folder named after the game, and other Unity games with the same quirk share that file. The
-  game's own keys are prefixed, so they don't collide.
+- **Started with `-screen-fullscreen`, the Linux player keeps its prefs in
+  `~/.config/unity3d/unknown/unknown/`**, a file other Unity games share, instead of
+  `~/.config/unity3d/Pocketvale Studio/Pocket Weather/`. It's a Unity quirk (the player opens its
+  prefs before reading the game's name). Launched normally it uses the right folder, and
+  `Tools/play.sh` no longer passes that flag. Progress saved in the old place by earlier
+  `Tools/play.sh` runs is brought over once on first launch; settings aren't.
 - **The web build has only run in headless Chrome.** That includes the music now arriving after
   boot, which the browser downloads and decodes itself. Safari (iPhone, iPad, Mac) and Firefox
   haven't been tried, and if a track can't be fetched the game plays on without it.

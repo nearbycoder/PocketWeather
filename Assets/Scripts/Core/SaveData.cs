@@ -26,7 +26,8 @@ namespace PocketWeather
         }
 
         static SaveFile data;
-        static string Key => GameRoot.HasArg("-pwAutopilot") || GameRoot.HasArg("-pwCapture") || GameRoot.HasArg("-pwTouchTest") || GameRoot.HasArg("-pwPadTest") || GameRoot.HasArg("-pwUiAudit") || GameRoot.HasArg("-pwKeyTest") || GameRoot.HasArg("-pwTrailer") ? "pw.save.test" : "pw.save.v1";
+        const string RealKey = "pw.save.v1";
+        static string Key => GameRoot.HasArg("-pwAutopilot") || GameRoot.HasArg("-pwCapture") || GameRoot.HasArg("-pwTouchTest") || GameRoot.HasArg("-pwPadTest") || GameRoot.HasArg("-pwUiAudit") || GameRoot.HasArg("-pwKeyTest") || GameRoot.HasArg("-pwTrailer") ? "pw.save.test" : RealKey;
 
         static SaveFile Data
         {
@@ -35,6 +36,7 @@ namespace PocketWeather
                 if (data != null) return data;
                 if (GameRoot.HasArg("-pwFreshSave")) PlayerPrefs.DeleteKey(Key);
                 if (GameRoot.HasArg("-pwCorruptSave")) PlayerPrefs.SetString(Key, "{\"levels\":[{\"id\":\"lev");   // test hook
+                if (Key == RealKey) ImportOldLinuxSave();
                 var json = PlayerPrefs.GetString(Key, "");
                 try
                 {
@@ -50,6 +52,37 @@ namespace PocketWeather
                 data.levels ??= new System.Collections.Generic.List<LevelSave>();
                 return data;
             }
+        }
+
+        /// <summary>Started with <c>-screen-fullscreen</c> (as <c>Tools/play.sh</c> did until round 4),
+        /// the Linux player keeps its prefs in <c>unity3d/unknown/unknown/</c>, a file other Unity
+        /// games share, instead of the game's own folder. The first time there's no save in the right
+        /// place, bring the progress over from there (once; settings stay behind, and the old file is
+        /// only read, never written).</summary>
+        static void ImportOldLinuxSave()
+        {
+#if UNITY_STANDALONE_LINUX && !UNITY_EDITOR
+            const string Done = "pw.save.imported";
+            if (PlayerPrefs.HasKey(RealKey) || PlayerPrefs.GetInt(Done, 0) == 1) return;
+            try
+            {
+                var cfg = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+                if (string.IsNullOrEmpty(cfg)) cfg = System.IO.Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? "", ".config");
+                var path = System.IO.Path.Combine(cfg, "unity3d", "unknown", "unknown", "prefs");
+                if (!System.IO.File.Exists(path)) return;
+                var m = System.Text.RegularExpressions.Regex.Match(System.IO.File.ReadAllText(path),
+                    "<pref name=\"" + System.Text.RegularExpressions.Regex.Escape(RealKey) + "\" type=\"string\">([^<]*)</pref>");
+                if (!m.Success) return;
+                var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(m.Groups[1].Value.Trim()));
+                var old = JsonUtility.FromJson<SaveFile>(json);   // throws on a damaged save: then leave it be
+                if (old?.levels == null) return;
+                PlayerPrefs.SetString(RealKey, json);
+                PlayerPrefs.SetInt(Done, 1);
+                PlayerPrefs.Save();
+                Debug.Log($"[PW] imported progress from {path}: {old.levels.FindAll(l => l.stamps != 0).Count} days with stamps");
+            }
+            catch (Exception e) { Debug.LogWarning($"[PW] couldn't import the old save: {e.Message}"); }
+#endif
         }
 
         public static LevelSave Get(string id)

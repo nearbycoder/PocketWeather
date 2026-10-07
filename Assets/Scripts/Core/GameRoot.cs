@@ -46,6 +46,11 @@ namespace PocketWeather
             Day = DayCycle.Create();
             DontDestroyOnLoad(Day.gameObject);
             Debug.Log("[PW] GameRoot booted");
+#if UNITY_STANDALONE_LINUX && !UNITY_EDITOR
+            // Unity opens its prefs before reading the game's name when it sees this flag
+            if (HasArg("-screen-fullscreen"))
+                Debug.LogWarning("[PW] started with -screen-fullscreen: the Linux player then keeps settings and progress in unity3d/unknown/unknown/ (shared with other Unity games) instead of the game's own folder");
+#endif
             _ = Platform.TouchFirst;   // logs the device guess the first hints will use
         }
 
