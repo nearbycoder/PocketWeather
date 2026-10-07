@@ -78,7 +78,8 @@ namespace PocketWeather
             }
             Sfx.Handler = (n, p, v, pi) => Play(n, p, v, pi);
             RainNotes.Handler = RainNote;
-            // the web player starts fetching every track now, the title's first, one at a time
+            // the web player starts fetching every track and ambience loop now, the title's first,
+            // one at a time
             if (FetchesMusic) foreach (var t in FetchOrder) Fetch(t, false);
         }
 
@@ -100,8 +101,7 @@ namespace PocketWeather
             c = Resources.Load<AudioClip>("Audio/Sfx/" + name)
                 ?? Resources.Load<AudioClip>("Audio/Notes/" + name)
                 ?? Resources.Load<AudioClip>("Audio/Music/sting_" + name)
-                ?? Resources.Load<AudioClip>("Audio/Music/" + name)
-                ?? Resources.Load<AudioClip>("Audio/Amb/" + name);
+                ?? Resources.Load<AudioClip>("Audio/Music/" + name);
             if (c == null) Debug.LogWarning("[PW] missing audio clip " + name);
             clips[name] = c;
             return c;
@@ -140,39 +140,43 @@ namespace PocketWeather
             duckTimer = Mathf.Max(duckTimer, seconds);
         }
 
-        // ------------------------------------------------------------------ music tracks
-        // The tracks aren't in Resources: each is an asset bundle in StreamingAssets/Music
-        // (BuildScript.AddMusic). Desktop players open a track's bundle from disk the moment it's
-        // first played. The web player downloads them in the background after it starts, so its
-        // first download doesn't wait for the music. Browsers hold decoded audio as raw samples
-        // (15-20 MB a track), so on the web a track is decoded only when it's about to play and
-        // released once it has faded out; a track that isn't ready yet fades in when it is.
+        // ------------------------------------------------------------------ music tracks and ambience
+        // The music tracks and ambience loops aren't in Resources: each is an asset bundle in
+        // StreamingAssets/Music or StreamingAssets/Ambience (BuildScript.AddStreamedAudio), named
+        // after its clip ("music_title", "amb_meadow"). Desktop players open a bundle from disk the
+        // moment it's first played. The web player downloads them in the background after it
+        // starts, so its first download doesn't wait for them. Browsers hold decoded audio as raw
+        // samples (15-20 MB a track), so on the web a track is decoded only when it's about to play
+        // and released once it has faded out; one that isn't ready yet fades in when it is.
         readonly Dictionary<string, AudioClip> music = new();
         readonly Dictionary<string, AssetBundle> bundles = new();
         readonly List<string> fetchQueue = new();
         readonly Dictionary<string, int> fetchFailures = new();
         readonly HashSet<string> failedTracks = new();
-        string fetching, preparing;
-        static readonly string[] FetchOrder = { "title", "morning", "seaside", "afternoon", "evening", "night", "wedding" };
+        string fetching, preparing, preparingAmb;
+        // the title's music and the meadow ambience under it first; the ambience loops are small
+        static readonly string[] FetchOrder = { "music_title", "amb_meadow", "music_morning", "amb_village", "amb_sea", "amb_night",
+                                                "music_seaside", "music_afternoon", "music_evening", "music_night", "music_wedding" };
         static bool FetchesMusic => Application.platform == RuntimePlatform.WebGLPlayer;
-        static string MusicPath(string track) => Application.streamingAssetsPath + "/Music/music_" + track + ".bundle";
+        static string BundlePath(string clip) => Application.streamingAssetsPath + (clip.StartsWith("amb_") ? "/Ambience/" : "/Music/") + clip + ".bundle";
 
-        /// <summary>Desktop and editor: the track's clip, loaded on the spot (null if it doesn't exist).</summary>
-        AudioClip MusicClipNow(string track)
+        /// <summary>Desktop and editor: the clip ("music_title", "amb_meadow"), loaded on the spot
+        /// (null if it doesn't exist).</summary>
+        AudioClip StreamedClipNow(string clip)
         {
-            if (music.TryGetValue(track, out var c)) return c;
+            if (music.TryGetValue(clip, out var c)) return c;
 #if UNITY_EDITOR
-            c = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Music/music_{track}.ogg");
+            c = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/{(clip.StartsWith("amb_") ? "Ambience" : "Music")}/{clip}.ogg");
 #else
-            var path = MusicPath(track);
+            var path = BundlePath(clip);
             var bundle = File.Exists(path) ? AssetBundle.LoadFromFile(path) : null;
-            c = bundle != null ? bundle.LoadAsset<AudioClip>("music_" + track) : null;
+            c = bundle != null ? bundle.LoadAsset<AudioClip>(clip) : null;
 #endif
-            music[track] = c;
+            music[clip] = c;
             return c;
         }
 
-        /// <summary>Queues a track's bundle to download (web only); urgent ones jump the queue.</summary>
+        /// <summary>Queues a clip's bundle to download (web only); urgent ones jump the queue.</summary>
         void Fetch(string track, bool urgent)
         {
             if (bundles.ContainsKey(track) || failedTracks.Contains(track) || fetching == track) return;
@@ -190,7 +194,7 @@ namespace PocketWeather
                 float t0 = Time.realtimeSinceStartup;
                 AssetBundle bundle = null;
                 string error = null;
-                using (var req = UnityWebRequestAssetBundle.GetAssetBundle(MusicPath(track)))
+                using (var req = UnityWebRequestAssetBundle.GetAssetBundle(BundlePath(track)))
                 {
                     yield return req.SendWebRequest();
                     if (req.result != UnityWebRequest.Result.Success) error = req.error;
@@ -201,12 +205,12 @@ namespace PocketWeather
                 {
                     int n = fetchFailures.TryGetValue(track, out var f) ? f + 1 : 1;
                     fetchFailures[track] = n;
-                    Debug.LogWarning($"[PW] music {track} didn't arrive ({error}){(n < 3 ? ", trying again later" : ", giving up")}");
+                    Debug.LogWarning($"[PW] {track} didn't arrive ({error}){(n < 3 ? ", trying again later" : ", giving up")}");
                     if (n < 3) fetchQueue.Add(track); else failedTracks.Add(track);
                     continue;
                 }
                 bundles[track] = bundle;
-                Debug.Log($"[PW] fetched music {track} in {Time.realtimeSinceStartup - t0:0.0} s");
+                Debug.Log($"[PW] fetched {track} in {Time.realtimeSinceStartup - t0:0.0} s");
             }
         }
 
@@ -215,23 +219,32 @@ namespace PocketWeather
         IEnumerator PrepareAndPlay(string track)
         {
             preparing = track;
-            Fetch(track, true);
-            while (!bundles.ContainsKey(track) && !failedTracks.Contains(track) && currentMusic == track) yield return null;
-            if (!bundles.TryGetValue(track, out var bundle) || currentMusic != track) { if (preparing == track) preparing = null; yield break; }
-            if (!music.TryGetValue(track, out var clip) || clip == null)
+            AudioClip clip = null;
+            yield return Prepare("music_" + track, () => currentMusic == track, c => clip = c);
+            if (preparing == track) preparing = null;
+            if (clip != null && currentMusic == track && activeMusic == null) StartTrack(track, clip, 2f);
+        }
+
+        /// <summary>Web: waits for a clip's bundle and decodes it, as long as it's still wanted.
+        /// Hands back null if it couldn't be had.</summary>
+        IEnumerator Prepare(string name, Func<bool> wanted, Action<AudioClip> done)
+        {
+            Fetch(name, true);
+            while (!bundles.ContainsKey(name) && !failedTracks.Contains(name) && wanted()) yield return null;
+            if (!bundles.TryGetValue(name, out var bundle) || !wanted()) { done(null); yield break; }
+            if (!music.TryGetValue(name, out var clip) || clip == null)
             {
-                var load = bundle.LoadAssetAsync<AudioClip>("music_" + track);
+                var load = bundle.LoadAssetAsync<AudioClip>(name);
                 yield return load;
-                music[track] = clip = load.asset as AudioClip;
+                music[name] = clip = load.asset as AudioClip;
             }
             if (clip != null && clip.loadState != AudioDataLoadState.Loaded)
             {
                 clip.LoadAudioData();
                 for (float w = 0; clip.loadState != AudioDataLoadState.Loaded && clip.loadState != AudioDataLoadState.Failed && w < 20f; w += Time.unscaledDeltaTime) yield return null;
             }
-            if (preparing == track) preparing = null;
-            if (clip == null || clip.loadState != AudioDataLoadState.Loaded) { Debug.LogWarning($"[PW] music {track} couldn't be decoded"); yield break; }
-            if (currentMusic == track && activeMusic == null) StartTrack(track, clip, 2f);
+            if (clip == null || clip.loadState != AudioDataLoadState.Loaded) { Debug.LogWarning($"[PW] {name} couldn't be decoded"); clip = null; }
+            done(clip);
         }
 
         // ------------------------------------------------------------------ music
@@ -241,7 +254,7 @@ namespace PocketWeather
             currentMusic = track;
             if (FetchesMusic)
             {
-                music.TryGetValue(track, out var ready);
+                music.TryGetValue("music_" + track, out var ready);
                 if (ready != null && ready.loadState == AudioDataLoadState.Loaded) { StartTrack(track, ready, fadeTime); return; }
                 // not downloaded or decoded yet: the old track fades out, and this one fades in when it's ready
                 Debug.Log($"[PW] music {track}: waiting for it to be ready");
@@ -251,7 +264,7 @@ namespace PocketWeather
                 if (preparing != track) StartCoroutine(PrepareAndPlay(track));
                 return;
             }
-            StartTrack(track, MusicClipNow(track), fadeTime);
+            StartTrack(track, StreamedClipNow("music_" + track), fadeTime);
         }
 
         void StartTrack(string track, AudioClip clip, float fadeTime)
@@ -286,8 +299,41 @@ namespace PocketWeather
         {
             if (name == currentAmb) return;
             currentAmb = name;
-            var clip = string.IsNullOrEmpty(name) ? null : Resources.Load<AudioClip>("Audio/Amb/amb_" + name);
+            if (string.IsNullOrEmpty(name)) { StopAmbience(); return; }
+            if (FetchesMusic)
+            {
+                // not downloaded yet: the old loop stops, and this one fades in when it arrives
+                music.TryGetValue("amb_" + name, out var ready);
+                if (ready != null && ready.loadState == AudioDataLoadState.Loaded) { StartAmbience(name, ready); return; }
+                StopAmbience();
+                if (preparingAmb != name) StartCoroutine(PrepareAmbience(name));
+                return;
+            }
+            StartAmbience(name, StreamedClipNow("amb_" + name));
+        }
+
+        void StopAmbience()
+        {
+            amb.Stop();
+            if (FetchesMusic && amb.clip != null) amb.clip.UnloadAudioData();   // the web frees the loop's decoded samples
+            amb.clip = null;
+        }
+
+        IEnumerator PrepareAmbience(string name)
+        {
+            preparingAmb = name;
+            AudioClip clip = null;
+            yield return Prepare("amb_" + name, () => currentAmb == name, c => clip = c);
+            if (preparingAmb == name) preparingAmb = null;
+            if (clip != null && currentAmb == name) StartAmbience(name, clip);
+        }
+
+        void StartAmbience(string name, AudioClip clip)
+        {
+            Debug.Log($"[PW] ambience {name}: {(clip != null ? "playing" : "MISSING")}");
+            if (amb.clip != clip) StopAmbience();
             amb.clip = clip;
+            amb.volume = 0;   // fades up in Update
             if (clip != null) amb.Play(); else amb.Stop();
         }
 

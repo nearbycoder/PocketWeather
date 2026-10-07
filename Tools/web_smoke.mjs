@@ -22,7 +22,8 @@
 // 3 s (the game's audio must stop while it's hidden). A phone must go fullscreen at its first tap
 // on the game, and again at the first tap after the page comes back (but not after leaving
 // fullscreen on purpose); a desktop never. A phone held sideways must draw its HUD and menus
-// big enough (0.47 and 0.43 CSS px per design unit). Screenshots at each step; exits non-zero if
+// big enough (0.47 and 0.43 CSS px per design unit). The ambience, fetched after boot like the
+// music, must arrive and start. Screenshots at each step; exits non-zero if
 // the game never boots, logs exceptions or fails a check.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync, readdirSync, statSync } from "node:fs";
@@ -347,11 +348,16 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   const cm = clock.match(/real ([\d.]+) s, chords follow ([\d.]+) s/);
   const clockOk = !booted || (cm != null && Math.abs(parseFloat(cm[1]) - parseFloat(cm[2])) < 1.5);
   console.log(`music clock: ${clock ? clock.replace(/.*music clock /, "") : "not logged"}${clockOk ? "" : " (the chords DON'T follow the music)"}`);
+  // the ambience loops arrive after boot (like the music) and start once they're in
+  const amb = log.map((l) => l.match(/\[PW\] ambience (\w+): playing/)).filter(Boolean).map((m) => m[1]);
+  const ambFetched = log.map((l) => l.match(/\[PW\] fetched amb_(\S+) in ([\d.]+) s/)).filter(Boolean).map((m) => `${m[1]} (${m[2]} s)`);
+  const ambOk = !booted || amb.length > 0;
+  console.log(`ambience: ${amb.length ? `playing ${[...new Set(amb)].join(", ")}` : "never started"}; fetched ${ambFetched.join(", ") || "none"}${ambOk ? "" : " (the ambience should arrive and play)"}`);
   writeFileSync(join(OUT, "console.txt"), log.join("\n"));
   const ex = log.filter((l) => /exception|error/i.test(l) && !/favicon/i.test(l));
   console.log(`console lines ${log.length}, error/exception lines ${ex.length}`);
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
   await shutdown();
-  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && quiet.ok && fsOk && rfOk && hudOk && menuOk ? 0 : 1);
+  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && ambOk && quiet.ok && fsOk && rfOk && hudOk && menuOk ? 0 : 1);
 })().catch(async (e) => { console.error(e); await shutdown(); process.exit(2); });

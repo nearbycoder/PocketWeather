@@ -100,19 +100,22 @@ namespace PocketWeather.EditorTools
                 EditorApplication.Exit(ok ? 0 : 1);
         }
 
-        const string MusicDir = "Assets/Music";
-
         /// <summary>
-        /// The music tracks live outside Resources (Assets/Music), each built into its own asset
-        /// bundle for the target and copied to the player's StreamingAssets/Music. Desktop players
-        /// open a track from disk when it's first played; the web player fetches the title's track
-        /// first and the rest in the background (AudioHub), so the first download doesn't wait for
-        /// a quarter of its size in music. The ".bundle" name lets the web loader cache them.
+        /// The music tracks (Assets/Music) and ambience loops (Assets/Ambience) live outside
+        /// Resources, each built into its own asset bundle for the target and copied to the
+        /// player's StreamingAssets/Music or StreamingAssets/Ambience. Desktop players open one
+        /// from disk when it's first played; the web player fetches the title's first and the rest
+        /// in the background (AudioHub), so the first download doesn't wait for a third of its
+        /// size in audio. The ".bundle" name lets the web loader cache them.
         /// </summary>
         static bool AddMusic(BuildTarget target, string playerPath)
+            => AddStreamedAudio(target, playerPath, "Assets/Music", "music_*.ogg", "Music", "music")
+            && AddStreamedAudio(target, playerPath, "Assets/Ambience", "amb_*.ogg", "Ambience", "ambience");
+
+        static bool AddStreamedAudio(BuildTarget target, string playerPath, string srcDir, string pattern, string folder, string what)
         {
             var builds = new List<AssetBundleBuild>();
-            foreach (var file in Directory.GetFiles(MusicDir, "music_*.ogg"))
+            foreach (var file in Directory.GetFiles(srcDir, pattern))
             {
                 string name = Path.GetFileNameWithoutExtension(file);
                 builds.Add(new AssetBundleBuild
@@ -122,20 +125,20 @@ namespace PocketWeather.EditorTools
                     addressableNames = new[] { name },
                 });
             }
-            string outDir = Path.Combine("Builds", "Bundles", target.ToString());
+            string outDir = Path.Combine("Builds", "Bundles", target.ToString(), folder);
             Directory.CreateDirectory(outDir);
             // uncompressed: the audio inside is already compressed, and desktop players stream it
             // straight out of the file
             var manifest = BuildPipeline.BuildAssetBundles(outDir, builds.ToArray(),
                 BuildAssetBundleOptions.UncompressedAssetBundle | BuildAssetBundleOptions.StrictMode, target);
-            if (manifest == null) { Debug.LogError("[PW] music bundles failed to build"); return false; }
+            if (manifest == null) { Debug.LogError($"[PW] {what} bundles failed to build"); return false; }
             string streaming = target switch
             {
                 BuildTarget.WebGL => Path.Combine(playerPath, "StreamingAssets"),
                 BuildTarget.StandaloneOSX => Path.Combine(playerPath, "Contents", "Resources", "Data", "StreamingAssets"),
                 _ => Path.Combine(Path.GetDirectoryName(playerPath), Path.GetFileNameWithoutExtension(playerPath) + "_Data", "StreamingAssets"),
             };
-            string dst = Path.Combine(streaming, "Music");
+            string dst = Path.Combine(streaming, folder);
             if (Directory.Exists(dst)) Directory.Delete(dst, true);
             Directory.CreateDirectory(dst);
             long bytes = 0;
@@ -144,7 +147,7 @@ namespace PocketWeather.EditorTools
                 File.Copy(Path.Combine(outDir, b.assetBundleName), Path.Combine(dst, b.assetBundleName));
                 bytes += new FileInfo(Path.Combine(dst, b.assetBundleName)).Length;
             }
-            Debug.Log($"[PW] music: {builds.Count} track bundles, {bytes / 1048576f:0.0} MB -> {dst}");
+            Debug.Log($"[PW] {what}: {builds.Count} bundles, {bytes / 1048576f:0.0} MB -> {dst}");
             return true;
         }
     }

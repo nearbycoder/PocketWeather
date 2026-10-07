@@ -37,7 +37,7 @@ def write(sub, name, x, base=None):
     os.makedirs(d, exist_ok=True)
     wav = os.path.join(d, name + ".wav")
     dsp.write_wav(wav, x)
-    if sub in ("Music", "Amb"):
+    if sub in ("Music", "Ambience"):
         # long files are stored as Ogg Vorbis to keep the repository small
         ogg = os.path.join(d, name + ".ogg")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-c:a", "libvorbis", "-q:a", "6", ogg], check=True)
@@ -73,7 +73,8 @@ def main():
     if "amb" in groups:
         for n, fn in sfx.AMBIENCE.items():
             if want(n):
-                write("Amb", n, fn())
+                # outside Resources, like the music: streamed in after the game starts (AudioHub)
+                write("Ambience", n, fn(), base=os.path.join(ROOT, "Assets"))
     if "stingers" in groups:
         for n, fn in music.STINGERS.items():
             if want(n):

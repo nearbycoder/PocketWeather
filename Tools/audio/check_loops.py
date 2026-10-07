@@ -32,7 +32,7 @@ def level_db(x):
 
 
 def main():
-    files = sorted(glob.glob(os.path.join(ROOT, "Assets", "Music", "music_*.ogg")) + glob.glob(os.path.join(AUDIO, "Amb", "*.ogg")) +
+    files = sorted(glob.glob(os.path.join(ROOT, "Assets", "Music", "music_*.ogg")) + glob.glob(os.path.join(ROOT, "Assets", "Ambience", "amb_*.ogg")) +
                    glob.glob(os.path.join(AUDIO, "Sfx", "*_loop.wav")))
     bad = 0
     for f in files:

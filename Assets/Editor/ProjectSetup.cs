@@ -116,6 +116,9 @@ namespace PocketWeather.EditorTools
     /// <summary>Import settings for the Blender-generated FBX files under Resources/Models.</summary>
     public class ModelImportSettings : AssetPostprocessor
     {
+        // bumped when these settings change, so Unity imports the models again
+        public override uint GetVersion() => 2;
+
         void OnPreprocessModel()
         {
             if (!assetPath.Contains("/Resources/Models/")) return;
@@ -134,7 +137,9 @@ namespace PocketWeather.EditorTools
             importer.isReadable = assetPath.Contains("/Terrain/");
             importer.importNormals = ModelImporterNormals.Import;
             importer.importTangents = ModelImporterTangents.None;
-            importer.meshCompression = ModelImporterMeshCompression.Off;
+            // quantised in the build (about 2 MB less to download on the web); the captures of every
+            // day showed no difference to the eye (docs/IMPROVEMENTS.md, round 8)
+            importer.meshCompression = ModelImporterMeshCompression.Medium;
             importer.optimizeMeshPolygons = true;
             importer.optimizeMeshVertices = true;
             importer.weldVertices = true;
