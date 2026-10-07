@@ -141,6 +141,23 @@ namespace PocketWeather
         /// <summary>The design width in portrait. 1920 would show the UI at 0.375x on a 720-wide
         /// phone; at 1200 it's 0.6x, and the few layouts wider than that reflow.</summary>
         public const float PortraitWidth = 1200f;
+        /// <summary>The menus are drawn at least this many CSS px per design unit in landscape
+        /// (28-unit text is then 12 px), scaled up by at most MenuMaxBoost, and never so far that
+        /// fewer than MenuMinWidth design units fit across.</summary>
+        public const float MenuMinCss = 0.44f, MenuMaxBoost = 1.35f, MenuMinWidth = 1600f;
+        /// <summary>How much the menus are scaled up (1 on desktops and in portrait).</summary>
+        public static float MenuBoost { get; private set; } = 1f;
+        /// <summary>The menus are scaled up, so their design area is shorter than 1080: screens that
+        /// wouldn't fit use their short layouts.</summary>
+        public static bool MenuShort => MenuBoost > 1f;
+        /// <summary>Raised when the menus switch between their usual and short layouts.</summary>
+        public static event Action<bool> MenuShortChanged;
+        internal static void SetMenuBoost(float k)
+        {
+            bool was = MenuShort;
+            MenuBoost = k;
+            if (MenuShort != was) MenuShortChanged?.Invoke(MenuShort);
+        }
         /// <summary>Raised when the screen turns between landscape and portrait.</summary>
         public static event Action<bool> OrientationChanged;
         static bool? lastPortrait;
@@ -448,6 +465,7 @@ namespace PocketWeather
             if (target == null) { Destroy(gameObject); return; }
             if (rt == null) rt = (RectTransform)transform;
             rt.anchoredPosition = target.anchoredPosition + offset;
+            rt.sizeDelta = target.sizeDelta + new Vector2(60, 60);   // a panel resized for a short screen
             rt.localScale = target.localScale;
             rt.localRotation = target.localRotation;
             var g = GetComponent<UnityEngine.UI.Image>();
@@ -476,11 +494,34 @@ namespace PocketWeather
     public class OrientationScaler : MonoBehaviour
     {
         CanvasScaler scaler;
+        bool menus;
         void Awake() { scaler = GetComponent<CanvasScaler>(); Apply(); }
         void Update() { Ui.PollOrientation(); Apply(); }
+
+        /// <summary>The menus' canvas: on a short landscape screen (a phone on its side) it's drawn
+        /// bigger, up to Ui.MenuMinCss, and the screens switch to their short layouts.</summary>
+        public void ForMenus() { menus = true; Apply(); }
+
         void Apply()
         {
             var want = Ui.Portrait ? new Vector2(Ui.PortraitWidth, 1080) : new Vector2(1920, 1080);
+            if (menus)
+            {
+                float k = 1f;
+                if (!Ui.Portrait && Screen.width > 0 && Screen.height > 0)
+                {
+                    // Expand: the canvas's scale is the smaller of the two fits, here in CSS px
+                    float fit = Mathf.Min(Screen.width / 1920f, Screen.height / 1080f);
+                    float css = fit / Platform.PixelsPerCssPx;
+                    k = Mathf.Clamp(Ui.MenuMinCss / Mathf.Max(css, 0.01f), 1f, Ui.MenuMaxBoost);
+                    // keep at least MenuMinWidth design units across (the pause menu's controls line)
+                    k = Mathf.Max(1f, Mathf.Min(k, Screen.width / (fit * Ui.MenuMinWidth)));
+                    if (k < 1.01f) k = 1f;
+                    if (k != Ui.MenuBoost) Debug.Log($"[PW] menu scale: {css * k:0.000} CSS px per design unit, x{k:0.00} at {Screen.width}x{Screen.height} ({Platform.PixelsPerCssPx:0.##} px per CSS px)");
+                }
+                want /= k;
+                Ui.SetMenuBoost(k);
+            }
             if (scaler != null && scaler.referenceResolution != want) scaler.referenceResolution = want;
         }
     }

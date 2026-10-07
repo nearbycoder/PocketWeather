@@ -42,6 +42,7 @@ namespace PocketWeather
                 case "encore": yield return EncoreShots(); break;
                 case "framing": yield return Framing(); break;
                 case "phonehud": yield return PhoneHud(); break;
+                case "menus": yield return Menus(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -322,6 +323,29 @@ namespace PocketWeather
                 yield return Shot($"p_day{day + 1:00}");
             }
             Hud.ForceTouchButtons = false;
+        }
+
+        /// <summary>Every menu screen, for checking layouts at a window size (-pwFreshSave keeps the
+        /// stamps the same from run to run).</summary>
+        IEnumerator Menus()
+        {
+            var f = GameFlow.I;
+            yield return new WaitForSeconds(1.5f);
+            yield return Shot("m01_title");
+            SaveData.Award(LevelLibrary.Campaign[0], SaveData.StampSaved);   // opens Day 1's Encore
+            f.DebugShowMap(); yield return new WaitForSeconds(1.5f); yield return Shot("m02_map");
+            f.DebugStart(0, false); f.DebugShowPostcard(); yield return new WaitForSeconds(1.6f); yield return Shot("m03_postcard");
+            f.DebugStart(0, false, true); f.DebugShowPostcard(); yield return new WaitForSeconds(1.6f); yield return Shot("m04_encore_postcard");
+            f.DebugStart(0, true); yield return new WaitForSeconds(1.2f);
+            f.DebugPause(); yield return new WaitForSecondsRealtime(1.0f); yield return Shot("m05_pause");
+            f.DebugSettings(); yield return new WaitForSecondsRealtime(1.0f); yield return Shot("m06_settings");
+            f.DebugCloseSettings(); yield return new WaitForSecondsRealtime(0.5f);
+            f.DebugResume(); yield return new WaitForSecondsRealtime(0.5f);
+            f.DebugResults(); yield return new WaitForSeconds(2.5f); yield return Shot("m07_results");
+            f.DebugCloseMenus();
+            f.DebugStart(1, true); yield return new WaitForSeconds(1.2f);
+            f.DebugSunset(); yield return new WaitForSeconds(3.2f); yield return Shot("m08_sunset");
+            f.DebugEnding(); yield return new WaitForSeconds(4.5f); yield return Shot("m09_ending");
         }
 
         /// <summary>Portrait framing: a few days at the start of play, then with Pip at each end

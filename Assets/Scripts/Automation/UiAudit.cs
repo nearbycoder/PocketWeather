@@ -30,6 +30,7 @@ namespace PocketWeather
         {
             var es = EventSystem.current;
             var problems = new List<string>();
+            var controls = new List<(Selectable sel, Rect r)>();
             int count = 0;
             // while a menu is open it's modal: whatever sits behind it (the HUD) is meant to be covered
             bool menuOpen = false;
@@ -47,6 +48,9 @@ namespace PocketWeather
                 Vector2 min = corners[0], max = corners[2];
                 if (max.x - min.x < 1 || max.y - min.y < 1) continue;
                 count++;
+                var screenRect = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+                // a full-screen backdrop (the title's "tap anywhere") sits under everything by design
+                if (screenRect.width * screenRect.height < 0.9f * Screen.width * Screen.height) controls.Add((sel, screenRect));
                 string name = Path(sel.transform);
                 if (min.x < -1 || min.y < -1 || max.x > Screen.width + 1 || max.y > Screen.height + 1)
                     problems.Add($"{name} off-screen ({min.x:0},{min.y:0})-({max.x:0},{max.y:0})");
@@ -58,10 +62,79 @@ namespace PocketWeather
                 var owner = top.GetComponentInParent<Selectable>();
                 if (owner != sel) problems.Add($"{name}: covered by {Path(top.transform)}");
             }
+            // no two controls overlap (rows may touch: a few design units of slack)
+            for (int i = 0; i < controls.Count; i++)
+            for (int j = i + 1; j < controls.Count; j++)
+            {
+                var (a, ra) = controls[i];
+                var (b, rb) = controls[j];
+                if (a.transform.IsChildOf(b.transform) || b.transform.IsChildOf(a.transform)) continue;
+                float unit = a.GetComponentInParent<Canvas>().rootCanvas.scaleFactor;
+                float ox = Mathf.Min(ra.xMax, rb.xMax) - Mathf.Max(ra.xMin, rb.xMin), oy = Mathf.Min(ra.yMax, rb.yMax) - Mathf.Max(ra.yMin, rb.yMin);
+                if (ox > 6f * unit && oy > 6f * unit) problems.Add($"{Path(a.transform)} overlaps {Path(b.transform)} ({ox / unit:0}x{oy / unit:0} units)");
+            }
+            string texts = menuOpen ? MenuTexts(controls, problems) : "";
             bool ok = problems.Count == 0 && count > 0;
-            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} {screen}: {count} controls at {Screen.width}x{Screen.height}" +
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} {screen}: {count} controls{texts} at {Screen.width}x{Screen.height}" +
                       (problems.Count > 0 ? "\n    " + string.Join("\n    ", problems) : count == 0 ? " (none found)" : ""));
             if (ok) passes++; else fails++;
+        }
+
+        /// <summary>Every text showing on the menus: on screen, not over a control it isn't part of,
+        /// and on a phone held sideways (short side 500 CSS px or less) at least 11.5 CSS px. A
+        /// desktop-sized landscape screen keeps the menus at their design scale.</summary>
+        string MenuTexts(List<(Selectable sel, Rect r)> controls, List<string> problems)
+        {
+            float px = Platform.PixelsPerCssPx;
+            float smallest = 999f;
+            string smallestText = "";
+            int n = 0;
+            foreach (var t in FindObjectsByType<Text>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (string.IsNullOrWhiteSpace(t.text) || !t.enabled || t.color.a < 0.3f) continue;
+                if (t.canvas == null || t.canvas.rootCanvas.name != "MenuCanvas") continue;
+                var cg = t.GetComponentInParent<CanvasGroup>();
+                if (cg != null && (cg.alpha < 0.5f || !cg.blocksRaycasts)) continue;
+                if (!GlyphRect(t, out var g)) continue;
+                n++;
+                int size = t.resizeTextForBestFit ? t.cachedTextGenerator.fontSizeUsedForBestFit : t.fontSize;
+                float cssPx = size * t.rectTransform.lossyScale.y / px;
+                string label = t.text.Replace("\n", " ");
+                if (label.Length > 28) label = label.Substring(0, 28) + "…";
+                if (cssPx < smallest) { smallest = cssPx; smallestText = label; }
+                if (g.xMin < -1 || g.yMin < -1 || g.xMax > Screen.width + 1 || g.yMax > Screen.height + 1)
+                    problems.Add($"text \"{label}\" off screen ({g.xMin:0},{g.yMin:0})-({g.xMax:0},{g.yMax:0})");
+                float unit = t.canvas.rootCanvas.scaleFactor;
+                foreach (var (sel, r) in controls)
+                {
+                    if (t.transform.IsChildOf(sel.transform)) continue;
+                    float ox = Mathf.Min(g.xMax, r.xMax) - Mathf.Max(g.xMin, r.xMin), oy = Mathf.Min(g.yMax, r.yMax) - Mathf.Max(g.yMin, r.yMin);
+                    if (ox > 6f * unit && oy > 6f * unit) problems.Add($"text \"{label}\" runs into {Path(sel.transform)} ({ox / unit:0}x{oy / unit:0} units)");
+                }
+            }
+            float shortCss = Mathf.Min(Screen.width, Screen.height) / px;
+            if (!Ui.Portrait && shortCss <= 500f && smallest < 11.5f) problems.Add($"smallest text {smallest:0.0} CSS px (\"{smallestText}\"), want 11.5");
+            if (!Ui.Portrait && Screen.height / px >= 720f && Ui.MenuBoost != 1f) problems.Add($"menus scaled x{Ui.MenuBoost:0.00} on a desktop-sized screen");
+            return $", {n} texts, smallest {smallest:0.0} CSS px (\"{smallestText}\"), menus x{Ui.MenuBoost:0.00}";
+        }
+
+        /// <summary>Where a text's glyphs actually are on screen (its rect is often far wider).</summary>
+        static bool GlyphRect(Text t, out Rect r)
+        {
+            r = default;
+            var verts = t.cachedTextGenerator.verts;
+            int count = Mathf.Min(verts.Count, t.cachedTextGenerator.characterCountVisible * 4);
+            if (count == 0) return false;
+            float inv = 1f / t.pixelsPerUnit;
+            Vector2 min = new(float.MaxValue, float.MaxValue), max = new(float.MinValue, float.MinValue);
+            for (int i = 0; i < count; i++)
+            {
+                Vector2 w = t.rectTransform.TransformPoint(verts[i].position * inv);
+                min = Vector2.Min(min, w); max = Vector2.Max(max, w);
+            }
+            if (max.x - min.x < 1f) return false;
+            r = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+            return true;
         }
 
         /// <summary>The HUD's gauge, sun track, needs tray and pause button sit on screen without

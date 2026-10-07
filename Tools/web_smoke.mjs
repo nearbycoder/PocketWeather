@@ -21,7 +21,8 @@
 // first level card, tap Start, drag Pip and hold to rain, then hide the page behind another tab for
 // 3 s (the game's audio must stop while it's hidden). A phone must go fullscreen at its first tap
 // on the game, and again at the first tap after the page comes back (but not after leaving
-// fullscreen on purpose); a desktop never. Screenshots at each step; exits non-zero if
+// fullscreen on purpose); a desktop never. A phone held sideways must draw its HUD and menus
+// big enough (0.47 and 0.43 CSS px per design unit). Screenshots at each step; exits non-zero if
 // the game never boots, logs exceptions or fails a check.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync, readdirSync, statSync } from "node:fs";
@@ -295,6 +296,12 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   const hudCss = hs ? parseFloat(hs[1]) * parseFloat(hs[2]) : 0;
   const hudOk = !booted || !PHONE || hudCss >= 0.47;
   console.log(`HUD scale: ${hs ? `${hudCss.toFixed(3)} CSS px per design unit (canvas ${hs[3]}, ${hs[4]} px per CSS px, top bar x${hs[2]})` : "not logged (a desktop-sized screen isn't scaled)"}${hudOk ? "" : " (too small for a phone)"}`);
+  // a phone held sideways draws its menus at least 0.43 CSS px per design unit (28-unit text is
+  // then 12 px); a desktop window keeps them at their design scale, and portrait isn't scaled yet
+  const ms = (log.filter((l) => /\[PW\] menu scale: /.test(l)).pop() || "").match(/menu scale: ([\d.]+) CSS px per design unit, x([\d.]+) at (\S+)/);
+  const menuCss = ms ? parseFloat(ms[1]) : 0;
+  const menuOk = !booted || (PHONE && !PORTRAIT ? menuCss >= 0.43 : !ms);
+  console.log(`menu scale: ${ms ? `${menuCss.toFixed(3)} CSS px per design unit (x${ms[2]} at ${ms[3]})` : "not logged (design scale)"}${menuOk ? "" : PHONE && !PORTRAIT ? " (too small for a phone)" : " (should stay at its design scale here)"}`);
   // (Firefox without BiDi's touch override reports no touch points, so the page can't tell it's a phone)
   const fsChecked = !(PHONE && !coarse);
   const fsOk = !booted || !fsChecked || (PHONE ? fullscreen === "pw-page" : fullscreen === "");
@@ -341,5 +348,5 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   ex.slice(0, 15).forEach((l) => console.log("  " + l.slice(0, 200)));
   for (const l of log.filter((l) => /\[PW\]/.test(l)).slice(0, 12)) console.log("  " + l.slice(0, 160));
   await shutdown();
-  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && quiet.ok && fsOk && rfOk && hudOk ? 0 : 1);
+  process.exit(booted && ex.length === 0 && remembered && rotateOk && hintOk && promptOk && clockOk && quiet.ok && fsOk && rfOk && hudOk && menuOk ? 0 : 1);
 })().catch(async (e) => { console.error(e); await shutdown(); process.exit(2); });

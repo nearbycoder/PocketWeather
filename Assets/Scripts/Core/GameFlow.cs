@@ -63,6 +63,7 @@ namespace PocketWeather
             Hud.SetVisible(false, 0.01f);
             Hud.OnPause = Pause;
             var menus = Ui.MakeCanvas("MenuCanvas", 50, transform);
+            menus.GetComponent<OrientationScaler>().ForMenus();   // bigger on a phone on its side
             title = Make<TitleScreen>(menus.transform, "Title");
             map = Make<MapScreen>(menus.transform, "Map");
             postcard = Make<Postcard>(menus.transform, "Postcard");
