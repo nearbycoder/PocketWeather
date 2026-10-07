@@ -202,28 +202,66 @@ namespace PocketWeather
             return $"top bar x{k:0.00}, pause {pausePx:0.0} px, clock {clockPx:0.0} px, {hud.TrayCount} tray items {trayPx:0.0} px at x{hud.TrayScale:0.00} (old layout {oldTrayPx:0.0})";
         }
 
-        /// <summary>The hint caption (a long one) stays clear of the touch buttons and on screen.</summary>
-        IEnumerator CheckHintClear(int day)
+        /// <summary>Every hint caption, in every device's words, and the longest toasts: each fits
+        /// on screen with its text inside its pill, no smaller than 75% of its usual size, and (held
+        /// upright, with the touch buttons showing) the hint stays clear of them.</summary>
+        IEnumerator CheckCaptions(int day)
         {
             var hud = GameFlow.I.Hud;
             GameFlow.I.DebugStart(day, true);
             Hud.ForceTouchButtons = true;
             yield return Settle(1.2f);
-            hud.ShowHint("Blow the washing dry (flick)", "wind", 10f);
-            yield return Settle(0.8f);
             var problems = new List<string>();
             var c = new Vector3[4];
-            hud.HintRect.GetWorldCorners(c);
-            var h = Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
             hud.TouchRect.GetWorldCorners(c);
             var t = Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
             if (!hud.TouchButtonsVisible) problems.Add("touch buttons not shown");
-            if (h.xMin < -1 || h.yMin < -1 || h.xMax > Screen.width + 1 || h.yMax > Screen.height + 1) problems.Add($"hint off screen {h}");
-            if (h.Overlaps(t)) problems.Add($"hint {h} overlaps the touch buttons {t}");
+            int hints = 0, toasts = 0, wrapped = 0;
+            float widest = 0, smallest = 99f;
+            var toastTexts = new List<string> { "Rain into the pond to fill it back up!", "Careful! The ducks need their pond", "Oh no! Make them a rainbow!", "Encore: a scorcher!" };
+            foreach (var id in LevelLibrary.Campaign)
+            {
+                var def = LevelLibrary.Load(id);
+                if (def?.delight != null && !string.IsNullOrEmpty(def.delight.title)) toastTexts.Add($"Delight! {def.delight.title}");
+            }
+            void Measure(string kind, string text, RectTransform pill, Text label, int usual)
+            {
+                pill.GetWorldCorners(c);
+                var r = Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
+                widest = Mathf.Max(widest, r.width / Screen.width);
+                // a margin of 4 CSS px: a pill that meets the screen's edges looks cut off
+                float m = 4f * Platform.PixelsPerCssPx;
+                if (r.xMin < m - 0.5f || r.yMin < -1 || r.xMax > Screen.width - m + 0.5f || r.yMax > Screen.height + 1) problems.Add($"{kind} \"{text}\" off screen or touching its edges {r}");
+                if (kind == "hint" && r.Overlaps(t)) problems.Add($"hint \"{text}\" {r} overlaps the touch buttons {t}");
+                Canvas.ForceUpdateCanvases();
+                if (!GlyphRect(label, out var g)) problems.Add($"{kind} \"{text}\" has no visible glyphs");
+                else if (g.xMin < r.xMin - 1 || g.xMax > r.xMax + 1 || g.yMin < r.yMin - 1 || g.yMax > r.yMax + 1) problems.Add($"{kind} \"{text}\" runs out of its pill: text {g}, pill {r}");
+                if (label.cachedTextGenerator.lineCount > 1) wrapped++;
+                float k = label.fontSize / (float)usual;
+                smallest = Mathf.Min(smallest, k);
+                if (k < 0.74f) problems.Add($"{kind} \"{text}\" shrunk to {k:0.00}");
+            }
+            foreach (var h in new HashSet<string>(Onboarding.AllHints()))
+            {
+                hud.ShowHint(h, "wind", 10f);
+                hud.DebugSettleCaptions();
+                yield return null;
+                hints++;
+                Measure("hint", h, hud.HintRect, hud.HintLabel, 40);
+            }
+            foreach (var s in toastTexts)
+            {
+                hud.Toast(s, "stamp_flower", 10f);
+                hud.DebugSettleCaptions();
+                yield return null;
+                toasts++;
+                Measure("toast", s, hud.ToastRect, hud.ToastLabel, 38);
+            }
             Hud.ForceTouchButtons = false;
             hud.HideHint();
             bool ok = problems.Count == 0;
-            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} hint clear of the touch buttons, day {day + 1}: hint {h.width:0}x{h.height:0} px at {Screen.width}x{Screen.height}" +
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} captions fit, day {day + 1}: {hints} hints and {toasts} toasts, widest {widest * 100f:0}% of the screen, " +
+                      $"{wrapped} on two lines, text at least x{smallest:0.00} at {Screen.width}x{Screen.height}" +
                       (ok ? "" : "\n    " + string.Join("\n    ", problems)));
             if (ok) passes++; else fails++;
         }
@@ -337,7 +375,7 @@ namespace PocketWeather
             f.DebugStart(3, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 4");
             f.DebugStart(11, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 12 (7 needs)");
             foreach (int d in new[] { 0, 3, 11 }) yield return CheckFraming(d);
-            yield return CheckHintClear(4);
+            yield return CheckCaptions(4);
             yield return WantBadges();
             Debug.Log($"[UiAudit] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);

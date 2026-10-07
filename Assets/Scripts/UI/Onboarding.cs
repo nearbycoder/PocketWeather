@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace PocketWeather
@@ -32,12 +33,44 @@ namespace PocketWeather
         bool Keys => Dev == CloudInput.Device.Keys;
         bool Pad => Dev == CloudInput.Device.Pad;
 
-        string MoveText => Touch ? "Drag to fly" : Pad ? "Left stick to fly" : Keys ? "Arrows to fly" : "Point to fly";
-        string RainText => GameSettings.RainToggle
-            ? (Touch ? "Hold still to start rain" : Pad ? "Press A to rain" : Keys ? "Space to rain" : "Click to rain")
-            : (Touch ? "Hold still to rain" : Pad ? "Hold A to rain" : Keys ? "Space to rain" : "Hold click to rain");
-        string GustText => Touch ? "Flick to blow" : Pad ? "X to blow" : Keys ? "E to blow" : "Right-drag to blow";
-        string GustShort => Touch ? "flick" : Pad ? "press X" : Keys ? "press E" : "right-drag";
+        /// <summary>Whose words the hints use: the device in use (a finger before any input on
+        /// phones and tablets).</summary>
+        CloudInput.Device Words => Touch ? CloudInput.Device.Touch : Dev == CloudInput.Device.None || Dev == CloudInput.Device.Virtual ? CloudInput.Device.Mouse : Dev;
+        string MoveText => MoveFor(Words);
+        string RainText => RainFor(Words, GameSettings.RainToggle);
+        string GustText => GustFor(Words);
+        string GustShort => GustShortFor(Words);
+
+        static string MoveFor(CloudInput.Device d) => d == CloudInput.Device.Touch ? "Drag to fly" : d == CloudInput.Device.Pad ? "Left stick to fly" : d == CloudInput.Device.Keys ? "Arrows to fly" : "Point to fly";
+        static string RainFor(CloudInput.Device d, bool toggle) => toggle
+            ? (d == CloudInput.Device.Touch ? "Hold still to start rain" : d == CloudInput.Device.Pad ? "Press A to rain" : d == CloudInput.Device.Keys ? "Space to rain" : "Click to rain")
+            : (d == CloudInput.Device.Touch ? "Hold still to rain" : d == CloudInput.Device.Pad ? "Hold A to rain" : d == CloudInput.Device.Keys ? "Space to rain" : "Hold click to rain");
+        static string GustFor(CloudInput.Device d) => d == CloudInput.Device.Touch ? "Flick to blow" : d == CloudInput.Device.Pad ? "X to blow" : d == CloudInput.Device.Keys ? "E to blow" : "Right-drag to blow";
+        static string GustShortFor(CloudInput.Device d) => d == CloudInput.Device.Touch ? "flick" : d == CloudInput.Device.Pad ? "press X" : d == CloudInput.Device.Keys ? "press E" : "right-drag";
+        static string KeepDryText(string what) => $"Keep the {what} dry";
+
+        /// <summary>Every hint caption, in every device's words (for the UI audit).</summary>
+        public static IEnumerable<string> AllHints()
+        {
+            foreach (var d in new[] { CloudInput.Device.Touch, CloudInput.Device.Mouse, CloudInput.Device.Keys, CloudInput.Device.Pad })
+            {
+                yield return MoveFor(d);
+                yield return RainFor(d, false);
+                yield return RainFor(d, true);
+                yield return GustFor(d);
+                yield return $"Blow the washing dry ({GustShortFor(d)})";
+                yield return $"Keep blowing the sails ({GustShortFor(d)})";
+            }
+            foreach (var w in new[] { "sandcastle", "cake", "washing" }) yield return KeepDryText(w);
+            yield return "Drink from the water!";
+            yield return "Just right, not too much!";
+            yield return "Shade the hot sheep";
+            yield return "Keep the campfire lit";
+            yield return "Now let the sun shine";
+            yield return "Rain on the fire!";
+            yield return "Don't drain the duck pond";
+            yield return "Sunflowers want sun";
+        }
 
         /// <summary>The flick hand, aimed across a gust-need from Pip's side.</summary>
         void FlickHandAt(Vector3 target, float seconds)
@@ -159,7 +192,7 @@ namespace PocketWeather
                     if (n is KeepDryNeed k && n.Required)
                     {
                         string what = k.Icon == "castle" ? "sandcastle" : k.Icon == "cake" ? "cake" : "washing";
-                        hud.ShowHint($"Keep the {what} dry", k.Icon, 6f);
+                        hud.ShowHint(KeepDryText(what), k.Icon, 6f);
                         break;
                     }
                 step = 70;

@@ -313,21 +313,50 @@ namespace PocketWeather
             if (hintText.text != text) Debug.Log("[PW] hint: " + text);
             hintText.text = text;
             hintIcon.sprite = Ui.IconSprite(icon);
-            float w = Mathf.Clamp(hintText.preferredWidth + 170f, 420f, 1100f);
-            hintRoot.sizeDelta = new Vector2(w, 100);
-            var panel = hintRoot.GetChild(hintRoot.childCount - 1) as RectTransform;
-            foreach (Transform c in hintRoot)
-            {
-                var rt = (RectTransform)c;
-                if (c.name.StartsWith("Panel") && !c.name.Contains("Shadow")) rt.sizeDelta = new Vector2(w, 96);
-                if (c.name.StartsWith("Panel") && c.name.Contains("Shadow")) rt.sizeDelta = new Vector2(w + 60, 156);
-            }
-            hintIcon.rectTransform.anchoredPosition = new Vector2(-w / 2 + 66, 2);
-            hintText.rectTransform.sizeDelta = new Vector2(w - 150, 80);
-            hintText.rectTransform.anchoredPosition = new Vector2(40, 2);
+            FitHint();
             hintTimer = seconds;
             Ui.Fade(hintGroup, 1, 0.3f);
             Ui.PopIn(hintRoot, 0, 0.4f);
+        }
+
+        float hintH = 96f, fittedWidth;
+
+        void FitHint()
+        {
+            float w = FitCaption(hintText, 40, 420f, 1100f, out hintH);
+            hintRoot.sizeDelta = new Vector2(w, hintH + 4f);
+            foreach (Transform c in hintRoot)
+            {
+                var rt = (RectTransform)c;
+                if (c.name.StartsWith("Panel") && !c.name.Contains("Shadow")) rt.sizeDelta = new Vector2(w, hintH);
+                if (c.name.StartsWith("Panel") && c.name.Contains("Shadow")) rt.sizeDelta = new Vector2(w + 60, hintH + 60);
+            }
+            hintIcon.rectTransform.anchoredPosition = new Vector2(-w / 2 + 66, 2);
+            fittedWidth = chrome.rect.width;
+            PlaceHint();
+        }
+
+        /// <summary>Sizes a caption pill (a hint or a toast) to its text: on one line at its usual
+        /// size if the screen has room, otherwise smaller (down to 75%), and if it still doesn't fit,
+        /// on two lines. Returns the pill's width; h is its height.</summary>
+        float FitCaption(Text text, int size, float minW, float maxW, out float h)
+        {
+            const float pad = 170f;   // the icon on the left, and the rounded ends
+            float avail = Mathf.Min(maxW, chrome.rect.width - 100f);   // about 12 CSS px a side on a phone
+            text.fontSize = size;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            float tw = text.preferredWidth;
+            if (tw + pad > avail)
+            {
+                text.fontSize = Mathf.Max(Mathf.RoundToInt(size * 0.75f), Mathf.FloorToInt(size * (avail - pad) / tw));
+                tw = text.preferredWidth;
+            }
+            float w = Mathf.Clamp(tw + pad, Mathf.Min(minW, avail), avail);
+            h = 96f;
+            if (tw + pad > avail) { text.horizontalOverflow = HorizontalWrapMode.Wrap; h = 136f; }
+            text.rectTransform.sizeDelta = new Vector2(w - 150f, h - 16f);
+            text.rectTransform.anchoredPosition = new Vector2(40, 2);
+            return w;
         }
 
         public void HideHint()
@@ -351,13 +380,11 @@ namespace PocketWeather
         {
             toastText.text = text;
             toastIcon.sprite = Ui.IconSprite(icon);
-            // fit the banner to the message so it stays on one line
-            float w = Mathf.Clamp(toastText.preferredWidth + 170f, 520f, 1300f);
-            toastPanel.sizeDelta = new Vector2(w, 96);
-            toast.sizeDelta = new Vector2(w, 96);
+            // fit the banner to the message, on one line if there's room
+            float w = FitCaption(toastText, 38, 520f, 1300f, out float h);
+            toastPanel.sizeDelta = new Vector2(w, h);
+            toast.sizeDelta = new Vector2(w, h);
             toastIcon.rectTransform.anchoredPosition = new Vector2(-w / 2f + 62f, 2);
-            toastText.rectTransform.sizeDelta = new Vector2(w - 150f, 80);
-            toastText.rectTransform.anchoredPosition = new Vector2(40, 2);
             toast.GetComponentInChildren<Image>().color = color ?? Ui.Butter;
             toast.gameObject.SetActive(true);
             Tween.KillOwner(toast);
@@ -441,6 +468,16 @@ namespace PocketWeather
 
         /// <summary>For the UI audit: the hint caption and the touch buttons' area.</summary>
         public RectTransform HintRect => hintRoot;
+        public Text HintLabel => hintText;
+        public RectTransform ToastRect => toastPanel;
+        public Text ToastLabel => toastText;
+        /// <summary>For the UI audit: skips the hint's pop-in and the toast's slide, so they can be
+        /// measured where they settle.</summary>
+        public void DebugSettleCaptions()
+        {
+            Tween.KillOwner(hintRoot); hintRoot.localScale = Vector3.one;
+            Tween.KillOwner(toast); toast.anchoredPosition = new Vector2(0, ToastY);
+        }
         public RectTransform TouchRect => touchRoot;
 
         /// <summary>For the UI audit: the clock's text, the tray's current shrink and its item count.</summary>
@@ -458,7 +495,7 @@ namespace PocketWeather
 
         /// <summary>The smallest the HUD is drawn, in CSS px per design unit (the pause button is
         /// then 44 px, the size phone guidelines ask for), and the most it's scaled up to get there.</summary>
-        public const float MinCssScale = 0.48f, MaxChromeScale = 1.5f;
+        public const float MinCssScale = 0.48f, MaxChromeScale = 1.6f;
         /// <summary>How much the top bar, hint and toast are scaled up (1 on desktops).</summary>
         public float ChromeScale => chromeScale;
         /// <summary>The HUD canvas's scale in CSS px per design unit, before ChromeScale.</summary>
@@ -493,10 +530,13 @@ namespace PocketWeather
                 x = Mathf.Clamp(half - 174f - tray.sizeDelta.x - sunHalf, -half + 474f + sunHalf, 0f);
             }
             sunTrack.anchoredPosition = new Vector2(x, Ui.Portrait ? -190f : -74f);
-            // held upright, the hint goes above the touch buttons (290 design units tall, unscaled),
-            // which a wide caption would otherwise run into
-            hintRoot.anchoredPosition = new Vector2(0f, Ui.Portrait ? 300f / chromeScale + 60f : 110f);
+            if (hintText.text.Length > 0 && Mathf.Abs(chrome.rect.width - fittedWidth) > 1f) FitHint();   // turned, or the window resized
+            PlaceHint();
         }
+
+        /// <summary>Held upright, the hint goes above the touch buttons (290 design units tall,
+        /// unscaled), which a wide caption would otherwise run into.</summary>
+        void PlaceHint() => hintRoot.anchoredPosition = new Vector2(0f, Ui.Portrait ? 300f / chromeScale + 12f + hintH / 2f : 62f + hintH / 2f);
 
         /// <summary>Portrait screens are too narrow for gauge + sun track + tray in one row: the sun
         /// track drops to a second row (and the toast below it); on a phone the tray takes a third.
