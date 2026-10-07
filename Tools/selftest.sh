@@ -2,7 +2,7 @@
 # Runs every automated check against the current Linux build and prints a summary.
 #
 #   Tools/selftest.sh            static validator, audio loop seams, keyboard/gamepad/touch self-tests, UI audit at
-#                                five window shapes (two portrait), and the expert AutoPilot over all 12 levels
+#                                seven window shapes (two landscape phones, two portrait), and the expert AutoPilot over all 12 levels
 #   Tools/selftest.sh --quick    skips the AutoPilot campaign
 #
 # Exit code is non-zero if anything failed. Logs go to Recordings/selftest/ (gitignored; /tmp is a
@@ -35,7 +35,7 @@ run_test keyboard -pwKeyTest KeyTest
 run_test gamepad -pwPadTest PadTest
 run_test touch -pwTouchTest TouchTest
 
-for r in 1600x900 1600x720 1200x900 720x1280 390x844; do
+for r in 1600x900 1600x720 1200x900 844x390 740x360 720x1280 390x844; do
   log="$OUT/ui-$r.log"
   PW_W=${r%x*} PW_H=${r#*x} timeout 400 "$PLAY" -logFile "$log" -pwUiAudit > /dev/null 2>&1
   done=$(grep -m1 "\[UiAudit\] done:" "$log" | sed 's/.*done: //')

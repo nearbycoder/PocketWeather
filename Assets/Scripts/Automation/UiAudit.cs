@@ -90,8 +90,62 @@ namespace PocketWeather
             var canvas = GameFlow.I.Hud.GetComponentInChildren<Canvas>();
             float want = Ui.Portrait ? Screen.width / Ui.PortraitWidth : Mathf.Min(Screen.width / 1920f, Screen.height / 1080f);
             if (canvas.scaleFactor < want * 0.99f) problems.Add($"UI scale {canvas.scaleFactor:0.000}, want {want:0.000}");
+            string sizes = PhoneSizes(rects[3], problems);
             bool ok = problems.Count == 0;
-            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} {what}: scale {canvas.scaleFactor:0.000} at {Screen.width}x{Screen.height}" +
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} {what}: scale {canvas.scaleFactor:0.000} at {Screen.width}x{Screen.height}; {sizes}" +
+                      (ok ? "" : "\n    " + string.Join("\n    ", problems)));
+            if (ok) passes++; else fails++;
+        }
+
+        /// <summary>On a phone-sized screen (short side 500 CSS px or less) the HUD must reach finger
+        /// and eye sizes: a 44 px pause button (with half a pixel's rounding), a 15 px clock, and tray
+        /// items no smaller than the old layout drew them (a centred 620-wide sun track, no top-bar
+        /// scaling; worked out here from the same numbers). Larger screens keep the design scale.</summary>
+        string PhoneSizes(Rect pause, List<string> problems)
+        {
+            var hud = GameFlow.I.Hud;
+            float px = Platform.PixelsPerCssPx, k = hud.ChromeScale, css = hud.CssScale;
+            float pausePx = pause.height / px;
+            float clockPx = hud.ClockText.fontSize * css * k;
+            float trayPx = 84f * css * k * hud.TrayScale;
+            // the old layout, on the same screen
+            var safe = (RectTransform)hud.TopBar[0].parent.parent;
+            float w = safe.rect.width, trayW = hud.TrayCount * 92f;
+            float oldAvail = Ui.Portrait ? w - 470f - 150f - 24f : w * 0.5f - 310f - 174f;
+            float oldTrayPx = 84f * css * (trayW > 1f ? Mathf.Clamp(oldAvail / trayW, 0.55f, 1f) : 1f);
+            float shortCss = Mathf.Min(Screen.width, Screen.height) / px;
+            if (shortCss <= 500f)
+            {
+                if (pausePx < 43.5f) problems.Add($"pause button {pausePx:0.0} px, want 44");
+                if (clockPx < 15f) problems.Add($"clock text {clockPx:0.0} px, want 15");
+                if (trayPx < oldTrayPx - 0.05f) problems.Add($"tray items {trayPx:0.0} px, smaller than the old layout's {oldTrayPx:0.0}");
+            }
+            else if (!Ui.Portrait && Screen.height / px >= 720f && k != 1f) problems.Add($"top bar scaled x{k:0.00} on a desktop-sized screen");
+            return $"top bar x{k:0.00}, pause {pausePx:0.0} px, clock {clockPx:0.0} px, {hud.TrayCount} tray items {trayPx:0.0} px (old layout {oldTrayPx:0.0})";
+        }
+
+        /// <summary>The hint caption (a long one) stays clear of the touch buttons and on screen.</summary>
+        IEnumerator CheckHintClear(int day)
+        {
+            var hud = GameFlow.I.Hud;
+            GameFlow.I.DebugStart(day, true);
+            Hud.ForceTouchButtons = true;
+            yield return Settle(1.2f);
+            hud.ShowHint("Blow the washing dry (flick)", "wind", 10f);
+            yield return Settle(0.8f);
+            var problems = new List<string>();
+            var c = new Vector3[4];
+            hud.HintRect.GetWorldCorners(c);
+            var h = Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
+            hud.TouchRect.GetWorldCorners(c);
+            var t = Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
+            if (!hud.TouchButtonsVisible) problems.Add("touch buttons not shown");
+            if (h.xMin < -1 || h.yMin < -1 || h.xMax > Screen.width + 1 || h.yMax > Screen.height + 1) problems.Add($"hint off screen {h}");
+            if (h.Overlaps(t)) problems.Add($"hint {h} overlaps the touch buttons {t}");
+            Hud.ForceTouchButtons = false;
+            hud.HideHint();
+            bool ok = problems.Count == 0;
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} hint clear of the touch buttons, day {day + 1}: hint {h.width:0}x{h.height:0} px at {Screen.width}x{Screen.height}" +
                       (ok ? "" : "\n    " + string.Join("\n    ", problems)));
             if (ok) passes++; else fails++;
         }
@@ -202,8 +256,10 @@ namespace PocketWeather
             f.DebugStart(1, true); yield return Settle(1.2f);
             f.DebugSunset(); yield return Settle(3.2f); Audit("sunset");
             f.DebugEnding(); yield return Settle(4f); Audit("ending");
+            f.DebugStart(3, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 4");
             f.DebugStart(11, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 12 (7 needs)");
             foreach (int d in new[] { 0, 3, 11 }) yield return CheckFraming(d);
+            yield return CheckHintClear(4);
             yield return WantBadges();
             Debug.Log($"[UiAudit] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);

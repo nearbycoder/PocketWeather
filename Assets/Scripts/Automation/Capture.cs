@@ -41,6 +41,7 @@ namespace PocketWeather
                 case "band": yield return Band(); break;
                 case "encore": yield return EncoreShots(); break;
                 case "framing": yield return Framing(); break;
+                case "phonehud": yield return PhoneHud(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -303,6 +304,24 @@ namespace PocketWeather
             flow.DebugEncoreResults();
             yield return new WaitForSecondsRealtime(2.2f);
             yield return Shot("e5_encore_results");
+        }
+
+        /// <summary>The HUD at its busiest (touch buttons, a hint, a toast), on a two-bed day and the
+        /// wedding's crowded tray, to judge it at a phone's size.</summary>
+        IEnumerator PhoneHud()
+        {
+            var flow = GameFlow.I;
+            Hud.ForceTouchButtons = true;
+            foreach (int day in new[] { 1, 11 })
+            {
+                flow.DebugStart(day, true);
+                yield return new WaitForSeconds(1.6f);
+                flow.Hud.ShowHint("Drag to fly", "hand", 30f);
+                if (day == 11) flow.Hud.Toast("Delight! Caught the bouquet", "stamp_flower", 30f);
+                yield return new WaitForSeconds(1.2f);
+                yield return Shot($"p_day{day + 1:00}");
+            }
+            Hud.ForceTouchButtons = false;
         }
 
         /// <summary>Portrait framing: a few days at the start of play, then with Pip at each end

@@ -9,4 +9,14 @@ mergeInto(LibraryManager.library, {
     } catch (e) {}
     return 0;
   },
+
+  // canvas pixels per CSS pixel (the page caps the backing resolution), so the HUD can size
+  // itself by what the player actually sees
+  PW_PixelsPerCssPx: function () {
+    try {
+      var c = Module.canvas, w = c.getBoundingClientRect().width;
+      if (w > 0 && c.width > 0) return c.width / w;
+    } catch (e) {}
+    return 1;
+  },
 });

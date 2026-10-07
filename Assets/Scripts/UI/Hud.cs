@@ -13,6 +13,9 @@ namespace PocketWeather
     {
         Canvas canvas;
         RectTransform root, safe;
+        // the top bar, hint and toast: scaled up together on phone-sized screens (see UpdateScale)
+        RectTransform chrome;
+        float chromeScale = 1f;
         CanvasGroup group;
         Level level;
 
@@ -21,7 +24,7 @@ namespace PocketWeather
         Image gaugeFillImg;
         float gaugeShown, gaugeShake;
         // sun track
-        RectTransform sunTrack, sunMarker, parFlag;
+        RectTransform sunTrack, sunLine, sunMarker, parFlag;
         Image trackFill, parIcon;
         Text clock;
         float trackW = 470f;
@@ -81,9 +84,10 @@ namespace PocketWeather
             bubbleLayer = Ui.Stretch("Bubbles", root);
             safe = Ui.Stretch("Safe", root);
             safe.gameObject.AddComponent<SafeArea>();
+            chrome = Ui.Stretch("Chrome", safe);
 
             // ---- water gauge (top-left)
-            var gp = Ui.Panel(safe, new Vector2(400, 92), new Vector2(250, -74), Ui.Paper, new Vector2(0, 1), 46f);
+            var gp = Ui.Panel(chrome, new Vector2(400, 92), new Vector2(250, -74), Ui.Paper, new Vector2(0, 1), 46f);
             gauge = gp.rectTransform;
             var track = Ui.Image(gauge, Ui.Rounded, Ui.PaperShade, new Vector2(280, 34), new Vector2(46, 0), null, "Track");
             track.pixelsPerUnitMultiplier = 52f / 17f;
@@ -103,9 +107,10 @@ namespace PocketWeather
             Ui.Icon(gauge, "drop", 44, new Vector2(-104, -22));
 
             // ---- sun track (top-centre)
-            var sp = Ui.Panel(safe, new Vector2(620, 92), new Vector2(0, -74), Ui.Paper, new Vector2(0.5f, 1), 46f);
+            var sp = Ui.Panel(chrome, new Vector2(620, 92), new Vector2(0, -74), Ui.Paper, new Vector2(0.5f, 1), 46f);
             sunTrack = sp.rectTransform;
             var line = Ui.Image(sunTrack, Ui.Rounded, Ui.PaperShade, new Vector2(trackW, 16), new Vector2(-40, -4), null, "Line");
+            sunLine = line.rectTransform;
             line.pixelsPerUnitMultiplier = 52f / 8f;
             trackFill = Ui.Image(line.transform, Ui.Rounded, Ui.Butter, new Vector2(0, 16), Vector2.zero, null, "Fill");
             trackFill.pixelsPerUnitMultiplier = 52f / 8f;
@@ -117,11 +122,11 @@ namespace PocketWeather
             clock = Ui.Label(sunTrack, "6:00", 34, Ui.Ink, new Vector2(140, 60), new Vector2(240, -2), true);
 
             // ---- needs tray + pause (top-right)
-            PauseButton = Ui.Button(safe, "", Ui.Lilac, new Vector2(92, 92), new Vector2(-74, -74), () => OnPause?.Invoke(), null, new Vector2(1, 1), 40, "Pause");
+            PauseButton = Ui.Button(chrome, "", Ui.Lilac, new Vector2(92, 92), new Vector2(-74, -74), () => OnPause?.Invoke(), null, new Vector2(1, 1), 40, "Pause");
             var face = PauseButton.transform.Find("Face");
             Ui.Image(face, Ui.Rounded, Color.white, new Vector2(14, 38), new Vector2(-11, 2), null, "Bar1").pixelsPerUnitMultiplier = 52f / 7f;
             Ui.Image(face, Ui.Rounded, Color.white, new Vector2(14, 38), new Vector2(11, 2), null, "Bar2").pixelsPerUnitMultiplier = 52f / 7f;
-            tray = Ui.Rect("Tray", safe, new Vector2(1, 1), new Vector2(600, 92), new Vector2(-150, -74), new Vector2(1, 0.5f));
+            tray = Ui.Rect("Tray", chrome, new Vector2(1, 1), new Vector2(600, 92), new Vector2(-150, -74), new Vector2(1, 0.5f));
 
             // ---- touch buttons (bottom-right)
             touchRoot = Ui.Rect("Touch", safe, new Vector2(1, 0), new Vector2(420, 260), new Vector2(-230, 160));
@@ -134,7 +139,7 @@ namespace PocketWeather
             touchRoot.gameObject.SetActive(false);
 
             // ---- hint caption (bottom-centre)
-            hintRoot = Ui.Rect("Hint", safe, new Vector2(0.5f, 0), new Vector2(560, 100), new Vector2(0, 110));
+            hintRoot = Ui.Rect("Hint", chrome, new Vector2(0.5f, 0), new Vector2(560, 100), new Vector2(0, 110));
             hintGroup = Ui.Group(hintRoot.gameObject);
             var hp = Ui.Panel(hintRoot, new Vector2(560, 96), Vector2.zero, Ui.Paper, null, 48f);
             hintIcon = Ui.Icon(hp.transform, "hand", 76, new Vector2(-220, 2));
@@ -145,7 +150,7 @@ namespace PocketWeather
             hand.gameObject.SetActive(false);
 
             // ---- toast (top-centre, below the sun track)
-            toast = Ui.Rect("Toast", safe, new Vector2(0.5f, 1), new Vector2(640, 96), new Vector2(0, -190));
+            toast = Ui.Rect("Toast", chrome, new Vector2(0.5f, 1), new Vector2(640, 96), new Vector2(0, -190));
             var tp = Ui.Panel(toast, new Vector2(640, 96), Vector2.zero, Ui.Butter, null, 48f);
             toastPanel = tp.rectTransform;
             toastIcon = Ui.Icon(tp.transform, "stamp_flower", 84, new Vector2(-260, 2));
@@ -165,8 +170,8 @@ namespace PocketWeather
         /// bubbles, hints and toasts, for cinematic trailer shots.</summary>
         public void SetChrome(bool visible)
         {
-            foreach (Transform c in safe)
-                if (c != toast && c != hintRoot && c != touchRoot) c.gameObject.SetActive(visible);
+            foreach (Transform c in chrome)
+                if (c != toast && c != hintRoot) c.gameObject.SetActive(visible);
         }
 
         public void Bind(Level lvl)
@@ -207,11 +212,11 @@ namespace PocketWeather
         /// <summary>Shrinks the tray when many needs would run into the sun track.</summary>
         void FitTray()
         {
-            var safeRt = (RectTransform)tray.parent;
+            float width = chrome.rect.width;
             // landscape: between the sun track and the pause button; portrait (sun track on the row
-            // below): between the water gauge and the pause button
-            float avail = Ui.Portrait ? safeRt.rect.width - 470f - 150f - 24f
-                                      : safeRt.rect.width * 0.5f - sunTrack.rect.width * 0.5f - 150f - 24f;
+            // below): between the water gauge and the pause button, or across a phone's third row
+            float avail = Ui.Portrait ? (compact ? width - 48f : width - 470f - 150f - 24f)
+                                      : width * 0.5f - (sunTrack.anchoredPosition.x + sunTrack.sizeDelta.x * 0.5f) - 150f - 24f;
             float s = tray.sizeDelta.x > 1f ? Mathf.Clamp(avail / tray.sizeDelta.x, 0.55f, 1f) : 1f;
             tray.localScale = new Vector3(s, s, 1f);
         }
@@ -419,18 +424,96 @@ namespace PocketWeather
             return list;
         }
 
+        static readonly Vector3[] corners = new Vector3[4];
+
+        /// <summary>The lowest edge of the top bar's pieces, in the bubble layer's units.</summary>
+        float TopBarBottom()
+        {
+            float y = float.MaxValue;
+            foreach (var rt in TopBar)
+            {
+                if (!rt.gameObject.activeInHierarchy) continue;
+                rt.GetWorldCorners(corners);
+                y = Mathf.Min(y, bubbleLayer.InverseTransformPoint(corners[0]).y);
+            }
+            return y == float.MaxValue ? bubbleLayer.rect.height * 0.5f : y;
+        }
+
+        /// <summary>For the UI audit: the hint caption and the touch buttons' area.</summary>
+        public RectTransform HintRect => hintRoot;
+        public RectTransform TouchRect => touchRoot;
+
+        /// <summary>For the UI audit: the clock's text, the tray's current shrink and its item count.</summary>
+        public Text ClockText => clock;
+        public float TrayScale => tray.localScale.x;
+        public int TrayCount => trayItems.Count;
+
         /// <summary>The top bar's pieces, for the UI audit's overlap check.</summary>
-        public RectTransform[] TopBar => new[] { gauge, sunTrack, tray, (RectTransform)PauseButton.transform };
+        public RectTransform[] TopBar => topBar ??= new[] { gauge, sunTrack, tray, (RectTransform)PauseButton.transform };
+        RectTransform[] topBar;
 
         bool? laidOutPortrait;
-        static float ToastY => Ui.Portrait ? -306f : -190f;
+        bool compact;
+        float ToastY => Ui.Portrait ? (compact ? -422f : -306f) : -190f;
+
+        /// <summary>The smallest the HUD is drawn, in CSS px per design unit (the pause button is
+        /// then 44 px, the size phone guidelines ask for), and the most it's scaled up to get there.</summary>
+        public const float MinCssScale = 0.48f, MaxChromeScale = 1.5f;
+        /// <summary>How much the top bar, hint and toast are scaled up (1 on desktops).</summary>
+        public float ChromeScale => chromeScale;
+        /// <summary>The HUD canvas's scale in CSS px per design unit, before ChromeScale.</summary>
+        public float CssScale { get; private set; } = 1f;
+        /// <summary>Bubbles sit over the island, so they grow less.</summary>
+        float BubbleScale => Mathf.Min(chromeScale, 1.2f);
+
+        /// <summary>On a phone the HUD would draw at about a third of its design size, which puts
+        /// the pause button and the clock below what fingers and eyes need. So the top bar, hint and
+        /// toast are scaled up together until they reach MinCssScale (or MaxChromeScale), inside a
+        /// container sized so its corners still meet the safe area's.</summary>
+        void UpdateScale()
+        {
+            CssScale = canvas.scaleFactor / Platform.PixelsPerCssPx;
+            float k = Mathf.Clamp(MinCssScale / Mathf.Max(CssScale, 0.01f), 1f, MaxChromeScale);
+            if (Mathf.Abs(k - 1f) < 0.01f) k = 1f;
+            if (k != chromeScale)
+            {
+                chromeScale = k;
+                chrome.localScale = new Vector3(k, k, 1f);
+                Debug.Log($"[PW] HUD scale: {CssScale:0.000} CSS px per design unit, top bar x{k:0.00} at {Screen.width}x{Screen.height} ({Platform.PixelsPerCssPx:0.##} px per CSS px)");
+            }
+            chrome.sizeDelta = safe.rect.size * (1f / k - 1f);
+            bool c = k > 1f;
+            if (laidOutPortrait != Ui.Portrait || c != compact) Layout(Ui.Portrait, c);
+            // a phone held sideways: the sun track moves left (no closer than the gauge) as far as the
+            // tray needs to fit at full size
+            float x = 0f;
+            if (!Ui.Portrait && compact)
+            {
+                float half = chrome.rect.width * 0.5f, sunHalf = sunTrack.sizeDelta.x * 0.5f;
+                x = Mathf.Clamp(half - 174f - tray.sizeDelta.x - sunHalf, -half + 474f + sunHalf, 0f);
+            }
+            sunTrack.anchoredPosition = new Vector2(x, Ui.Portrait ? -190f : -74f);
+            // held upright, the hint goes above the touch buttons (290 design units tall, unscaled),
+            // which a wide caption would otherwise run into
+            hintRoot.anchoredPosition = new Vector2(0f, Ui.Portrait ? 300f / chromeScale + 60f : 110f);
+        }
 
         /// <summary>Portrait screens are too narrow for gauge + sun track + tray in one row: the sun
-        /// track drops to a second row (and the toast below it).</summary>
-        void Layout(bool portrait)
+        /// track drops to a second row (and the toast below it); on a phone the tray takes a third.
+        /// Compact (phone-sized) top bars have a shorter sun track.</summary>
+        void Layout(bool portrait, bool compactNow)
         {
             laidOutPortrait = portrait;
-            sunTrack.anchoredPosition = new Vector2(0, portrait ? -190 : -74);
+            compact = compactNow;
+            trackW = compact ? 220f : 470f;
+            sunTrack.sizeDelta = new Vector2(compact ? 420f : 620f, 92f);
+            sunLine.sizeDelta = new Vector2(trackW, 16f);
+            sunLine.anchoredPosition = new Vector2(compact ? -65f : -40f, -4f);
+            clock.rectTransform.anchoredPosition = new Vector2(compact ? 130f : 240f, -2f);
+            bool thirdRow = portrait && compact;
+            tray.anchorMin = tray.anchorMax = thirdRow ? new Vector2(0.5f, 1f) : new Vector2(1f, 1f);
+            tray.pivot = thirdRow ? new Vector2(0.5f, 0.5f) : new Vector2(1f, 0.5f);
+            tray.anchoredPosition = thirdRow ? new Vector2(0f, -306f) : new Vector2(-150f, -74f);
             if (toast.gameObject.activeSelf) toast.anchoredPosition = new Vector2(0, ToastY);
         }
 
@@ -439,7 +522,7 @@ namespace PocketWeather
             float dt = Clock.UnscaledDelta;
             float t = Clock.UnscaledTime;
             var cloud = Cloud.Instance;
-            if (laidOutPortrait != Ui.Portrait) Layout(Ui.Portrait);
+            UpdateScale();
             if (trayItems.Count > 0) FitTray();
 
             // ---- gauge
@@ -502,6 +585,8 @@ namespace PocketWeather
             var rig = GameRoot.Instance != null ? GameRoot.Instance.Rig : null;
             bool canPin = rig != null && rig.PanMax > 0.01f;
             float halfW = bubbleLayer.rect.width * 0.5f;
+            // a bubble of a need at the back of the island waits below the top bar, not under it
+            float barBottom = TopBarBottom() - (92f + 54f + 8f) * BubbleScale;
             foreach (var b in bubbles)
             {
                 if (b.need == null) continue;
@@ -509,7 +594,8 @@ namespace PocketWeather
                 b.shown = Mathf.MoveTowards(b.shown, show ? 1 : 0, dt * 4f);
                 var lp = WorldToCanvas(b.need.BubbleAnchor, out bool vis);
                 bool pinned = canPin && Mathf.Abs(lp.x) > halfW - 30f;
-                if (canPin) lp.x = Mathf.Clamp(lp.x, -(halfW - 116f), halfW - 116f);   // room for the arrow beside it
+                if (canPin) lp.x = Mathf.Clamp(lp.x, -(halfW - 116f * BubbleScale), halfW - 116f * BubbleScale);   // room for the arrow beside it
+                lp.y = Mathf.Min(lp.y, barBottom);
                 if (pinned != b.pinned)
                 {
                     b.pinned = pinned;
@@ -527,7 +613,7 @@ namespace PocketWeather
                 b.shake = Mathf.MoveTowards(b.shake, 0, dt * 2f);
                 b.rt.anchoredPosition = lp + new Vector2(Mathf.Sin(t * 40f) * 6f * b.shake, bob);
                 b.group.alpha = vis ? Ease.OutCubic(b.shown) : 0;
-                b.rt.localScale = Vector3.one * (0.6f + 0.4f * Ease.OutBack(b.shown));
+                b.rt.localScale = Vector3.one * (BubbleScale * (0.6f + 0.4f * Ease.OutBack(b.shown)));
                 bool problem = b.need.Problem;
                 string icon = problem ? b.need.ProblemIcon : b.need.Icon;
                 if (icon != b.iconName)
@@ -539,7 +625,7 @@ namespace PocketWeather
                 if (problem && !b.wasProblem) b.shake = 1f;
                 b.wasProblem = problem;
                 bool metNow = b.need.Met;
-                if (metNow && !b.wasMet && running && vis) FlyCheck(b.rt.anchoredPosition + new Vector2(0, 92), b.need);
+                if (metNow && !b.wasMet && running && vis) FlyCheck(b.rt.anchoredPosition + new Vector2(0, 92f * BubbleScale), b.need);
                 b.wasMet = metNow;
                 if (b.bed != null)
                 {
