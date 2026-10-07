@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Runs every automated check against the current Linux build and prints a summary.
 #
-#   Tools/selftest.sh            static validator, audio loop seams, keyboard/gamepad/touch self-tests, UI audit at
+#   Tools/selftest.sh            static validator, audio loop seams, the Linux launcher (with stand-in games and
+#                                the real build), keyboard/gamepad/touch self-tests, UI audit at
 #                                eight window shapes (two landscape phones, three portrait), and the expert AutoPilot over all 12 levels
 #   Tools/selftest.sh --quick    skips the AutoPilot campaign
 #
@@ -30,6 +31,8 @@ if python3 "$ROOT/Tools/validate_levels.py" > "$OUT/validate.txt" 2>&1; then row
 
 if "$ROOT/Tools/.venv/bin/python" "$ROOT/Tools/audio/check_loops.py" > "$OUT/loops.txt" 2>&1; then row "audio loop seams" "PASS"; else row "audio loop seams" "FAIL (see $OUT/loops.txt)"; fail=1; fi
 
+if "$ROOT/Tools/linux/test_launcher.sh" > "$OUT/launcher.txt" 2>&1; then row "Linux launcher (stand-in games)" "PASS ($(sed -n 's/.*done: //p' "$OUT/launcher.txt"))"; else row "Linux launcher (stand-in games)" "FAIL (see $OUT/launcher.txt)"; fail=1; fi
+
 run_test() {   # name flag tag
   local name=$1 flag=$2 tag=$3 log="$OUT/$1.log"
   timeout 400 "$PLAY" -logFile "$log" "$flag" > /dev/null 2>&1
@@ -46,6 +49,11 @@ for r in 1600x900 1600x720 1200x900 844x390 740x360 720x1280 390x844 360x800; do
   done=$(grep -m1 "\[UiAudit\] done:" "$log" | sed 's/.*done: //')
   if [ -n "$done" ] && echo "$done" | grep -q " 0 failed"; then row "UI audit $r" "PASS ($done)"; else row "UI audit $r" "FAIL (${done:-no result}; see $log)"; fail=1; fi
 done
+
+# the real build, started the way players start it (PocketWeather.sh), with this run's sandbox prefs
+log="$OUT/launcher-boot.log"
+XDG_CONFIG_HOME="$PW_CONFIG" timeout 120 "$ROOT/Builds/Linux/PocketWeather.sh" -screen-width 1280 -screen-height 720 -logFile "$log" -pwCapture "$OUT/launcher-shots" -pwScript start > /dev/null 2>&1
+if grep -q "GameRoot booted" "$log" 2>/dev/null && grep -q "capture done" "$log"; then row "boots through PocketWeather.sh" "PASS"; else row "boots through PocketWeather.sh" "FAIL (see $log)"; fail=1; fi
 
 if [ "${1:-}" != "--quick" ]; then
   log="$OUT/autopilot.log"
