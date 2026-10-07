@@ -338,12 +338,16 @@ namespace PocketWeather
             f.DebugShowMap(); yield return new WaitForSeconds(1.5f); yield return Shot("m02_map");
             f.DebugStart(0, false); f.DebugShowPostcard(); yield return new WaitForSeconds(1.6f); yield return Shot("m03_postcard");
             f.DebugStart(0, false, true); f.DebugShowPostcard(); yield return new WaitForSeconds(1.6f); yield return Shot("m04_encore_postcard");
+            f.DebugStart(11, false); f.DebugShowPostcard(); yield return new WaitForSeconds(1.6f); yield return Shot("m04b_postcard_day12");
             f.DebugStart(0, true); yield return new WaitForSeconds(1.2f);
             f.DebugPause(); yield return new WaitForSecondsRealtime(1.0f); yield return Shot("m05_pause");
             f.DebugSettings(); yield return new WaitForSecondsRealtime(1.0f); yield return Shot("m06_settings");
             f.DebugCloseSettings(); yield return new WaitForSecondsRealtime(0.5f);
             f.DebugResume(); yield return new WaitForSecondsRealtime(0.5f);
             f.DebugResults(); yield return new WaitForSeconds(2.5f); yield return Shot("m07_results");
+            f.DebugCloseMenus();
+            f.DebugStart(0, true, true); yield return new WaitForSeconds(1.2f);
+            f.DebugEncoreResults(); yield return new WaitForSeconds(2.5f); yield return Shot("m07b_encore_results");
             f.DebugCloseMenus();
             f.DebugStart(1, true); yield return new WaitForSeconds(1.2f);
             f.DebugSunset(); yield return new WaitForSeconds(3.2f); yield return Shot("m08_sunset");

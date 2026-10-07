@@ -27,22 +27,23 @@ namespace PocketWeather
             root.gameObject.SetActive(false);
             Build();
             ApplyLayout();
-            Ui.MenuShortChanged += _ => ApplyLayout();
+            Ui.MenuLayoutChanged += _ => ApplyLayout();
         }
 
         protected abstract void Build();
         protected virtual void OnOpen() { }
 
-        bool? laidOutShort;
-        /// <summary>A phone on its side draws the menus bigger (Ui.MenuShort), which leaves a
-        /// design area only about 820 to 900 units tall: screens that wouldn't fit move things
-        /// here. Called after Build and whenever that changes.</summary>
-        protected virtual void Layout(bool shortScreen) { }
+        MenuForm? laidOut;
+        /// <summary>A phone draws the menus bigger (see Ui.MenuLayout). On its side that leaves a
+        /// design area only about 820 to 900 units tall (Short), and upright one about 860 to 890
+        /// units wide (Narrow): screens that wouldn't fit move things here. Called after Build and
+        /// whenever the layout changes; each override sets everything it moves for every form.</summary>
+        protected virtual void Layout(MenuForm form) { }
         void ApplyLayout()
         {
-            if (laidOutShort == Ui.MenuShort) return;
-            laidOutShort = Ui.MenuShort;
-            Layout(Ui.MenuShort);
+            if (laidOut == Ui.MenuLayout) return;
+            laidOut = Ui.MenuLayout;
+            Layout(Ui.MenuLayout);
         }
 
         public virtual void Open()
@@ -82,8 +83,8 @@ namespace PocketWeather
     public class TitleScreen : MenuScreen
     {
         public Action OnPlay, OnSettings;
-        Text tap, credit;
-        RectTransform logo;
+        Text tap, credit, subLine;
+        RectTransform logo, subPill, creditPill;
 
         protected override void Build()
         {
@@ -98,9 +99,10 @@ namespace PocketWeather
             var l2 = Ui.Label(logo, "Weather", 170, Color.white, new Vector2(900, 190), new Vector2(120, -60), true);
             Ui.Outlined(l2, Res.Hex("7A8FD6"), 5);
             Ui.Shadowed(l2, 10, 0.3f);
-            var subPill = Ui.Panel(logo, new Vector2(860, 64), new Vector2(60, -178), Ui.Paper, null, 32f);
-            subPill.raycastTarget = false;
-            Ui.Label(subPill.transform, "a tiny cloud helps a miniature world through its day", 34, Ui.Ink, new Vector2(840, 60), Vector2.zero, false, TextAnchor.MiddleCenter);
+            var sp = Ui.Panel(logo, new Vector2(860, 64), new Vector2(60, -178), Ui.Paper, null, 32f);
+            sp.raycastTarget = false;
+            subPill = sp.rectTransform;
+            subLine = Ui.Label(subPill, "a tiny cloud helps a miniature world through its day", 34, Ui.Ink, new Vector2(840, 60), Vector2.zero, false, TextAnchor.MiddleCenter);
             tap = Ui.Label(safe, PromptFor(Platform.TouchFirst ? CloudInput.Device.Touch : CloudInput.Device.Mouse), 58, Color.white, new Vector2(800, 90), new Vector2(0, 150), true, TextAnchor.MiddleCenter, new Vector2(0.5f, 0));
             Ui.Outlined(tap, Res.Hex("6C7FCC"), 3);
             Debug.Log($"[PW] title prompt: {tap.text}");
@@ -116,16 +118,32 @@ namespace PocketWeather
             if (!Application.isMobilePlatform && Application.platform != RuntimePlatform.WebGLPlayer)
                 Ui.Button(safe, "Quit", Ui.Paper, new Vector2(170, 84), new Vector2(115, 80), () => { GameSettings.Save(); Application.Quit(); }, null, new Vector2(0, 0), 34, "Quit");
             firstSelected = btn.gameObject;
-            var creditPill = Ui.Panel(safe, new Vector2(520, 46), new Vector2(0, 62), new Color(1, 1, 1, 0.7f), new Vector2(0.5f, 0), 23f, false);
-            creditPill.raycastTarget = false;
-            credit = Ui.Label(creditPill.transform, "Mouse, touch, keyboard or gamepad", 26, Ui.Ink, new Vector2(500, 44), Vector2.zero, false, TextAnchor.MiddleCenter);
+            var cp = Ui.Panel(safe, new Vector2(520, 46), new Vector2(0, 62), new Color(1, 1, 1, 0.7f), new Vector2(0.5f, 0), 23f, false);
+            cp.raycastTarget = false;
+            creditPill = cp.rectTransform;
+            credit = Ui.Label(creditPill, "Mouse, touch, keyboard or gamepad", 26, Ui.Ink, new Vector2(500, 44), Vector2.zero, false, TextAnchor.MiddleCenter);
         }
 
-        protected override void Layout(bool shortScreen) => credit.fontSize = shortScreen ? 28 : 26;
+        /// <summary>Narrow: the logo smaller (its subtitle line drawn bigger inside it, so it reads
+        /// at the same size as elsewhere), and the credit and prompt above the corner buttons.</summary>
+        protected override void Layout(MenuForm form)
+        {
+            bool narrow = form == MenuForm.Narrow;
+            credit.fontSize = form == MenuForm.Usual ? 26 : 28;
+            logo.localScale = Vector3.one * (narrow ? 0.7f : 1f);
+            logo.anchoredPosition = new Vector2(0, narrow ? -200 : -230);
+            subLine.fontSize = narrow ? 40 : 34;
+            subPill.sizeDelta = narrow ? new Vector2(1080, 76) : new Vector2(860, 64);
+            subPill.anchoredPosition = new Vector2(narrow ? 0 : 60, narrow ? -188 : -178);
+            subLine.rectTransform.sizeDelta = narrow ? new Vector2(1060, 72) : new Vector2(840, 60);
+            creditPill.sizeDelta = new Vector2(narrow ? 560 : 520, 46);
+            creditPill.anchoredPosition = new Vector2(0, narrow ? 160 : 62);
+            tap.rectTransform.anchoredPosition = new Vector2(0, narrow ? 260 : 150);
+        }
 
         protected override void OnOpen()
         {
-            Ui.PopIn(logo, 0.1f, 0.7f);
+            Ui.PopIn(logo, 0.1f, 0.7f, Ui.MenuNarrow ? 0.7f : 1f);
         }
 
         /// <summary>The "... to play" prompt, in the words of the device in use.</summary>
@@ -186,7 +204,7 @@ namespace PocketWeather
         public Action OnBack, OnSettings;
         readonly List<JuicyButton> cards = new();
         Text total, encoreTotal;
-        RectTransform encorePill;
+        RectTransform encorePill, stampsPill;
         RectTransform grid, back, gear;
         Text title, sub;
 
@@ -201,6 +219,7 @@ namespace PocketWeather
             sub = Ui.Label(safe, "One summer, twelve little days", 38, Color.white, new Vector2(900, 50), new Vector2(0, -170), false, TextAnchor.MiddleCenter, new Vector2(0.5f, 1));
             Ui.Shadowed(sub, 3, 0.4f);
             var tp = Ui.Panel(safe, new Vector2(230, 84), new Vector2(-150, -80), Ui.Paper, new Vector2(1, 1), 42f);
+            stampsPill = tp.rectTransform;
             Ui.Icon(tp.transform, "stamp_flower", 64, new Vector2(-70, 2));
             total = Ui.Label(tp.transform, "0/36", 40, Ui.Ink, new Vector2(140, 70), new Vector2(30, 2), true);
             // Encore stamps get their own pill once the first Encore opens
@@ -213,17 +232,24 @@ namespace PocketWeather
         }
 
         /// <summary>Short: no subtitle, the cards a little smaller and the corner buttons lower, and
-        /// the Encore pill beside the stamps pill instead of under it (where the cards now reach).</summary>
-        protected override void Layout(bool shortScreen)
+        /// the Encore pill beside the stamps pill instead of under it (where the cards now reach).
+        /// Narrow: three cards a row, and the two pills side by side under the subtitle (the title
+        /// fills the top).</summary>
+        protected override void Layout(MenuForm form)
         {
+            bool shortScreen = form == MenuForm.Short, narrow = form == MenuForm.Narrow;
             title.rectTransform.anchoredPosition = new Vector2(0, shortScreen ? -78 : -95);
             sub.gameObject.SetActive(!shortScreen);
             grid.localScale = Vector3.one * (shortScreen ? 0.88f : 1f);
-            grid.anchoredPosition = new Vector2(0, shortScreen ? -24 : -20);
+            grid.anchoredPosition = new Vector2(0, shortScreen ? -24 : narrow ? -60 : -20);
             back.localScale = gear.localScale = Vector3.one * (shortScreen ? 0.9f : 1f);
             back.anchoredPosition = shortScreen ? new Vector2(125, 58) : new Vector2(150, 80);
             gear.anchoredPosition = shortScreen ? new Vector2(-70, 58) : new Vector2(-80, 80);
-            encorePill.anchoredPosition = shortScreen ? new Vector2(-390, -80) : new Vector2(-150, -176);
+            var pillAnchor = narrow ? new Vector2(0.5f, 1f) : new Vector2(1f, 1f);
+            stampsPill.anchorMin = stampsPill.anchorMax = encorePill.anchorMin = encorePill.anchorMax = pillAnchor;
+            stampsPill.anchoredPosition = narrow ? new Vector2(-130, -262) : new Vector2(-150, -80);
+            encorePill.anchoredPosition = narrow ? new Vector2(130, -262) : shortScreen ? new Vector2(-390, -80) : new Vector2(-150, -176);
+            PlaceCards();
         }
 
         protected override void OnOpen()
@@ -238,7 +264,7 @@ namespace PocketWeather
             for (int i = 0; i < LevelLibrary.Campaign.Length; i++)
             {
                 int idx = i;
-                var pos = CardPos(i, Ui.Portrait);
+                var pos = CardPos(i, Columns);
                 var def = LevelLibrary.Load(LevelLibrary.Campaign[i]);
                 bool unlocked = SaveData.Unlocked(i);
                 var save = SaveData.Get(LevelLibrary.Campaign[i]);
@@ -266,31 +292,37 @@ namespace PocketWeather
             }
             firstSelected = cards[Mathf.Clamp(next, 0, cards.Count - 1)].gameObject;
             if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(firstSelected);
-            laidOutPortrait = Ui.Portrait;
+            laidOutColumns = Columns;
         }
 
-        bool laidOutPortrait;
+        int laidOutColumns;
 
-        /// <summary>Six cards a row in landscape, four in portrait (the narrower design width).</summary>
-        static Vector2 CardPos(int i, bool portrait)
+        /// <summary>Six cards a row in landscape, four in portrait (the narrower design width), three
+        /// on a phone held upright.</summary>
+        static int Columns => Ui.MenuNarrow ? 3 : Ui.Portrait ? 4 : 6;
+
+        static Vector2 CardPos(int i, int cols)
         {
-            int cols = portrait ? 4 : 6, rows = (LevelLibrary.Campaign.Length + cols - 1) / cols;
+            int rows = (LevelLibrary.Campaign.Length + cols - 1) / cols;
             int col = i % cols, row = i / cols;
             return new Vector2((col - (cols - 1) / 2f) * 272, ((rows - 1) / 2f - row) * 330);
         }
 
+        void PlaceCards()
+        {
+            if (laidOutColumns == Columns) return;
+            laidOutColumns = Columns;
+            for (int i = 0; i < cards.Count; i++)
+            {
+                var rt = (RectTransform)cards[i].transform;
+                rt.anchoredPosition = CardPos(i, laidOutColumns);
+                rt.GetComponent<UiBob>()?.Rebase();
+            }
+        }
+
         void Update()
         {
-            if (IsOpen && laidOutPortrait != Ui.Portrait)
-            {
-                laidOutPortrait = Ui.Portrait;
-                for (int i = 0; i < cards.Count; i++)
-                {
-                    var rt = (RectTransform)cards[i].transform;
-                    rt.anchoredPosition = CardPos(i, laidOutPortrait);
-                    rt.GetComponent<UiBob>()?.Rebase();
-                }
-            }
+            if (IsOpen) PlaceCards();
             if (!IsOpen || JustOpened) return;
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
@@ -306,7 +338,7 @@ namespace PocketWeather
         public Action<bool> OnEncore;
         RectTransform card;
         Text day, title, story, parText, best;
-        RectTransform needsRow, stampsRow;
+        RectTransform needsRow, stampsRow, parRow, helpLabel;
         Image icon, stripe, parIcon;
         JuicyButton startBtn, encoreBtn;
         bool showingEncore;
@@ -322,9 +354,9 @@ namespace PocketWeather
             day = Ui.Label(card, "Day 1", 34, Ui.InkSoft, new Vector2(600, 50), new Vector2(40, 272), true, TextAnchor.MiddleLeft);
             title = Ui.Label(card, "First Drops", 66, Ui.Ink, new Vector2(700, 80), new Vector2(90, 222), true, TextAnchor.MiddleLeft);
             story = Ui.Label(card, "", 36, Ui.Ink, new Vector2(860, 140), new Vector2(0, 100), false);
-            Ui.Label(card, "Today, help:", 30, Ui.InkSoft, new Vector2(400, 40), new Vector2(0, 22), true);
+            helpLabel = Ui.Label(card, "Today, help:", 30, Ui.InkSoft, new Vector2(400, 40), new Vector2(0, 22), true).rectTransform;
             needsRow = Ui.Rect("Needs", card, new Vector2(0.5f, 0.5f), new Vector2(900, 110), new Vector2(0, -60));
-            var parRow = Ui.Rect("Par", card, new Vector2(0.5f, 0.5f), new Vector2(600, 60), new Vector2(-170, -175));
+            parRow = Ui.Rect("Par", card, new Vector2(0.5f, 0.5f), new Vector2(600, 60), new Vector2(-170, -175));
             parIcon = Ui.Icon(parRow, "clock", 54, new Vector2(-250, 0));
             parText = Ui.Label(parRow, "", 32, Ui.Ink, new Vector2(500, 60), new Vector2(40, 0), true, TextAnchor.MiddleLeft);
             stampsRow = Ui.Rect("Stamps", card, new Vector2(0.5f, 0.5f), new Vector2(240, 70), new Vector2(-330, -245));
@@ -333,6 +365,39 @@ namespace PocketWeather
             // a saved day offers its Encore (and an Encore offers the ordinary day back)
             encoreBtn = Ui.Button(card, "Encore", Res.Hex("FF9A5C"), new Vector2(260, 64), new Vector2(300, -150), () => OnEncore?.Invoke(!showingEncore), "stamp_encore", null, 32, "Encore");
             firstSelected = startBtn.gameObject;
+        }
+
+        /// <summary>Narrow: a taller card, the story wrapped over more lines, and the par line, best
+        /// time, stamps and buttons each on a row of their own.</summary>
+        protected override void Layout(MenuForm form)
+        {
+            bool n = form == MenuForm.Narrow;
+            card.sizeDelta = n ? new Vector2(840, 1010) : new Vector2(1000, 640);
+            stripe.rectTransform.sizeDelta = new Vector2(n ? 800 : 960, 120);
+            stripe.rectTransform.anchoredPosition = new Vector2(0, n ? 425 : 240);
+            icon.rectTransform.anchoredPosition = n ? new Vector2(-300, 430) : new Vector2(-370, 245);
+            day.rectTransform.sizeDelta = new Vector2(n ? 560 : 600, 50);
+            day.rectTransform.anchoredPosition = n ? new Vector2(60, 457) : new Vector2(40, 272);
+            title.rectTransform.sizeDelta = new Vector2(n ? 600 : 700, 80);
+            title.rectTransform.anchoredPosition = n ? new Vector2(80, 407) : new Vector2(90, 222);
+            story.rectTransform.sizeDelta = n ? new Vector2(760, 200) : new Vector2(860, 140);
+            story.rectTransform.anchoredPosition = new Vector2(0, n ? 245 : 100);
+            helpLabel.anchoredPosition = new Vector2(0, n ? 115 : 22);
+            needsRow.anchoredPosition = new Vector2(0, n ? 30 : -60);
+            parRow.anchoredPosition = n ? new Vector2(30, -85) : new Vector2(-170, -175);
+            best.rectTransform.sizeDelta = new Vector2(n ? 600 : 330, 50);
+            best.rectTransform.anchoredPosition = n ? new Vector2(0, -150) : new Vector2(-30, -245);
+            stampsRow.anchoredPosition = n ? new Vector2(0, -225) : new Vector2(-330, -245);
+            PlaceButtons();
+        }
+
+        /// <summary>Narrow: Start and Encore side by side along the bottom, or Start in the middle
+        /// when there's no Encore yet.</summary>
+        void PlaceButtons()
+        {
+            bool n = Ui.MenuNarrow, both = encoreBtn.gameObject.activeSelf;
+            ((RectTransform)startBtn.transform).anchoredPosition = n ? new Vector2(both ? 175 : 0, -405) : new Vector2(300, -240);
+            ((RectTransform)encoreBtn.transform).anchoredPosition = n ? new Vector2(-185, -405) : new Vector2(300, -150);
         }
 
         public void Show(LevelDef def, int index)
@@ -347,6 +412,7 @@ namespace PocketWeather
             parText.text = def.encore ? "The scorcher stamp for saving it" : $"Stamp for finishing before {FormatHour(def.par)}";
             bool encoreOpen = SaveData.EncoreUnlocked(def.id);
             encoreBtn.gameObject.SetActive(encoreOpen);
+            PlaceButtons();
             encoreBtn.SetLabel(def.encore ? "Normal day" : "Encore");
             // an Encore's postcard shows the scorcher's own best, never the ordinary day's
             var rec = SaveData.Get(def.id);
@@ -355,12 +421,14 @@ namespace PocketWeather
             foreach (Transform c in needsRow) Destroy(c.gameObject);
             var reqs = new List<NeedDef>();
             foreach (var n in def.needs) if (!n.hidden) reqs.Add(n);
+            // held upright the card is narrower: a long row (the wedding's seven) draws closer and smaller
+            float step = Mathf.Min(124f, (Ui.MenuNarrow ? 780f : 900f) / Mathf.Max(1, reqs.Count));
             for (int i = 0; i < reqs.Count; i++)
             {
-                var it = Ui.Rect("N" + i, needsRow, new Vector2(0.5f, 0.5f), new Vector2(110, 110), new Vector2((i - (reqs.Count - 1) / 2f) * 124, 0));
+                var it = Ui.Rect("N" + i, needsRow, new Vector2(0.5f, 0.5f), new Vector2(110, 110), new Vector2((i - (reqs.Count - 1) / 2f) * step, 0));
                 Ui.Image(it, Ui.Circle, Res.Hex("F1E8DA"), new Vector2(104, 104), Vector2.zero, null, "Bg");
                 Ui.Icon(it, NeedIcon(reqs[i]), 74, new Vector2(0, 2));
-                Ui.PopIn(it, 0.25f + 0.07f * i, 0.4f);
+                Ui.PopIn(it, 0.25f + 0.07f * i, 0.4f, step / 124f);
             }
             foreach (Transform c in stampsRow) Destroy(c.gameObject);
             var save = SaveData.Get(def.id);
@@ -467,8 +535,9 @@ namespace PocketWeather
 
         /// <summary>Short: a wide panel with the four buttons in a 2x2 grid, and the controls line
         /// close under it.</summary>
-        protected override void Layout(bool shortScreen)
+        protected override void Layout(MenuForm form)
         {
+            bool shortScreen = form == MenuForm.Short;
             shortLayout = shortScreen;
             panel.sizeDelta = shortScreen ? new Vector2(1000, 540) : new Vector2(620, 720);
             panel.anchoredPosition = new Vector2(0, shortScreen ? 40 : 0);
@@ -481,7 +550,8 @@ namespace PocketWeather
             PlaceStrip();
         }
 
-        /// <summary>The controls line wraps onto two lines in portrait's narrower design width.</summary>
+        /// <summary>The controls line wraps onto two lines in portrait's narrower design width (and
+        /// in a narrower strip on a phone held upright).</summary>
         public void SetControls(CloudInput.Device device)
         {
             controls.text = ControlsLine(device);
@@ -490,10 +560,10 @@ namespace PocketWeather
 
         void PlaceStrip()
         {
-            bool p = Ui.Portrait;
-            strip.sizeDelta = p ? new Vector2(1140, 116) : new Vector2(1500, 76);
-            strip.anchoredPosition = new Vector2(0, p ? -445 : shortLayout ? -320 : -425);
-            controls.rectTransform.sizeDelta = p ? new Vector2(1090, 110) : new Vector2(1460, 70);
+            bool p = Ui.Portrait, n = Ui.MenuNarrow;
+            strip.sizeDelta = n ? new Vector2(820, 150) : p ? new Vector2(1140, 116) : new Vector2(1500, 76);
+            strip.anchoredPosition = new Vector2(0, n ? -470 : p ? -445 : shortLayout ? -320 : -425);
+            controls.rectTransform.sizeDelta = n ? new Vector2(780, 144) : p ? new Vector2(1090, 110) : new Vector2(1460, 70);
         }
         public string ControlsText => controls.text;
 
@@ -598,8 +668,10 @@ namespace PocketWeather
             }
         }
 
-        protected override void Layout(bool shortScreen)
+        /// <summary>Short: two columns. Narrow keeps the usual single column, which fits.</summary>
+        protected override void Layout(MenuForm form)
         {
+            bool shortScreen = form == MenuForm.Short;
             panel.sizeDelta = shortScreen ? new Vector2(1440, 720) : new Vector2(760, 1060);
             foreach (var (rt, usual, shortPos) in rows) rt.anchoredPosition = shortScreen ? shortPos : usual;
         }
@@ -631,15 +703,18 @@ namespace PocketWeather
         Text title, subtitle, timeLine;
         readonly Image[] stamps = new Image[3];
         readonly Text[] stampLabels = new Text[3];
+        readonly RectTransform[] slots = new RectTransform[3], plates = new RectTransform[3], buttons = new RectTransform[3];
+        RectTransform banner;
         JuicyButton next;
 
         protected override void Build()
         {
             Dim(0.3f);
             card = Ui.Panel(root, new Vector2(1060, 640), new Vector2(0, 0), Ui.Paper, null, 48f).rectTransform;
-            var banner = Ui.Image(card, Ui.Rounded, Ui.Butter, new Vector2(700, 120), new Vector2(0, 300), null, "Banner");
-            banner.pixelsPerUnitMultiplier = 52f / 40f;
-            title = Ui.Label(banner.transform, "Day saved!", 74, Color.white, new Vector2(680, 110), new Vector2(0, 2), true);
+            var bn = Ui.Image(card, Ui.Rounded, Ui.Butter, new Vector2(700, 120), new Vector2(0, 300), null, "Banner");
+            bn.pixelsPerUnitMultiplier = 52f / 40f;
+            banner = bn.rectTransform;
+            title = Ui.Label(banner, "Day saved!", 74, Color.white, new Vector2(680, 110), new Vector2(0, 2), true);
             Ui.Outlined(title, Res.Hex("E09A3A"), 4);
             subtitle = Ui.Label(card, "", 36, Ui.Ink, new Vector2(960, 50), new Vector2(0, 200), false);
             timeLine = Ui.Label(card, "", 28, Ui.InkSoft, new Vector2(960, 40), new Vector2(0, 158), false);
@@ -647,14 +722,44 @@ namespace PocketWeather
             for (int i = 0; i < 3; i++)
             {
                 var slot = Ui.Rect("Slot" + i, card, new Vector2(0.5f, 0.5f), new Vector2(300, 260), new Vector2((i - 1) * 320, 0));
-                Ui.Image(slot, Ui.Circle, Res.Hex("EFE6D8"), new Vector2(190, 190), new Vector2(0, 30), null, "Plate");
+                slots[i] = slot;
+                plates[i] = Ui.Image(slot, Ui.Circle, Res.Hex("EFE6D8"), new Vector2(190, 190), new Vector2(0, 30), null, "Plate").rectTransform;
                 stamps[i] = Ui.Icon(slot, "stamp_empty", 180, new Vector2(0, 30));
                 stampLabels[i] = Ui.Label(slot, labels[i], 30, Ui.Ink, new Vector2(300, 70), new Vector2(0, -100), true);
             }
-            Ui.Button(card, "Map", Ui.Lilac, new Vector2(230, 96), new Vector2(-330, -235), () => OnMap?.Invoke(), null, null, 42);
-            Ui.Button(card, "Replay", Ui.Sky, new Vector2(250, 96), new Vector2(-50, -235), () => OnReplay?.Invoke(), null, null, 42);
+            buttons[0] = (RectTransform)Ui.Button(card, "Map", Ui.Lilac, new Vector2(230, 96), new Vector2(-330, -235), () => OnMap?.Invoke(), null, null, 42).transform;
+            buttons[1] = (RectTransform)Ui.Button(card, "Replay", Ui.Sky, new Vector2(250, 96), new Vector2(-50, -235), () => OnReplay?.Invoke(), null, null, 42).transform;
             next = Ui.Button(card, "Next day", Ui.Coral, new Vector2(300, 104), new Vector2(270, -235), () => OnNext?.Invoke(), null, null, 46);
+            buttons[2] = (RectTransform)next.transform;
             firstSelected = next.gameObject;
+        }
+
+        /// <summary>Narrow: a taller card, its text wrapping, the stamps closer together and smaller,
+        /// and the buttons in a row across the bottom.</summary>
+        protected override void Layout(MenuForm form)
+        {
+            bool n = form == MenuForm.Narrow;
+            card.sizeDelta = n ? new Vector2(840, 760) : new Vector2(1060, 640);
+            banner.anchoredPosition = new Vector2(0, n ? 360 : 300);
+            banner.sizeDelta = new Vector2(n ? 640 : 700, 120);
+            subtitle.rectTransform.sizeDelta = n ? new Vector2(780, 100) : new Vector2(960, 50);
+            subtitle.rectTransform.anchoredPosition = new Vector2(0, n ? 235 : 200);
+            timeLine.rectTransform.sizeDelta = new Vector2(n ? 780 : 960, 40);
+            timeLine.rectTransform.anchoredPosition = new Vector2(0, n ? 165 : 158);
+            for (int i = 0; i < 3; i++)
+            {
+                slots[i].sizeDelta = new Vector2(n ? 250 : 300, 260);
+                slots[i].anchoredPosition = new Vector2((i - 1) * (n ? 262 : 320), n ? 10 : 0);
+                plates[i].sizeDelta = Vector2.one * (n ? 170 : 190);
+                stamps[i].rectTransform.sizeDelta = Vector2.one * (n ? 160 : 180);
+                stampLabels[i].rectTransform.sizeDelta = new Vector2(n ? 250 : 300, 70);
+            }
+            buttons[0].anchoredPosition = n ? new Vector2(-290, -285) : new Vector2(-330, -235);
+            buttons[1].anchoredPosition = n ? new Vector2(-40, -285) : new Vector2(-50, -235);
+            buttons[2].anchoredPosition = n ? new Vector2(245, -285) : new Vector2(270, -235);
+            buttons[0].sizeDelta = new Vector2(n ? 190 : 230, 96);
+            buttons[1].sizeDelta = new Vector2(n ? 210 : 250, 96);
+            buttons[2].sizeDelta = new Vector2(n ? 260 : 300, 104);
         }
 
         static string TimeLine(float finishHour, float previousBest) =>
@@ -748,22 +853,43 @@ namespace PocketWeather
     public class FailCard : MenuScreen
     {
         public Action OnRetry, OnMap;
-        RectTransform card, row;
+        RectTransform card, row, heading, subLine, tipPill, mapBtn, retryBtn;
         Text tip;
 
         protected override void Build()
         {
             Dim(0.4f);
             card = Ui.Panel(root, new Vector2(980, 640), Vector2.zero, Ui.Paper, null, 48f).rectTransform;
-            Ui.Label(card, "The sun has set", 70, Ui.Ink, new Vector2(900, 90), new Vector2(0, 235), true);
-            Ui.Label(card, "Some friends still needed you. Try again tomorrow!", 36, Ui.InkSoft, new Vector2(900, 50), new Vector2(0, 160), false);
+            heading = Ui.Label(card, "The sun has set", 70, Ui.Ink, new Vector2(900, 90), new Vector2(0, 235), true).rectTransform;
+            subLine = Ui.Label(card, "Some friends still needed you. Try again tomorrow!", 36, Ui.InkSoft, new Vector2(900, 50), new Vector2(0, 160), false).rectTransform;
             row = Ui.Rect("Row", card, new Vector2(0.5f, 0.5f), new Vector2(800, 120), new Vector2(0, 55));
-            var tipPill = Ui.Image(card, Ui.Rounded, Res.Hex("EAF4FB"), new Vector2(880, 96), new Vector2(0, -78), null, "TipPill");
-            tipPill.pixelsPerUnitMultiplier = 52f / 30f;
-            tip = Ui.Label(tipPill.transform, "", 30, Ui.Ink, new Vector2(840, 90), Vector2.zero, false);
-            Ui.Button(card, "Map", Ui.Lilac, new Vector2(240, 96), new Vector2(-180, -225), () => OnMap?.Invoke(), null, null, 42);
+            var tp = Ui.Image(card, Ui.Rounded, Res.Hex("EAF4FB"), new Vector2(880, 96), new Vector2(0, -78), null, "TipPill");
+            tp.pixelsPerUnitMultiplier = 52f / 30f;
+            tipPill = tp.rectTransform;
+            tip = Ui.Label(tipPill, "", 30, Ui.Ink, new Vector2(840, 90), Vector2.zero, false);
+            mapBtn = (RectTransform)Ui.Button(card, "Map", Ui.Lilac, new Vector2(240, 96), new Vector2(-180, -225), () => OnMap?.Invoke(), null, null, 42).transform;
             var r = Ui.Button(card, "Try again", Ui.Coral, new Vector2(320, 104), new Vector2(160, -225), () => OnRetry?.Invoke(), null, null, 46);
+            retryBtn = (RectTransform)r.transform;
             firstSelected = r.gameObject;
+        }
+
+        /// <summary>Narrow: a taller card, with the line under the heading and the tip each wrapping
+        /// over more lines.</summary>
+        protected override void Layout(MenuForm form)
+        {
+            bool n = form == MenuForm.Narrow;
+            card.sizeDelta = n ? new Vector2(840, 800) : new Vector2(980, 640);
+            heading.sizeDelta = new Vector2(n ? 780 : 900, 90);
+            heading.anchoredPosition = new Vector2(0, n ? 315 : 235);
+            subLine.sizeDelta = n ? new Vector2(760, 100) : new Vector2(900, 50);
+            subLine.anchoredPosition = new Vector2(0, n ? 215 : 160);
+            row.sizeDelta = new Vector2(n ? 760 : 800, 120);
+            row.anchoredPosition = new Vector2(0, n ? 85 : 55);
+            tipPill.sizeDelta = n ? new Vector2(760, 150) : new Vector2(880, 96);
+            tipPill.anchoredPosition = new Vector2(0, n ? -75 : -78);
+            tip.rectTransform.sizeDelta = n ? new Vector2(710, 140) : new Vector2(840, 90);
+            mapBtn.anchoredPosition = new Vector2(-180, n ? -305 : -225);
+            retryBtn.anchoredPosition = new Vector2(160, n ? -305 : -225);
         }
 
         public void Show(Level level)
@@ -771,12 +897,13 @@ namespace PocketWeather
             foreach (Transform c in row) Destroy(c.gameObject);
             var unmet = new List<Need>();
             foreach (var n in level.Needs) if (n.Required && !n.Met) unmet.Add(n);
+            float step = Mathf.Min(124f, (Ui.MenuNarrow ? 760f : 900f) / Mathf.Max(1, unmet.Count));
             for (int i = 0; i < unmet.Count; i++)
             {
-                var it = Ui.Rect("U" + i, row, new Vector2(0.5f, 0.5f), new Vector2(110, 110), new Vector2((i - (unmet.Count - 1) / 2f) * 124, 0));
+                var it = Ui.Rect("U" + i, row, new Vector2(0.5f, 0.5f), new Vector2(110, 110), new Vector2((i - (unmet.Count - 1) / 2f) * step, 0));
                 Ui.Image(it, Ui.Circle, Res.Hex("F6DCD6"), new Vector2(104, 104), Vector2.zero, null, "Bg");
                 Ui.Icon(it, unmet[i].Icon, 72, new Vector2(0, 2));
-                Ui.PopIn(it, 0.3f + 0.08f * i, 0.4f);
+                Ui.PopIn(it, 0.3f + 0.08f * i, 0.4f, step / 124f);
             }
             tip.text = unmet.Count > 0 ? Tip(unmet[0]) : "";
             Open();
@@ -806,25 +933,25 @@ namespace PocketWeather
     public class EndingScreen : MenuScreen
     {
         public Action OnDone;
-        RectTransform card, stampIcon, doneBtn, credits;
+        RectTransform card, stampIcon, doneBtn, credits, banner, rainbowIcon, heartIcon, story, thanks;
         Text stampsText, creditsText;
-        float cardY = 270;
+        float cardY = 270, stampsY = -38;
 
         protected override void Build()
         {
             Dim(0.12f);
             card = Ui.Panel(root, new Vector2(1120, 380), new Vector2(0, 270), Ui.Paper, null, 48f).rectTransform;
-            var banner = Ui.Image(card, Ui.Rounded, Res.Hex("F2A7C3"), new Vector2(620, 124), new Vector2(0, 186), null, "Banner");
-            banner.pixelsPerUnitMultiplier = 52f / 40f;
-            var title = Ui.Label(banner.transform, "The End", 84, Color.white, new Vector2(600, 116), new Vector2(0, 2), true);
+            var bn = Ui.Image(card, Ui.Rounded, Res.Hex("F2A7C3"), new Vector2(620, 124), new Vector2(0, 186), null, "Banner");
+            bn.pixelsPerUnitMultiplier = 52f / 40f;
+            banner = bn.rectTransform;
+            var title = Ui.Label(banner, "The End", 84, Color.white, new Vector2(600, 116), new Vector2(0, 2), true);
             Ui.Outlined(title, Res.Hex("C9638A"), 4);
-            Ui.Icon(card, "rainbow", 120, new Vector2(-440, 186));
-            Ui.Icon(card, "heart", 96, new Vector2(440, 186));
-            Ui.Label(card, "Rosa and Tom were married under a rainbow,\nand Pocketvale had the loveliest summer it can remember.",
-                36, Ui.Ink, new Vector2(1060, 100), new Vector2(0, 62), false);
+            rainbowIcon = Ui.Icon(card, "rainbow", 120, new Vector2(-440, 186)).rectTransform;
+            heartIcon = Ui.Icon(card, "heart", 96, new Vector2(440, 186)).rectTransform;
+            story = Ui.Label(card, StoryText, 36, Ui.Ink, new Vector2(1060, 100), new Vector2(0, 62), false).rectTransform;
             stampsText = Ui.Label(card, "", 34, Ui.InkSoft, new Vector2(900, 56), new Vector2(30, -38), true);
             stampIcon = Ui.Icon(card, "stamp_flower", 64, new Vector2(-200, -38)).rectTransform;
-            Ui.Label(card, "Thank you for helping Pip!", 32, Ui.Ink, new Vector2(900, 50), new Vector2(0, -122), true);
+            thanks = Ui.Label(card, "Thank you for helping Pip!", 32, Ui.Ink, new Vector2(900, 50), new Vector2(0, -122), true).rectTransform;
 
             var b = Ui.Button(root, "Back to Pocketvale", Ui.Coral, new Vector2(480, 104), new Vector2(0, -300), () => OnDone?.Invoke(), "heart", null, 40);
             doneBtn = (RectTransform)b.transform;
@@ -836,16 +963,36 @@ namespace PocketWeather
             firstSelected = b.gameObject;
         }
 
+        const string StoryText = "Rosa and Tom were married under a rainbow,\nand Pocketvale had the loveliest summer it can remember.";
+
         /// <summary>Short: the card higher (its banner pokes above it) and the button and credits
-        /// closer under it.</summary>
-        protected override void Layout(bool shortScreen)
+        /// closer under it. Narrow: a taller, narrower card near the top, its lines wrapping, and the
+        /// button and credits near the bottom, under the couple.</summary>
+        protected override void Layout(MenuForm form)
         {
-            cardY = shortScreen ? 151 : 270;
+            bool shortScreen = form == MenuForm.Short, n = form == MenuForm.Narrow;
+            cardY = shortScreen ? 151 : n ? 560 : 270;
             if (IsOpen) card.anchoredPosition = new Vector2(0, cardY);
+            card.sizeDelta = n ? new Vector2(840, 560) : new Vector2(1120, 380);
+            banner.anchoredPosition = new Vector2(0, n ? 276 : 186);
+            banner.sizeDelta = new Vector2(n ? 540 : 620, 124);
+            rainbowIcon.anchoredPosition = new Vector2(n ? -350 : -440, n ? 276 : 186);
+            heartIcon.anchoredPosition = new Vector2(n ? 350 : 440, n ? 276 : 186);
+            // the story's two lines would each wrap anyway: let it flow as one paragraph
+            story.GetComponent<Text>().text = n ? StoryText.Replace("\n", " ") : StoryText;
+            story.sizeDelta = n ? new Vector2(760, 190) : new Vector2(1060, 100);
+            story.anchoredPosition = new Vector2(0, n ? 120 : 62);
+            stampsY = n ? -40 : -38;
+            stampsText.rectTransform.sizeDelta = new Vector2(n ? 700 : 900, 56);
+            stampsText.rectTransform.anchoredPosition = new Vector2(30, stampsY);
+            thanks.sizeDelta = new Vector2(n ? 760 : 900, 50);
+            thanks.anchoredPosition = new Vector2(0, n ? -150 : -122);
             // the button stays low, clear of the rainbow arcing over the couple
-            doneBtn.anchoredPosition = new Vector2(0, shortScreen ? -245 : -300);
-            credits.anchoredPosition = new Vector2(0, shortScreen ? -355 : -440);
-            creditsText.fontSize = shortScreen ? 28 : 26;
+            doneBtn.anchoredPosition = new Vector2(0, shortScreen ? -245 : n ? -620 : -300);
+            credits.sizeDelta = n ? new Vector2(820, 140) : new Vector2(1180, 96);
+            credits.anchoredPosition = new Vector2(0, shortScreen ? -355 : n ? -790 : -440);
+            creditsText.rectTransform.sizeDelta = n ? new Vector2(780, 134) : new Vector2(1140, 90);
+            creditsText.fontSize = form == MenuForm.Usual ? 26 : 28;
         }
 
         protected override void OnOpen()
@@ -853,7 +1000,7 @@ namespace PocketWeather
             int total = SaveData.TotalStamps(), max = LevelLibrary.Campaign.Length * 3;
             stampsText.text = total >= max ? $"Every stamp of the summer: {total} / {max}!" : $"Summer stamps collected: {total} / {max}";
             // keep the stamp icon just left of the (centred) text, whatever its length
-            stampIcon.anchoredPosition = new Vector2(30 - stampsText.preferredWidth / 2f - 46f, -38);
+            stampIcon.anchoredPosition = new Vector2(30 - Mathf.Min(stampsText.preferredWidth, stampsText.rectTransform.sizeDelta.x) / 2f - 46f, stampsY);
             card.anchoredPosition = new Vector2(0, 870);
             Tween.To(-600, 0, 0.7f, y => card.anchoredPosition = new Vector2(0, cardY - y), k => Ease.OutBack(k, 1.1f), 0.2f, null, card);
         }

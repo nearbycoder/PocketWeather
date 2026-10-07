@@ -81,8 +81,8 @@ namespace PocketWeather
         }
 
         /// <summary>Every text showing on the menus: on screen, not over a control it isn't part of,
-        /// and on a phone held sideways (short side 500 CSS px or less) at least 11.5 CSS px. A
-        /// desktop-sized landscape screen keeps the menus at their design scale.</summary>
+        /// and on a phone held either way (short side 500 CSS px or less) at least 11.5 CSS px. A
+        /// desktop-sized screen (short side 720 or more) keeps the menus at their design scale.</summary>
         string MenuTexts(List<(Selectable sel, Rect r)> controls, List<string> problems)
         {
             float px = Platform.PixelsPerCssPx;
@@ -113,8 +113,8 @@ namespace PocketWeather
                 }
             }
             float shortCss = Mathf.Min(Screen.width, Screen.height) / px;
-            if (!Ui.Portrait && shortCss <= 500f && smallest < 11.5f) problems.Add($"smallest text {smallest:0.0} CSS px (\"{smallestText}\"), want 11.5");
-            if (!Ui.Portrait && Screen.height / px >= 720f && Ui.MenuBoost != 1f) problems.Add($"menus scaled x{Ui.MenuBoost:0.00} on a desktop-sized screen");
+            if (shortCss <= 500f && smallest < 11.5f) problems.Add($"smallest text {smallest:0.0} CSS px (\"{smallestText}\"), want 11.5");
+            if (shortCss >= 720f && Ui.MenuBoost != 1f) problems.Add($"menus scaled x{Ui.MenuBoost:0.00} on a desktop-sized screen");
             return $", {n} texts, smallest {smallest:0.0} CSS px (\"{smallestText}\"), menus x{Ui.MenuBoost:0.00}";
         }
 
@@ -361,6 +361,7 @@ namespace PocketWeather
             SaveData.Award(LevelLibrary.Campaign[0], SaveData.StampSaved);   // opens Day 1's Encore
             f.DebugShowMap(); yield return Settle(); Audit("map with an Encore open");
             f.DebugStart(0, false, true); f.DebugShowPostcard(); yield return Settle(1.6f); Audit("encore postcard");
+            f.DebugStart(11, false); f.DebugShowPostcard(); yield return Settle(1.6f); Audit("postcard, day 12 (7 needs)");
             f.DebugStart(0, false); yield return Settle(1.6f);
             f.DebugBeginPlay(); yield return Settle(); Audit("hud"); CheckTopBar("hud top bar, day 1");
             f.DebugPause(); yield return Settle(); Audit("pause");
@@ -368,6 +369,9 @@ namespace PocketWeather
             f.DebugCloseSettings(); yield return Settle(0.6f);
             f.DebugResume(); yield return Settle(0.6f);
             f.DebugResults(); yield return Settle(1.6f); Audit("results");
+            f.DebugCloseMenus();
+            f.DebugStart(0, true, true); yield return Settle(1.2f);
+            f.DebugEncoreResults(); yield return Settle(1.6f); Audit("encore results");
             f.DebugCloseMenus();
             f.DebugStart(1, true); yield return Settle(1.2f);
             f.DebugSunset(); yield return Settle(3.2f); Audit("sunset");

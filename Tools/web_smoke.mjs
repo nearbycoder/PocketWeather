@@ -249,6 +249,9 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     const cw = (aspect < 1 ? 1200 : aspect > 16 / 9 ? 1080 * aspect : 1920) / boost;
     const ch = (aspect < 1 ? 1200 / aspect : aspect > 16 / 9 ? 1080 : 1920 / aspect) / boost;
     const ui = (dx, dy) => [r.x + r.width * (0.5 + dx / cw), r.y + r.height * (0.5 - dy / ch)];
+    // held upright and scaled up, the menus use their narrow layouts (a taller postcard, Start at
+    // the bottom in the middle while a new player has no Encore)
+    const narrow = aspect < 1 && boost > 1;
     await tap(...at(0.5, 0.5));                    // title: tap anywhere (a fresh profile goes straight to Day 1's postcard)
     await sleep(3500);
     await shot("w02_after_title");
@@ -257,7 +260,7 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     await tap(...ui(-739, 151));                   // map's Day 1 card, for builds that show the map first (harmless on the postcard)
     await sleep(3000);
     await shot("w03_postcard");
-    await tap(...ui(300, -220));                   // postcard: Start
+    await tap(...(narrow ? ui(0, -395) : ui(300, -220)));   // postcard: Start
     await sleep(3500);
     await shot("w04_play");
     // drag from Pip toward the middle, then hold still to rain
@@ -275,7 +278,7 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
     // its next tap; leaving fullscreen with the page showing sticks. The taps land beside the pause
     // menu (play paused itself while hidden), on its dimmed backdrop.
     const fsNow = async () => await evaluate("document.fullscreenElement ? document.fullscreenElement.id || document.fullscreenElement.tagName : ''");
-    const backdrop = ui(-cw / 2 + 120, 0);
+    const backdrop = ui(-cw / 2 + (narrow ? 50 : 120), 0);
     const lost = await fsNow();
     await tap(...backdrop);
     await sleep(1200);
@@ -298,12 +301,12 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   const hudCss = hs ? parseFloat(hs[1]) * parseFloat(hs[2]) : 0;
   const hudOk = !booted || !PHONE || hudCss >= 0.47;
   console.log(`HUD scale: ${hs ? `${hudCss.toFixed(3)} CSS px per design unit (canvas ${hs[3]}, ${hs[4]} px per CSS px, top bar x${hs[2]})` : "not logged (a desktop-sized screen isn't scaled)"}${hudOk ? "" : " (too small for a phone)"}`);
-  // a phone held sideways draws its menus at least 0.43 CSS px per design unit (28-unit text is
-  // then 12 px); a desktop window keeps them at their design scale, and portrait isn't scaled yet
+  // a phone, held either way, draws its menus at least 0.43 CSS px per design unit (28-unit text
+  // is then 12 px); a desktop window keeps them at their design scale
   const ms = (log.filter((l) => /\[PW\] menu scale: /.test(l)).pop() || "").match(/menu scale: ([\d.]+) CSS px per design unit, x([\d.]+) at (\S+)/);
   const menuCss = ms ? parseFloat(ms[1]) : 0;
-  const menuOk = !booted || (PHONE && !PORTRAIT ? menuCss >= 0.43 : !ms);
-  console.log(`menu scale: ${ms ? `${menuCss.toFixed(3)} CSS px per design unit (x${ms[2]} at ${ms[3]})` : "not logged (design scale)"}${menuOk ? "" : PHONE && !PORTRAIT ? " (too small for a phone)" : " (should stay at its design scale here)"}`);
+  const menuOk = !booted || (PHONE ? menuCss >= 0.43 : !ms);
+  console.log(`menu scale: ${ms ? `${menuCss.toFixed(3)} CSS px per design unit (x${ms[2]} at ${ms[3]})` : "not logged (design scale)"}${menuOk ? "" : PHONE ? " (too small for a phone)" : " (should stay at its design scale here)"}`);
   // (Firefox without BiDi's touch override reports no touch points, so the page can't tell it's a phone)
   const fsChecked = !(PHONE && !coarse);
   const fsOk = !booted || !fsChecked || (PHONE ? fullscreen === "pw-page" : fullscreen === "");
