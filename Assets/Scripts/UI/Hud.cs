@@ -484,10 +484,10 @@ namespace PocketWeather
             chrome.sizeDelta = safe.rect.size * (1f / k - 1f);
             bool c = k > 1f;
             if (laidOutPortrait != Ui.Portrait || c != compact) Layout(Ui.Portrait, c);
-            // a phone held sideways: the sun track moves left (no closer than the gauge) as far as the
-            // tray needs to fit at full size
+            // landscape: the sun track moves left (no closer than the gauge) as far as the tray needs
+            // to fit at full size; days with few needs keep it centred
             float x = 0f;
-            if (!Ui.Portrait && compact)
+            if (!Ui.Portrait)
             {
                 float half = chrome.rect.width * 0.5f, sunHalf = sunTrack.sizeDelta.x * 0.5f;
                 x = Mathf.Clamp(half - 174f - tray.sizeDelta.x - sunHalf, -half + 474f + sunHalf, 0f);

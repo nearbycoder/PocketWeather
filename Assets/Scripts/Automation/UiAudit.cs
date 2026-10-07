@@ -120,8 +120,13 @@ namespace PocketWeather
                 if (clockPx < 15f) problems.Add($"clock text {clockPx:0.0} px, want 15");
                 if (trayPx < oldTrayPx - 0.05f) problems.Add($"tray items {trayPx:0.0} px, smaller than the old layout's {oldTrayPx:0.0}");
             }
-            else if (!Ui.Portrait && Screen.height / px >= 720f && k != 1f) problems.Add($"top bar scaled x{k:0.00} on a desktop-sized screen");
-            return $"top bar x{k:0.00}, pause {pausePx:0.0} px, clock {clockPx:0.0} px, {hud.TrayCount} tray items {trayPx:0.0} px (old layout {oldTrayPx:0.0})";
+            else if (!Ui.Portrait && Screen.height / px >= 720f)
+            {
+                if (k != 1f) problems.Add($"top bar scaled x{k:0.00} on a desktop-sized screen");
+                // the sun track makes room, so even Day 12's seven needs keep their full size
+                if (hud.TrayScale < 0.999f) problems.Add($"tray shrunk to x{hud.TrayScale:0.00} on a desktop-sized screen");
+            }
+            return $"top bar x{k:0.00}, pause {pausePx:0.0} px, clock {clockPx:0.0} px, {hud.TrayCount} tray items {trayPx:0.0} px at x{hud.TrayScale:0.00} (old layout {oldTrayPx:0.0})";
         }
 
         /// <summary>The hint caption (a long one) stays clear of the touch buttons and on screen.</summary>
