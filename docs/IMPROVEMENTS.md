@@ -1911,8 +1911,11 @@ start, 19 at the end), passed every row but one:
   round's 3 in 5 (load 15 to 20). The check measured 0.05 s after the finger stopped, and Pip
   glides after a finger, so uneven frames left it a few hundredths short. It now gives Pip up to
   0.25 s (rain needs 0.38 s of a still finger, so it still checks before rain), and passed 6 runs
-  out of 6 (load 15 to 18), plus once each at 844x390 and 390x844. The self-test wasn't rerun in
-  full after that fix, since it changed only the test.
+  out of 6 (load 15 to 18), plus once each at 844x390 and 390x844.
+
+A second full self-test on the final code (load 11 at the start, 16 at the end) passed touch 23/23
+and every other row, except the UI audit at 740x360: 23 of 24, a caption "with no visible glyphs"
+(see below). After that fix, the UI audit passed all 24 checks at all eight sizes (load 14 to 15).
 
 `web_smoke` passed in all six modes (Chrome desktop, `--mouse`, `--phone` and `--portrait`;
 `--firefox` and `--firefox --phone`) on a web build of the round's code, with 0 console errors, at
@@ -2016,9 +2019,12 @@ pretend ones that go through the same path in Unity's loader.
 
 ### Found along the way, not fixed
 
-- The UI audit once failed at 1200x900 because the "Flick to blow" hint had no glyphs yet (load
-  25). It passed on two reruns and in the full self-test. It looks like the text wasn't laid out
-  yet when it was measured; not chased further.
+- **Fixed in the test:** the UI audit's caption check twice reported a hint "with no visible glyphs"
+  ("Flick to blow" at 1200x900, load 25; "Drag to fly" at 740x360 in the second self-test). It
+  measures right after `Canvas.ForceUpdateCanvases()`, and when the dynamic font's atlas is
+  rebuilt that frame (shrunk captions ask for new sizes) the text's layout can come back empty.
+  The check now lays the text out once more before failing; a caption with really no glyphs still
+  fails. It then passed at all eight sizes once, which can't show a one-in-ten flake is gone.
 - Running the Unity player in the private KWin makes frame pacing less even than on the desktop,
   which is what exposed the touch check above. Timing measurements (`-pwPerf`) should still use
   `PW_NESTED=0`, or be read with that in mind.

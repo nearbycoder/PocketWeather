@@ -246,7 +246,11 @@ namespace PocketWeather
                 if (r.xMin < m - 0.5f || r.yMin < -1 || r.xMax > Screen.width - m + 0.5f || r.yMax > Screen.height + 1) problems.Add($"{kind} \"{text}\" off screen or touching its edges {r}");
                 if (kind == "hint" && r.Overlaps(t)) problems.Add($"hint \"{text}\" {r} overlaps the touch buttons {t}");
                 Canvas.ForceUpdateCanvases();
-                if (!GlyphRect(label, out var g)) problems.Add($"{kind} \"{text}\" has no visible glyphs");
+                // a font atlas rebuilt this frame (shrunk captions ask for new sizes) can leave the
+                // text's layout empty until it's rebuilt: lay it out once more before giving up
+                bool laidOut = GlyphRect(label, out var g);
+                if (!laidOut) { label.SetAllDirty(); Canvas.ForceUpdateCanvases(); laidOut = GlyphRect(label, out g); }
+                if (!laidOut) problems.Add($"{kind} \"{text}\" has no visible glyphs");
                 else if (g.xMin < r.xMin - 1 || g.xMax > r.xMax + 1 || g.yMin < r.yMin - 1 || g.yMax > r.yMax + 1) problems.Add($"{kind} \"{text}\" runs out of its pill: text {g}, pill {r}");
                 if (label.cachedTextGenerator.lineCount > 1) wrapped++;
                 float k = label.fontSize / (float)usual;
