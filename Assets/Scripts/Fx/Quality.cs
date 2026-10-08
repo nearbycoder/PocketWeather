@@ -123,8 +123,9 @@ namespace PocketWeather
                     _ => baseRenderScale,
                 };
                 // Low's 75% picture is upscaled with AMD's FSR 1 (edge-aware, sharpened), not bilinear,
-                // where the build has its shader: the web build strips it, and URP then skips every
-                // post-processing pass rather than fall back
+                // where the build has its shader (URP warns that it skips post-processing without it).
+                // The web build logs that warning at boot whatever the setting, as it did in round 11,
+                // yet draws its post-processing at every step
                 urp.upscalingFilter = tier == Tier.Low && FsrAvailable ? UpscalingFilterSelection.FSR : UpscalingFilterSelection.Auto;
                 urp.msaaSampleCount = tier switch { Tier.Low => 1, Tier.Medium => Mathf.Min(2, baseMsaa), Tier.Ultra => Mathf.Max(4, baseMsaa), _ => baseMsaa };
                 urp.shadowDistance = tier == Tier.Low ? 28f : baseShadowDistance;
