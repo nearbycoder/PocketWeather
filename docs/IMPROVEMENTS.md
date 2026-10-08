@@ -2034,3 +2034,95 @@ pretend ones that go through the same path in Unity's loader.
 Hosting the web build, a new release zip (v0.1.0 predates all nine rounds, and the new launcher
 is only in builds from the current source), the trailer, licences, signing and Windows Build
 Support.
+
+## Round 10 scope
+
+Planned 2026-10-07 on `improvements-10`, from `main` at `83a6c7a` (round 9 merged, `main` equal to
+`origin/main`). Nine rounds made the game fit for every screen, input and browser, and made it
+survive crashes and dropped controllers. This round goes back to the day itself, and to the player
+the bots can't stand in for: someone who keeps running out of daylight. Before planning I read the
+day clock, the sunset card and the results code on a fresh Linux build of HEAD:
+
+- **A day that's too hard has no way round it.** Days open one after another, so a player who
+  can't save one before sundown can't see the rest of the summer. Days last 120 to 200 s; the
+  newcomer bot, the slowest player we have, saves Day 9 only 1.2 game-hours inside par, and no
+  person has ever played it. The sunset card offers "Try again" and a tip, nothing more. The
+  Encores already scale a day's length (`MakeEncore`), so the clock can be stretched the same way.
+- **Sundown creeps up unannounced.** In the last 15% of a day the sun track pulses coral, but it's
+  at the top of the screen, and a player's eyes are on Pip. Nothing says how many friends are left.
+- **Every retry goes through the postcard again.** "Try again" on the sunset card and Restart in
+  the pause menu both load the day behind its postcard, so each retry costs another press on a
+  card the player has just seen.
+- **Round 9 left one thing unproven:** the UI audit's caption fix passed once at each size, which
+  can't show a one-in-ten flake is gone, and no complete self-test ran on round 9's final commit.
+
+### R10-1. Relaxed days
+
+**What:**
+- **Settings → Relaxed days** (Off by default): on an ordinary day the sun takes half as long
+  again to cross the sky (Day 1's 120 s becomes 180 s, the wedding's 200 s becomes 300 s).
+  Encores, which are the challenge, keep their scorcher pace.
+- From the second sunset on the same day, the sunset card offers it: a **Slower sun** button beside
+  "Try again" turns Relaxed days on and goes straight back into the day.
+- The day saved and the delight count as usual. "Before par" and best times are about pace, so
+  they're kept for the usual sun: a relaxed day's postcard says so where the par stamp is
+  described, and its results card labels the par stamp "Usual pace only".
+
+**Acceptance:**
+- The keyboard self-test turns the setting on and fails unless a day's clock runs at 2/3 of its
+  usual rate (measured over at least 2 s), and an Encore's at its usual scorcher rate. It saves a
+  relaxed day and fails unless the day-saved stamp is awarded, the par stamp and best time aren't,
+  and the results card says "Usual pace only". It lets the same day reach sunset twice and fails
+  unless the second sunset card, and not the first, shows "Slower sun"; pressing it must turn the
+  setting on and start the day relaxed.
+- The UI audit checks the settings menu with the new row, the sunset card with three buttons, and
+  the relaxed postcard and results card, at all eight sizes.
+- The keyboard, gamepad and touch self-tests and the AutoPilot campaign still pass (they play with
+  the setting off).
+
+**Verify:** the self-tests above, plus screenshots of the settings, the sunset card's offer, the
+relaxed postcard and the results card.
+
+### R10-2. "Not long left"
+
+**What:** when 85% of a day has gone (as the sun track starts to pulse) and friends still need
+Pip, a toast says so once, with the count: "Not long left! 2 still need you". It waits for any
+toast already showing (a fire, the finale), and doesn't show if everyone's happy.
+
+**Acceptance:** the keyboard self-test moves a day's clock to just before 85% and fails unless
+the toast appears within 1 s of crossing it, with the right count, and only once; on a day whose
+needs are all met it must not appear. The UI audit adds the longest wording to its toast checks.
+
+**Verify:** the keyboard test, the UI audit, and a screenshot.
+
+### R10-3. Try again goes straight back to the day
+
+**What:** "Try again" on the sunset card and Restart in the pause menu (after its "Sure?") reload
+the day and start it at once, without its postcard. Replay on the results card, and picking a day
+on the map, still show the postcard, since that's where the Encore is chosen.
+
+**Acceptance:** the keyboard self-test's Restart check fails unless the day is running again at
+its start hour with no postcard; its sunset check fails unless "Try again" does the same. The touch
+test's Restart check still passes.
+
+**Verify:** the keyboard and touch self-tests.
+
+### R10-4. Proof runs
+
+**What:** no code. Run the UI audit 10 times at each of the two sizes where round 9's caption flake
+was seen (1200x900 and 740x360), run the full self-test on the round's final commit, and run
+`web_smoke` in all six modes on a web build of the round's code.
+
+**Acceptance:** each run's verdict is read from its own log and reported with the log's name and
+the machine's load.
+
+### Not in this round
+
+- Splitting each island's terrain into its own web download (about 1.5 MB of the 17 MB) still
+  needs the levels moved out of `Resources` and an asynchronous level load behind every screen.
+  Still a lead.
+- Real phones, Safari, controllers, audio by ear and the Encores' difficulty still need people or
+  the owner. Hosting, releases and tags, the trailer, licences and Windows Build Support are the
+  owner's.
+- Whether a relaxed day should still be able to earn "Before par" is a design call; this round
+  keeps the stamp for the usual pace and notes it for the owner.
