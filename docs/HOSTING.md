@@ -55,6 +55,11 @@ Upload the whole folder, `StreamingAssets/` included; without it the game runs s
   `python3 Tools/make_web_template.py`, which derives them from the logo, Pip's icon and the
   trailer poster.
 - The browser support message appears when WebGL 2 isn't available.
+- If the game crashes, or the browser takes its graphics back (phones do that to save memory),
+  the page shows its own card with a Reload button instead of Unity's developer `alert()` or a
+  frozen screen. Errors from other scripts on the page (an analytics snippet, a browser
+  extension) are logged to the console and otherwise left alone, so a host's own scripts can't
+  stop the game with a pop-up.
 
 ## Known limits
 

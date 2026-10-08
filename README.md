@@ -64,7 +64,7 @@ the controls for whatever you're playing with. Every menu works with mouse, touc
 gamepad (d-pad or stick to move, A to choose, B to go back). **Settings → Tap to rain** turns rain
 into a toggle for anyone who finds holding a button tiring, and **Settings → Touch buttons** can be
 Auto (shown once you touch the screen), On or Off. The game pauses itself when the window loses
-focus or a phone sends it to the background. It's laid out for landscape, but a phone held upright
+focus, a phone sends it to the background or the controller you're flying with disconnects. It's laid out for landscape, but a phone held upright
 gets a bigger, rearranged interface and a closer view that follows Pip from side to side (and, in
 the browser, a nudge to turn sideways). On a phone the HUD is drawn larger than its design scale so
 the pause button and clock stay finger- and eye-sized, and the menus are drawn larger too: held
@@ -152,7 +152,8 @@ the day plays out as a timelapse into a starry night. Each day has three stamps:
 **Before par** (finish before the par hour on the sun track) and **Delight**, a secret reaction
 hinted at by a riddle in the pause menu.
 
-Once a day is saved, its postcard offers an **Encore**: the same diorama on a scorcher. The sun
+Once a day is saved, its postcard offers an **Encore** (the results card says so the first time):
+the same diorama on a scorcher. The sun
 races across the sky, the beds dry out as you watch, and Pip sets off half-empty. Saving it
 earns that day's fourth stamp, and its postcard keeps your best scorcher time to beat.
 
@@ -212,7 +213,7 @@ Download the latest build from [**Releases**](https://github.com/nearbycoder/Poc
 - **Linux (x86_64):** unzip `PocketWeather-0.1.0-linux-x86_64.zip` and run `PocketWeather.x86_64`.
   On Wayland, add `-force-wayland` if the window doesn't appear (some compositors hang on the
   XWayland path). Builds from the current source include `PocketWeather.sh`, which does that for
-  you: start the game with it.
+  you, and starts the game again if it crashes while starting: start the game with it.
 - **Web:** unzip `PocketWeather-0.1.0-web.zip` and serve the folder over HTTP (browsers won't run
   it from `file://`), for example `python3 -m http.server 8080` inside it, then open
   `http://localhost:8080`. It's made for desktop and phone browsers alike, with touch controls
@@ -220,7 +221,8 @@ Download the latest build from [**Releases**](https://github.com/nearbycoder/Poc
 
 The current source builds a web version that's ready for a static host: the game fills the
 window, loads behind its own loading card (about 17 MB; the music and ambience follow in the
-background once the game is running) and needs no server configuration (see [docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet, and the v0.1.0 downloads above
+background once the game is running), offers a reload instead of a frozen screen if the game
+crashes or the browser takes its graphics back, and needs no server configuration (see [docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet, and the v0.1.0 downloads above
 predate it and the other changes listed in [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md).
 
 ## Build from source
@@ -290,19 +292,22 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
 - **Audio loop seams** (`Tools/.venv/bin/python Tools/audio/check_loops.py`): no click or level
   jump where any looping clip wraps.
 - **Keyboard, gamepad and touch self-tests** (`-pwKeyTest`, `-pwPadTest`, `-pwTouchTest`): virtual
-  devices drive the real Input System from the title screen through menus and play (45, 26 and
+  devices drive the real Input System from the title screen through menus and play (47, 32 and
   23 checks), including a new player's first tap going straight to Day 1, the pause menu's
   controls line, Restart asking "Sure?" well into a day, hints hiding behind pause, the Touch
   buttons Off setting, best times, the hint on each day that brings in a new idea, and opening an
   Encore from its postcard, saving it, and
-  finding its own best time there (and the ordinary day's left alone). The keyboard test also
+  finding its own best time there (and the ordinary day's left alone), a day's first save saying
+  its Encore is open (and a second save not repeating it), and a controller that drops out
+  mid-flight pausing the day (but not when the keys are flying). The keyboard test also
   throws the wedding bouquet four times: the smallest Pip waiting on the ring must catch three
   throws at different angles, and must miss one when parked 2.5 units off it.
 - **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen (the Encore
   postcard and results, and Day 12's postcard, included) must receive a tap at its centre and sit
   fully on screen, at 16:9, 20:9, 4:3, two phones held sideways (844x390 and 740x360) and three
   portrait sizes (720x1280, and 390x844 and 360x800 phones). No two controls may overlap, and no
-  menu text may run off screen or into a control it isn't part of. The HUD's gauge, sun track, needs tray and pause button must not overlap, the UI
+  menu text may run off screen, into a control it isn't part of, or out of the card, pill or
+  button it's drawn on. The HUD's gauge, sun track, needs tray and pause button must not overlap, the UI
   must be drawn at its design scale, a desktop's tray must keep its full size (Day 12 included),
   and on a phone-sized screen the pause button must be at least 44 px, the clock's text 15 px and
   the tray's items no smaller than the old layout drew them. On a phone held either way, the
@@ -313,6 +318,10 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   camera too: landscape framing unchanged, portrait at least 1.5x closer on a phone, and Pip and
   every thought bubble on screen with Pip at either end of the island. It also loads all twelve
   days and fails if any need is missing its "what helps" badge.
+- **Linux launcher** (`Tools/linux/test_launcher.sh`): stand-in games check that `PocketWeather.sh`
+  starts the game again after a crash while starting (once, with the same arguments), not after
+  a clean exit, an error exit or a crash later on, and that stopping it stops the game. The
+  self-test then boots the real build through the launcher.
 - **AutoPilot** (`Tools/play.sh -pwAutopilot $PWD/Recordings/auto`): a bot plays every level through the same
   input API as the player and reports PASS/FAIL, finishing hour against par, oopses and water
   used. `-pwDelights` also chases each secret (with a second try for most of them),
@@ -332,7 +341,9 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   first tap and again at the first tap after coming back, but not after leaving fullscreen itself
   (a desktop never goes fullscreen). A phone's HUD must be at least 0.47 CSS px per design unit,
   and its menus, held either way, at least 0.43. The ambience, fetched after boot, must arrive and
-  play.
+  play. Last, it checks the page's reload card: an error from another script shows nothing,
+  losing the WebGL context shows the card within 1 s and its Reload boots the game again with its
+  progress, an error from the game's own files shows the card, and no browser dialog ever opens.
   It isn't part of `selftest.sh`, which tests the Linux build.
 
 ### Rebuilding the trailer and README media
@@ -377,7 +388,8 @@ Assets/
 ArtSource/       Blender generators: pw_lib (the kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
 Tools/           unity.sh, play.sh, nested.sh, selftest.sh, serve_web.sh, package_web.sh, web_smoke.mjs,
-                 linux/PocketWeather.sh (the launcher copied next to every Linux build),
+                 linux/PocketWeather.sh (the launcher copied next to every Linux build) and its
+                 test_launcher.sh,
                  make_levels.py, validate_levels.py, make_video.py, make_trailer.py,
                  make_web_template.py, audio/ (synth, sfx, music)
 docs/            PLAN.md (design and technical plan), BRIEF.md (the original brief),
@@ -456,7 +468,7 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, eight improvement rounds (see
+every input method. Since then, nine improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
@@ -494,6 +506,12 @@ every input method. Since then, eight improvement rounds (see
 - Restart and Map in the pause menu ask "Sure?" once a day is 5 s old
 - a smaller web download (17.0 MB before the title, from 21.0 MB): the ambience follows after
   boot like the music, and the models are mesh-compressed
+- a day that pauses when the controller flying Pip disconnects, and says why
+- a results card that says a day's Encore is open, the first time the day is saved
+- a Linux launcher that starts the game again if it crashes while starting
+- a web page that offers a reload when the game crashes or the browser takes its graphics back
+  (before: a developer's `alert()` for any error on the page, or a frozen screen)
+- test and capture windows in a private KWin on a virtual screen, never on the desktop
 
 None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
@@ -511,7 +529,7 @@ None of it is in a release yet. What has been verified (on the Linux build unles
   game-hours inside par) and Day 5 (1.5).
 - Both bots save all twelve Encores before sundown. The newcomer's tightest were Becalmed (66 of
   105 s) and the Heatwave (78 of 135 s).
-- Keyboard (45 checks), gamepad (26), touch (23) and UI-reachability self-tests pass through the
+- Keyboard (47 checks), gamepad (32), touch (23) and UI-reachability self-tests pass through the
   real Input System; the touch test also passes in 844x390 and 390x844 windows. The UI audit runs
   at eight window shapes: two landscape phones and three portrait. On the phone sizes it checks a
   44 px pause button, a 15 px or larger clock and tray items no smaller than before (the HUD is
@@ -582,7 +600,10 @@ Rough edges, honestly:
   starts it with Unity's Wayland backend instead, as `Tools/play.sh` does. The v0.1.0 zip predates
   it. X11 sessions and other compositors haven't been tried.
 - **The Linux player can crash at startup under Wayland.** Once in about 45 automated launches,
-  it crashed inside Unity's Wayland window backend. Relaunching works.
+  it crashed inside Unity's Wayland window backend. Relaunching works, and `PocketWeather.sh`
+  (in builds from the current source) now does that by itself: a game that dies of a signal in
+  its first 20 s is started once more. Checked by crashing the real build on purpose 2 s in; the
+  crash itself hasn't been seen again to watch the launcher catch it.
 - **Platforms:** Linux and web are tested. `Tools/unity.sh mac` builds a universal macOS app,
   but it has **never been run on a Mac**. It isn't signed with a Developer ID or notarised, so
   Gatekeeper warns on first launch. There's no Windows build: the entry point exists, but this
@@ -593,6 +614,10 @@ Rough edges, honestly:
   prefs before reading the game's name). Launched normally it uses the right folder, and
   `Tools/play.sh` no longer passes that flag. Progress saved in the old place by earlier
   `Tools/play.sh` runs is brought over once on first launch; settings aren't.
+- **The web page's reload card was checked by pretending.** The test loses the WebGL context
+  on purpose and fires a pretend WebAssembly trap; a real phone dropping the game's graphics, and
+  a real crash, haven't been seen. A browser that loses the context during loading shows the
+  card too, untested.
 - **The web build has only run in headless Chrome and headless Firefox** (desktop Firefox 157;
   its phone mode can't fake a phone's coarse pointer, so the touch wording before the first
   touch is checked in Chrome only). Safari (iPhone, iPad, Mac) hasn't been tried: Playwright's

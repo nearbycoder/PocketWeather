@@ -1888,3 +1888,143 @@ Not verifiable here: a real phone losing its context, and Safari.
 - Real phones, Safari, controllers, audio by ear and the Encores' difficulty still need people or
   the owner. Hosting, releases and tags, the trailer, licences and Windows Build Support are the
   owner's.
+
+## Round 9 results
+
+Implemented on `improvements-9`, one commit per item, plus a touch self-test fix that the new test
+compositor turned up. Screenshots are in
+[`docs/media/improvements/round9/`](media/improvements/round9/). Every game window this round
+opened in a private KWin on a virtual screen (R9-1), and every tool run used a throwaway config
+folder in `Recordings/`. The machine's load average was 12 to 64 during the round; input-driven
+runs are noted with their load.
+
+The full self-test, run inside its private KWin on a Linux build of the round's code (load 21 at the
+start, 19 at the end), passed every row but one:
+- validator and loop seams
+- the Linux launcher with stand-in games (9 cases), and the real build booting through it
+- keyboard 47 and gamepad 32 checks (were 45 and 26)
+- the UI audit at eight sizes, 24 checks each (was 22)
+- the AutoPilot campaign 12/12 with **12/12 delights**, no exceptions
+- prefs in the game's own folder, and all 13 windows on the private KWin's display with no X11
+- **touch: 22 of 23.** "Drag moves Pip to the finger" missed by 0.05 units. It's a pre-existing
+  flake, not this round's code: in the private KWin round 8's code failed it 4 runs in 5 and this
+  round's 3 in 5 (load 15 to 20). The check measured 0.05 s after the finger stopped, and Pip
+  glides after a finger, so uneven frames left it a few hundredths short. It now gives Pip up to
+  0.25 s (rain needs 0.38 s of a still finger, so it still checks before rain), and passed 6 runs
+  out of 6 (load 15 to 18), plus once each at 844x390 and 390x844. The self-test wasn't rerun in
+  full after that fix, since it changed only the test.
+
+`web_smoke` passed in all six modes (Chrome desktop, `--mouse`, `--phone` and `--portrait`;
+`--firefox` and `--firefox --phone`) on a web build of the round's code, with 0 console errors, at
+load 24 to 64. The download before the title is still 17.0 MB (17,607,262 bytes in `Build/`).
+
+### R9-1. Test windows in a private compositor: done
+
+- `Tools/nested.sh <command>` starts `kwin_wayland --virtual` with its own Wayland socket under
+  `dbus-run-session` (a probe without it showed the nested KWin joining the desktop's session bus),
+  runs the command with that display and no `DISPLAY`, then stops the KWin by its own PID and
+  removes its socket.
+- `Tools/play.sh` runs every tool run (any `-pw` automation flag) inside one when `kwin_wayland`
+  is installed, and `Tools/selftest.sh` runs all its windows inside one. `PW_NESTED=0` opts out. A
+  plain `Tools/play.sh` still opens a normal window.
+- The game logs which display it opened on, and the self-test fails unless every window went to
+  the private one: all 13 did. Afterwards the KWin was gone and its socket and work folder removed.
+- The virtual screen draws on the real GPU (the log names the Radeon 8060S).
+- It also lets the UI audit run at sizes larger than the desktop: 2400x1000 (an ultrawide) and
+  1280x800 (the Steam Deck's screen) passed all 22 checks during planning.
+
+### R9-2. A controller that drops out pauses the day: done
+
+- If the gamepad flying Pip is removed or disconnects during a day, the day pauses and the pause
+  menu's controls line reads "Controller disconnected: reconnect it, or carry on with the mouse,
+  keys or touch". A pad coming back puts the pad's controls back on the line. An idle pad dropping
+  out while the keys or mouse are flying is ignored.
+- **Gamepad test** (32 checks, was 26, load 25): removing the virtual pad mid-flight paused the day
+  with the message, and the clock stayed put for 0.6 s; a new pad brought the pad's controls back,
+  and B on it resumed. With the keys flying, removing the pad left the day running.
+- The UI audit checks the menu with that line at all eight sizes (smallest text 11.8 CSS px at
+  360x800).
+
+![controller disconnected](media/improvements/round9/2-controller-disconnected-pause.jpg)
+
+Not verified: a real wireless pad going to sleep. The Input System reports that as a removed or
+disconnected device, which is what the test sends.
+
+### R9-3. Encores you can find: done
+
+- The first time a day is saved, its results card says "Encore unlocked! Play this day as a
+  scorcher from its postcard." with the Encore stamp, in a pill between the stamps and the buttons.
+  Later saves don't repeat it.
+- **Keyboard test** (47 checks, was 45): saving Day 3 for the first time through the real
+  celebration showed the note, and saving it again didn't.
+- **UI audit:** the first-save card passes at all eight sizes. The first layout's note wrapped onto
+  a second line at 1600x900 and spilled out of its pill, which the audit didn't catch, because it
+  checked text against controls only. It now also fails if menu text spills out of the card, pill
+  or button it's drawn on (a settings row's label beside its switch is allowed). The note is now
+  one line on desktops and two inside a taller pill held upright.
+
+![Encore note](media/improvements/round9/3-results-encore-note.jpg)
+
+Not judged: whether players read it, and whether they then go looking for Encores.
+
+### R9-4. A Linux launcher that tries again after a startup crash: done
+
+- `PocketWeather.sh` runs the game as a child. If the game dies of a signal within 20 s of
+  starting, it's started once more with the same arguments and the launcher says why. Any other
+  exit, or a crash later in play, ends the launcher with the game's status. SIGTERM, SIGINT and
+  SIGHUP to the launcher stop the game.
+- `Tools/linux/test_launcher.sh` (run by the self-test) passed all 9 cases with stand-in games: a
+  crash at start retried once with arguments intact (one containing a space); two crashes stop
+  with 139; a clean exit, status 1 and a crash after the window aren't retried; SIGTERM stops the
+  game with 143; no `-force-wayland` without Wayland. The stand-ins turn off core dumps; the first
+  run, before that, left four small bash cores in systemd's store.
+- **The real thing:** in the private KWin, the real build was started through the launcher and
+  killed with SIGSEGV 2 s in. The launcher logged "the game stopped with status 139 while
+  starting; starting it again", and the second start booted, ran its capture and quit with 0.
+- Not seen: the Wayland backend's own crash being caught, since it happens about once in 45
+  launches. Only bash (`/bin/sh` here) ran the launcher; dash (Debian and Ubuntu's `/bin/sh`)
+  isn't installed, so `PW_SH=dash Tools/linux/test_launcher.sh` is there for a machine that has it.
+- Probing the player's exit status during planning (a SIGSEGV sent to a running build) left one
+  25 MB core of the game in systemd's coredump store, which systemd cleans up by itself.
+
+### R9-5. The web page catches crashes and a lost picture: done
+
+- The page gives Unity an `errorHandler`. Before, Unity's loader showed a developer's `alert()`
+  ("An error occurred running the Unity content on this page…") for any error or unhandled
+  rejection on the page, whoever raised it. Now:
+  - an error from the game's own `Build/` files, or a WebAssembly trap, abort or out-of-memory,
+    shows a card in the game's style, "Pip got lost in the clouds", saying stamps are saved, with
+    **Reload** and a smaller **Try to carry on**;
+  - anything else is logged and left alone.
+- Losing the WebGL context (Unity's framework has no handling for it, so the game would just stop
+  drawing) shows "Pip lost sight of Pocketvale" with Reload only.
+- The game logs its save at boot ("save: 1 days played, 0 stamps, 0 Encore stamps"), so a reload
+  can be checked.
+- **web_smoke**, in all six modes: an error event from another script showed nothing; losing the
+  context with `WEBGL_lose_context` showed the card in 21 to 227 ms; its Reload booted the game
+  again with the day it had played; a pretend trap from the framework file showed the card, and
+  "Try to carry on" closed it. No browser dialog opened. Run against round 8's page, the same
+  checks found Unity's alert and no card.
+- After the build, two lines of CSS changed (a shadow under Pip's icon and a sky-blue focus ring).
+  They were copied into the built page byte for byte rather than rebuilding, and the six runs used
+  that page.
+
+![web reload cards](media/improvements/round9/5-web-reload-cards.jpg)
+
+Not verified: a real phone dropping the game's graphics, a real crash, and Safari. The errors were
+pretend ones that go through the same path in Unity's loader.
+
+### Found along the way, not fixed
+
+- The UI audit once failed at 1200x900 because the "Flick to blow" hint had no glyphs yet (load
+  25). It passed on two reruns and in the full self-test. It looks like the text wasn't laid out
+  yet when it was measured; not chased further.
+- Running the Unity player in the private KWin makes frame pacing less even than on the desktop,
+  which is what exposed the touch check above. Timing measurements (`-pwPerf`) should still use
+  `PW_NESTED=0`, or be read with that in mind.
+
+### Decisions for the owner (unchanged)
+
+Hosting the web build, a new release zip (v0.1.0 predates all nine rounds, and the new launcher
+is only in builds from the current source), the trailer, licences, signing and Windows Build
+Support.
