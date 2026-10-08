@@ -2237,3 +2237,107 @@ download before the title is 17,626,084 bytes in `Build/` (17,607,262 in round 9
   days should be offered sooner or later than a day's second sunset.
 - Unchanged: hosting the web build, a new release zip (v0.1.0 predates all ten rounds), the
   trailer, licences, signing and Windows Build Support.
+
+## Round 11 scope
+
+Planned 2026-10-08 on `improvements-11`, from `main` at `1fc8a66` (round 10 merged, `main` equal to
+`origin/main`). Ten rounds made the game fit every screen, input and browser and gave a struggling
+player a slower sun. This round looks at the moments a player gets something wrong, and whether the
+game tells them how to put it right. Before planning I built HEAD, took the screenshot tour in a
+private KWin (throwaway prefs in `Recordings/r11/`) and read how each mistake is reported:
+
+- **Mistakes are signalled, not explained.** Overwatering a bed, soaking a sheep, raining on the
+  dried washing, putting the campfire out or shading a sunflower too long all play the same "oops":
+  Pip's worried face, a sound, a punch on the tray item. Only the duck pond says how to fix it
+  ("Rain into the pond to fill it back up!"). A soggy bed dries by itself in the sun, a soaked sheep
+  forgives after a sulk (or under a rainbow), wet washing can be blown dry again, but a new player
+  isn't told any of it until the sunset card, and may restart a day they could have saved.
+- **The sunset card's tip covers one friend.** It shows a tip for the first unmet need only. In the
+  tour's Day 1 sunset (`t05_fail`), a flower bed, three sunbathers and a boat were left, and the only
+  tip was about thirsty beds.
+- **"Not long left" doesn't say who.** It gives a count; the player's eyes are on Pip, and the
+  waiting friends' bubbles look the same as before.
+- **Two toast bugs.** A toast's colour goes to its shadow, not its pill (round 10 found the coral
+  "Not long left" drawn in butter yellow; `Hud.Toast` tints the first `Image` it finds, which is the
+  shadow). And a toast's hide timer isn't cancelled by the next toast, so a toast shown while another
+  is up is put away when the first one's time runs out, not its own.
+- **The web build's console** still logs Unity's "Trying to get length of sound which is not loaded
+  yet" at music changes (found in rounds 4 and 5, never traced).
+- Checked and fine: no `ksecretd` or other helper from this repo's private KWin was left running
+  after the tour (the ~80 on the machine come from other projects' test desktops).
+
+### R11-1. A mistake says how to put it right
+
+**What:** the first time in a sitting that Pip makes each kind of mistake, a hint (the bottom pill,
+with its icon) says how to recover, then fades:
+- a soggy bed: the sun will dry it, and to stop sooner next time
+- a friend who wanted shade, soaked: they wanted shade, not rain
+- dried washing, rained on again: blow it dry again
+- a sunflower shaded too long: fly off and let the sun reach it
+- something that must stay dry (sandcastle, cake, campfire), spoilt: it will be put right, keep the
+  rain off it
+
+It respects Settings → Hints, never replaces a teaching hint that's on screen (it waits for the next
+mistake of that kind instead), and isn't shown again for that kind until the game is restarted. The
+pond keeps its existing toast.
+
+**Acceptance:** the keyboard self-test overwaters a Day 2 bed and fails unless the soggy hint appears
+within 1 s; overwaters it again and fails if it repeats; soaks a Day 3 sheep and fails unless the
+shade hint appears; with Hints off, a soaked sheep must show nothing. The UI audit adds every new
+caption to its hint checks at all eight sizes.
+
+**Verify:** the keyboard self-test, the UI audit, a screenshot.
+
+### R11-2. The sunset card has a tip for everyone left
+
+**What:** when friends of more than one kind are left, the sunset card's tip pill steps through one
+tip per kind (about 4 s each, looping), and the icons it's talking about are lit while the others
+dim. One kind left behaves as today.
+
+**Acceptance:** the keyboard self-test lets a day with several kinds left reach sunset, and fails
+unless the tip changes to the second kind's text within 5 s, with only that kind's icons lit. The UI
+audit lays out every tip on the sunset card at all eight sizes and fails if one runs out of its pill.
+
+**Verify:** the keyboard self-test, the UI audit, screenshots of two tips.
+
+### R11-3. "Not long left" points at who's waiting, and toasts keep their colour and time
+
+**What:** when "Not long left" is said, the bubbles and tray items of the needs still waiting pulse
+for about 2 s. Toasts draw their pill in the colour asked for (coral for "Not long left", peach for
+an Encore, blue for the pond and the wedding's rainbow call), and a toast stays up for its own time
+however many came before it.
+
+**Acceptance:** the keyboard self-test fails unless, at "Not long left", the needs that pulse are
+exactly the unmet ones, the pill's colour is the one asked for, and a second toast shown 1.5 s into
+a 3 s toast is still up 2.5 s later.
+
+**Verify:** the keyboard self-test and a screenshot.
+
+### R11-4. A quieter web console (only if the cause is found cheaply)
+
+**What:** find which call raises "Trying to get length of sound which is not loaded yet" on the web
+and avoid it (likely reading `AudioClip.length` or `AudioSource.time` before a streamed clip has
+loaded).
+
+**Acceptance:** `web_smoke` logs the console's warnings; the count of that warning drops to zero
+with every other check still passing. If the cause isn't found within a bounded look, this is
+reported and dropped rather than half-done.
+
+**Verify:** `web_smoke` in all six modes on a web build of the round's code.
+
+### R11-5. Proof runs
+
+**What:** the full self-test on the round's final commit, `web_smoke` in all six modes, and the real
+prefs files' `pw.` entries compared before the first tool run and after the last. Also tighten the
+touch test's Restart check, which round 10 found passes during the 0.35 s lead-in: it must wait for
+play and see no postcard.
+
+**Acceptance:** each verdict read from its own log, named, with the machine's load.
+
+### Not in this round
+
+- Splitting each island's terrain into its own web download: still a lead, still risky.
+- Real phones, Safari, controllers, audio by ear and the Encores' difficulty still need people. Whether
+  the new hints are worded well, and whether they come too often, needs players too.
+- Hosting, releases and tags, the trailer, licences, signing and Windows Build Support are the owner's;
+  so are whether a relaxed day may earn "Before par" and when the slower sun is offered.
