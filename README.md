@@ -150,7 +150,8 @@ them and has sunflowers that droop in your shadow. The wedding has a twist of it
 <td>
 
 ### Save the day, collect the stamps
-When 85% of the day has gone, a note says how many friends still need you. Meet every need at the
+When 85% of the day has gone, a note says how many friends still need you, and their bubbles
+pulse. Meet every need at the
 same moment and the day is saved: a hit-stop, confetti, and the rest of
 the day plays out as a timelapse into a starry night. Each day has three stamps: **Day saved**,
 **Before par** (finish before the par hour on the sun track) and **Delight**, a secret reaction
@@ -170,7 +171,8 @@ Also included: a title screen over the diorama of the day you're up to, a map of
 your stamps, a postcard before each day, pause and settings (music, sound and ambience volume,
 graphics Auto/High/Low, fullscreen, screen shake, tilt-shift blur, hints, touch buttons,
 tap-to-rain, relaxed days, reset progress), your best finishing time on each postcard and results card, a sunset
-card with a tip for whatever was left undone and a straight-back-in "Try again", an ending, wordless device-aware onboarding hints, and
+card with a tip for each kind of friend left undone and a straight-back-in "Try again", an ending, wordless device-aware onboarding hints,
+a hint saying how to put each kind of mistake right the first time it happens (a soggy bed dries in the sun), and
 saved progress.
 
 ## Content
@@ -296,7 +298,7 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
 - **Audio loop seams** (`Tools/.venv/bin/python Tools/audio/check_loops.py`): no click or level
   jump where any looping clip wraps.
 - **Keyboard, gamepad and touch self-tests** (`-pwKeyTest`, `-pwPadTest`, `-pwTouchTest`): virtual
-  devices drive the real Input System from the title screen through menus and play (59, 32 and
+  devices drive the real Input System from the title screen through menus and play (67, 32 and
   23 checks), including a new player's first tap going straight to Day 1, the pause menu's
   controls line, Restart asking "Sure?" well into a day, hints hiding behind pause, the Touch
   buttons Off setting, best times, the hint on each day that brings in a new idea, and opening an
@@ -306,13 +308,16 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   mid-flight pausing the day (but not when the keys are flying). The keyboard test also checks
   Relaxed days (an ordinary day's sun at 2/3, an Encore's untouched, a relaxed save with no par
   stamp or best time, and "Slower sun" offered at a day's second sunset and not its first), the
-  "Not long left" note (once, at 85%, with the right count, and not during a saved day's
-  timelapse), and Restart and Try again going straight back into the day. It also
+  "Not long left" note (once, at 85%, with the right count, pointing at exactly the friends
+  still waiting, and not during a saved day's timelapse), toasts drawn in their own colour and kept
+  up for their own time, the first soggy bed and soaked sheep saying how to put it right (once,
+  and not with hints off), the sunset card stepping through a tip for each kind of friend left, and
+  Restart and Try again going straight back into the day. It also
   throws the wedding bouquet four times: the smallest Pip waiting on the ring must catch three
   throws at different angles, and must miss one when parked 2.5 units off it.
 - **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen (the Encore
   postcard and results, Day 12's postcard, the sunset card offering a slower sun and a relaxed day's
-  postcard and results included) must receive a tap at its centre and sit
+  postcard and results included, with every tip the sunset card can show) must receive a tap at its centre and sit
   fully on screen, at 16:9, 20:9, 4:3, two phones held sideways (844x390 and 740x360) and three
   portrait sizes (720x1280, and 390x844 and 360x800 phones). No two controls may overlap, and no
   menu text may run off screen, into a control it isn't part of, or out of the card, pill or
@@ -477,7 +482,7 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, ten improvement rounds (see
+every input method. Since then, eleven improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
@@ -524,6 +529,12 @@ every input method. Since then, ten improvement rounds (see
 - Relaxed days: a slower sun on ordinary days, in Settings and offered at a day's second sunset
 - a "Not long left" note at 85% of the day, with how many friends are still waiting
 - Try again and Restart that go straight back into the day, without the postcard
+- a hint, the first time each kind of mistake happens, saying how to put it right (a soggy bed
+  dries in the sun, a soaked sheep wanted shade, wet washing can be blown dry again)
+- a sunset card with a tip for each kind of friend left, in turn, not just the first
+- "Not long left" pulses the bubbles of the friends still waiting, and toasts show in their own
+  colours and stay up for their own time (before, a toast's colour went to its shadow, and a toast
+  shown over another went away with the first)
 
 None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
@@ -541,7 +552,7 @@ None of it is in a release yet. What has been verified (on the Linux build unles
   game-hours inside par) and Day 5 (1.5).
 - Both bots save all twelve Encores before sundown. The newcomer's tightest were Becalmed (66 of
   105 s) and the Heatwave (78 of 135 s).
-- Keyboard (59 checks), gamepad (32), touch (23) and UI-reachability self-tests pass through the
+- Keyboard (67 checks), gamepad (32), touch (23) and UI-reachability self-tests pass through the
   real Input System; the touch test also passes in 844x390 and 390x844 windows. The UI audit runs
   at eight window shapes: two landscape phones and three portrait. On the phone sizes it checks a
   44 px pause button, a 15 px or larger clock and tray items no smaller than before (the HUD is
@@ -584,8 +595,9 @@ Rough edges, honestly:
 - **No human playtesting yet.** The newcomer bot is a heuristic stand-in; par times and the
   difficulty curve still need real players. Relaxed days (round 10) give anyone who keeps missing
   sundown a way through, but whether the usual pace is right still needs people, as does whether
-  a relaxed day should be able to earn "Before par" (it can't, for now). The bots don't read the bubbles, so whether the new
-  band and badges help can only be judged by people.
+  a relaxed day should be able to earn "Before par" (it can't, for now). The bots don't read the bubbles or the
+  hints, so whether the band, the badges and the hints after a mistake (round 11: their wording, and
+  whether once a sitting is too often or not enough) help can only be judged by people.
 - **No real touchscreen or controller testing.** Touch and gamepad have only been exercised
   through virtual devices and emulated browser touch. There's no native Android or iOS build, and
   phone-browser performance is untested. The phone-sized HUD and menus, going fullscreen at the

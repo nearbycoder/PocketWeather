@@ -2341,3 +2341,100 @@ play and see no postcard.
   the new hints are worded well, and whether they come too often, needs players too.
 - Hosting, releases and tags, the trailer, licences, signing and Windows Build Support are the owner's;
   so are whether a relaxed day may earn "Before par" and when the slower sun is offered.
+
+## Round 11 results
+
+Implemented on `improvements-11`, one commit per item. Screenshots are in
+[`docs/media/improvements/round11/`](media/improvements/round11/). Every game window this round
+opened in a private KWin on a virtual screen, every tool run used a throwaway config folder in
+`Recordings/r11/`, and none of the private KWins left a helper behind (a scan of `/proc` for this
+repo's sockets and folders found nothing after the runs). The machine's load average was 3 to 65
+during the round; runs are noted with their load. The full self-test on the round's final code is
+reported at the end.
+
+### R11-1. A mistake says how to put it right: done
+
+- The first time in a sitting that each kind of mistake happens, the hint pill says how to recover:
+  "Too wet! The sun will dry it" (a soggy bed), "They wanted shade, not rain" (a soaked sheep,
+  cow or picnicker), "Wet again! Blow it dry" (dried washing rained on), "Fly off and let the sun
+  in" (a shaded sunflower), "It'll relight. Keep rain off it" (the campfire) and "It'll be fixed.
+  Keep rain off it" (the sandcastle or the cake). The duck pond keeps its own toast.
+- It follows Settings → Hints, isn't shown in an Encore or for the wedding's scripted sneeze, and
+  doesn't replace Day 1's fly and rain hints, which wait for the player to act. Other hints are
+  short-lived notes, so a mistake's hint does replace them: on Day 2 the "Just right, not too much!"
+  hint gives way to "Too wet!" when the bed goes soggy, which is the moment it's about. (The scope
+  said it would never replace a hint; this is narrower.)
+- **Keyboard test** (63 checks after this item, was 59; load 16, `Recordings/r11/key-1.log`): a
+  Day 2 bed rained on until soggy showed "Too wet!" 0.03 s later; a second soggy bed didn't repeat
+  it; a soaked Day 3 sheep showed "They wanted shade, not rain"; with Hints off, a soaked sheep
+  showed nothing.
+- **UI audit:** the six new captions are in its hint list (40 hints, was 34) and fit at 360x800 and
+  740x360 (`ui-1-*.log`), and at all eight sizes in the final self-test.
+
+![a mistake's way back](media/improvements/round11/1-mistake-hints.jpg)
+
+### R11-2. The sunset card has a tip for everyone left: done
+
+- With friends of more than one kind left, the sunset card's tip steps through one tip per kind
+  every 4 s, looping, and lights the icons it's talking about (the others dim to 35%). One kind left
+  looks as it did.
+- **Keyboard test** (64 checks; load 26, `key-2.log`): Day 5's sunset, with washing, a bed and a
+  dog left, had 3 tips; the first lit the two shirts only, and 3.7 s after it was measured the tip
+  moved to the bed's, lighting only the bed.
+- **UI audit** (28 checks, was 27): every one of the 13 tips laid out in the card's pill, with no
+  text spilling out or off screen, at 1600x900, 740x360, 390x844 and 360x800 (load 22,
+  `ui-2-*.log`), and at all eight sizes in the final self-test.
+
+![the sunset card's tips in turn](media/improvements/round11/2-sunset-tips.jpg)
+
+![held upright](media/improvements/round11/2b-sunset-tips-upright.jpg)
+
+### R11-3. "Not long left" points at who's waiting; toasts keep their colour and time: done
+
+- When "Not long left" is said, the bubbles of the friends still waiting pulse for 2 s and their
+  tray items punch.
+- **Fixed:** a toast's colour was given to its shadow (the first `Image` under it), so every tinted
+  toast drew butter yellow. "Not long left" is now coral, an Encore's toast peach, and the pond's and
+  the wedding's rainbow call blue, as written.
+- **Fixed:** a toast's hide timer wasn't cancelled by the next toast, so a toast shown while
+  another was up went away when the first one's time ran out. Each toast now stays up for its own
+  time.
+- **Keyboard test** (67 checks; load 26, `key-3.log`): on Day 4, the bubbles pulsing were exactly
+  the 3 unmet needs; the pill was FFC9B5, the colour asked for; a second toast shown 1.5 s into a
+  3 s toast was still up 2.5 s later.
+
+![not long left, in coral](media/improvements/round11/3-not-long-left-coral.jpg)
+
+### R11-4. A quieter web console: dropped, not the game's doing
+
+The warning comes from Unity's own web audio code. Its `framework.js` logs "Trying to get length of
+sound which is not loaded yet" when the engine asks for a clip's length while the browser is still
+decoding it, which happens as each sound effect, note and streamed track is first loaded, not at a
+call the game makes. Plays aren't affected: Unity's "Trying to play sound which is not loaded" never
+appeared in any run. Preloading the clips would only move the warnings earlier, so nothing was
+changed. The web build logged it 20 times in round 10's build (`Recordings/r11/web-base/`) and 15 to
+23 times per mode this round.
+
+### R11-5. Proof runs
+
+- **Touch test tightened:** Restart's second tap must now land in play, with the day running from
+  its start and no postcard, not just in the 0.35 s lead-in. It passed 23 of 23 (load 32, above the
+  usual limit for input tests, `touch-1.log`), and again in the final self-test.
+- **Web:** `web_smoke` passed in all six modes (Chrome desktop, `--mouse`, `--phone` and
+  `--portrait`; `--firefox` and `--firefox --phone`) on a web build of `f4f1c7c` (the round's code),
+  with 0 console errors and no browser dialogs, at load 25 to 65 (`Recordings/r11/web-*.log`). The
+  download before the title is 17,623,061 bytes in `Build/` (17,626,084 in round 10).
+
+### Found along the way, not fixed
+
+- Unity's web player also logs that `JS_FileSystem_Sync()` is deprecated and suggests
+  `autoSyncPersistentDataPath`. Switching would change how the web build saves progress, so it was
+  left for a round that can test saves across reloads with that in mind.
+- The sunset card's shade tip says "hot animals", which reads oddly when the friends left are
+  sunbathers or picnickers. Wording only; left alone.
+
+### Decisions for the owner (unchanged)
+
+Whether a relaxed day may earn "Before par" and when the slower sun is offered; hosting the web
+build, a new release zip (v0.1.0 predates all eleven rounds), the trailer, licences, signing and
+Windows Build Support.
