@@ -114,9 +114,14 @@ namespace PocketWeather
             var bed = L.FindNeed("bedA") as BedNeed ?? FindFirst<BedNeed>();
             var start = C.GroundPoint;
             yield return Drag(Screen(start), Screen(bed.transform.position), 0.8f, release: false);
-            yield return Hold(Screen(bed.transform.position), 0.05f);
+            // Pip glides after the finger: give it up to 0.25 s of a still finger to arrive (rain only
+            // starts after 0.38 s still). A fixed 0.05 s missed by a few hundredths whenever frames
+            // came unevenly (in a virtual-screen KWin, on round 8's code as well).
+            float arrive = 0;
+            while (arrive < 0.25f && Dist2D(C.transform.position, bed.transform.position) >= 0.5f)
+            { arrive += Time.unscaledDeltaTime; Send(TouchPhase.Stationary, Screen(bed.transform.position)); yield return null; }
             Check("drag moves Pip to the finger", Dist2D(C.transform.position, bed.transform.position) < 0.5f,
-                $"{Dist2D(C.transform.position, bed.transform.position):0.00} from target");
+                $"{Dist2D(C.transform.position, bed.transform.position):0.00} from target, {arrive:0.00} s after the finger stopped");
             Check("device switches to touch", C.Input.LastDevice == CloudInput.Device.Touch, C.Input.LastDevice.ToString());
             Check("no rain while dragging", !C.Raining);
             float m0 = bed.Moisture;
