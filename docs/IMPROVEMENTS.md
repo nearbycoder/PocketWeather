@@ -2465,3 +2465,90 @@ changed. The web build logged it 20 times in round 10's build (`Recordings/r11/w
 Whether a relaxed day may earn "Before par" and when the slower sun is offered; hosting the web
 build, a new release zip (v0.1.0 predates all eleven rounds), the trailer, licences, signing and
 Windows Build Support.
+
+## Round 12 scope
+
+Planned 2026-10-08 on `improvements-12`, from `main` at `2f91efd` (round 11 merged, `main` equal to
+`origin/main`). This round's focus, from the owner, is AAA polish: graphics, UI and the feel of the
+first few minutes, with a Graphics Fidelity slider of at least four steps. Before planning I built
+HEAD and took the screenshot tour in a private KWin (throwaway prefs in `Recordings/r12/`), and read
+the rendering and UI code:
+
+- **Graphics is a three-way button** (Auto, High, Low). Low renders at 75% without MSAA, swaps the
+  bokeh depth of field for a gaussian one and shortens shadows; High is the full look. There's no
+  step between them, and nothing above High, though the desktop GPU has room (2 to 8 ms a frame).
+- **The fires' lights light nothing.** Every fire and the campfire carries a warm point light, but
+  the game's own toon and ground shaders only read the sun, so at night on Day 9 a burning haystack
+  is a bright puff with no glow on the grass, hay or tents around it.
+- **Keyboard and gamepad focus is hard to see.** A focused button lifts 2 px and grows 3%; a focused
+  slider or toggle changes by Unity's default tint, which on these colours is close to invisible.
+  Moving down the settings menu with the d-pad, it's hard to tell which row will change. Sliders
+  and toggles also give no feedback under the mouse.
+
+### R12-1. A Graphics Fidelity slider
+
+**What:** Settings → Graphics becomes a stepped slider: **Auto, Low, Medium, High, Ultra**, with the
+step's name beside it. It's saved in the same pref as before (a player's Auto, High or Low carries
+over), and works by drag, tap, arrow keys and d-pad. Auto behaves as today (High, dropping to Low if
+the GPU can't keep up, remembered). Roughly:
+- **Low:** today's Low (75% resolution, no MSAA, gaussian depth of field, shorter and smaller
+  shadows), plus no ambient occlusion and thinner particle effects.
+- **Medium:** full resolution, 2x MSAA, bokeh depth of field at normal sampling, no ambient
+  occlusion, a 2048 shadow map.
+- **High:** today's look, unchanged (the default through Auto).
+- **Ultra:** supersampled (rendered above the window's resolution), finer ambient occlusion, four
+  shadow cascades with the softest filtering, high-quality bloom and depth of field, a finer
+  wetness map (crisper wet and green edges where it rained) and denser particle effects.
+
+**Acceptance:** a new capture script shoots the same moment of the same day at every step in one
+run, and a benchmark runs the same scripted flight on the same day at every step and logs frame
+times (average, p95, p99, GPU ms) with vsync off. Low must be no slower than today's Low, High must
+match today's High, and Ultra's frame time must be recorded honestly. The keyboard and gamepad tests
+step the slider and check the label, the saved pref and the applied settings; the UI audit lays out
+the new row at all eight sizes; `web_smoke` still finds a downgraded Auto remembered.
+
+**Verify:** screenshots at each step (`docs/media/improvements/round12/`), the benchmark log with the
+machine's load, the self-tests and the UI audit.
+
+### R12-2. Warm light at night
+
+**What:** the toon and ground shaders take URP's additional lights (Forward+ on desktop, per-pixel
+forward on the web), through the same soft two-band ramp as the sun, so a burning haystack, the
+campfire and anything else that carries a light paints a warm pool on the grass and lights the
+sides of the hay, trees and tents that face it. Off at Low.
+
+**Acceptance:** a Day 9 night capture with a fire burning, before and after, shows the ground around
+the fire lit; a daytime capture of every day is unchanged to the eye; the frame-time benchmark shows
+no measurable cost at High on a day without lights.
+
+**Verify:** before/after screenshots, the benchmark, the full self-test.
+
+### R12-3. Focus you can see, and controls that answer
+
+**What:** with the keyboard or a gamepad, the focused control on every menu wears a soft, breathing
+ring around it that glides from control to control, so it's always clear what A or Enter will do.
+It hides as soon as the mouse or a finger is used. Sliders and toggles lift under the mouse and when
+focused, like buttons already do, and a stepped slider ticks at each step.
+
+**Acceptance:** the keyboard and gamepad self-tests fail unless the ring is visible and centred on the
+selected control after navigating on the title, map, settings and pause screens, and hidden after a
+mouse move. The UI audit fails if the ring would run off screen around any control at any size.
+
+**Verify:** the self-tests, the UI audit and screenshots.
+
+### R12-4. Proof runs
+
+**What:** the full self-test on the round's final commit, `web_smoke` in all six modes on a web build
+of the round's code (and the web download's size, which must stay within about 0.3 MB of round 11's
+17.6 MB), and the real prefs files' `pw.` entries compared before the first tool run and after the
+last.
+
+**Acceptance:** each verdict read from its own log, named, with the machine's load.
+
+### Not in this round
+
+- Splitting each island's terrain into its own web download, and moving off the deprecated web
+  save-sync: still leads, still risky.
+- Real phones, Safari, controllers, audio by ear and the Encores' difficulty still need people.
+- Hosting, releases and tags, the trailer, licences, signing and Windows Build Support are the
+  owner's; so are whether a relaxed day may earn "Before par" and when the slower sun is offered.
