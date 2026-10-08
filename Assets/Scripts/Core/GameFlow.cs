@@ -89,21 +89,22 @@ namespace PocketWeather
             postcard.OnStart = BeginPlay;
             postcard.OnEncore = on => { if (Current == State.Intro && LevelIndex >= 0) StartLevel(LevelIndex, on); };
             pause.OnResume = Resume;
-            pause.OnRestart = () => { Resume(); StartLevel(LevelIndex, Encore); };
+            // a retry goes straight back into the day: its postcard was seen moments ago
+            pause.OnRestart = () => { Resume(); StartLevel(LevelIndex, Encore, true); };
             pause.OnMap = () => { Resume(); Transition(ShowMapNow); };
             pause.OnSettings = () => OpenSettings(pause);
             settings.OnClose = CloseSettings;
             results.OnNext = NextLevel;
             results.OnReplay = () => StartLevel(LevelIndex, Encore);
             results.OnMap = () => Transition(ShowMapNow);
-            fail.OnRetry = () => StartLevel(LevelIndex, Encore);
+            fail.OnRetry = () => StartLevel(LevelIndex, Encore, true);
             fail.OnMap = () => Transition(ShowMapNow);
             fail.OnSlower = () =>
             {
                 GameSettings.RelaxedDays = true;
                 GameSettings.Save();
                 Debug.Log("[PW] relaxed days: on, from the sunset card");
-                StartLevel(LevelIndex, Encore);
+                StartLevel(LevelIndex, Encore, true);
             };
             ending.OnDone = () => Transition(ShowMapNow);
         }
@@ -168,6 +169,7 @@ namespace PocketWeather
                          firstSave ? 99f : Level.Def.par - 1.5f, relaxed);
         }
         public bool ResultsEncoreNote => results.EncoreNoteShown;
+        public bool PostcardOpen => postcard.IsOpen;
         public void DebugCloseMenus() => CloseAll();
         /// <summary>Saves the day as if its last need had just been met (the real celebration, records
         /// and results card).</summary>
@@ -250,13 +252,14 @@ namespace PocketWeather
         }
 
         // ------------------------------------------------------------------ levels
-        public void StartLevel(int index, bool encore = false)
+        /// <param name="straight">skip the postcard and start playing (a retry)</param>
+        public void StartLevel(int index, bool encore = false, bool straight = false)
         {
             Time.timeScale = 1f;
-            Transition(() => StartLevelNow(index, encore));
+            Transition(() => StartLevelNow(index, encore, straight));
         }
 
-        void StartLevelNow(int index, bool encore = false)
+        void StartLevelNow(int index, bool encore = false, bool straight = false)
         {
             CloseAll();
             LevelIndex = index;
@@ -274,7 +277,12 @@ namespace PocketWeather
             Hud.Bind(Level);
             Hud.SetVisible(false, 0.01f);
             if (GameRoot.HasArg("-pwSkipIntro")) { BeginPlay(); return; }
-            Tween.Delay(0.35f, () => { if (Current == State.Intro) postcard.Show(def, index); });
+            var loaded = Level;
+            Tween.Delay(0.35f, () =>
+            {
+                if (Current != State.Intro || Level != loaded) return;
+                if (straight) BeginPlay(); else postcard.Show(def, index);
+            });
         }
 
         void LoadLevelObject(LevelDef def)

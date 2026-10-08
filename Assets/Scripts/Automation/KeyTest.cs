@@ -214,10 +214,10 @@ namespace PocketWeather
             yield return Press(Key.Enter);
             yield return new WaitForSecondsRealtime(0.3f);
             yield return Press(Key.Enter);
-            yield return WaitFor(() => Now == GameFlow.State.Intro || (Now == GameFlow.State.Playing && L.Hour < hour0 - 0.01f), 6f);
-            Check("Restart reloads the day", L != null && L.Def.id == "level04" && L.Hour <= L.Def.startHour + 0.05f, $"{Now}, hour {L?.Hour:0.00}");
+            yield return WaitFor(() => Now == GameFlow.State.Playing && L.Hour < hour0 - 0.01f, 6f);
+            Check("Restart goes straight back into the day, with no postcard", L != null && L.Def.id == "level04" && Now == GameFlow.State.Playing && !GameFlow.I.PostcardOpen && L.Hour <= L.Def.startHour + 0.05f,
+                  $"{Now}, postcard {GameFlow.I.PostcardOpen}, hour {L?.Hour:0.00}");
             yield return new WaitForSecondsRealtime(1.2f);
-            if (Now == GameFlow.State.Intro) { yield return Press(Key.Enter); yield return WaitFor(() => Now == GameFlow.State.Playing, 5f); }
             yield return new WaitForSeconds(0.5f);
             yield return Press(Key.Escape);
             yield return new WaitForSecondsRealtime(0.5f);
@@ -380,9 +380,9 @@ namespace PocketWeather
 
             // --- the sunset card offers a slower sun from the day's second sunset, and it works
             GameSettings.RelaxedDays = false;
+            GameFlow.I.DebugStart(2, true);
             for (int sunset = 1; sunset <= 2; sunset++)
             {
-                GameFlow.I.DebugStart(2, true);
                 yield return new WaitForSeconds(0.5f);
                 L.SetHour(L.Def.endHour - 0.02f);
                 yield return WaitFor(() => Now == GameFlow.State.Failed, 5f);
@@ -390,17 +390,21 @@ namespace PocketWeather
                 bool offered = GameFlow.I.SunsetOffersSlower && GameObject.Find("Btn_" + FailCard.SlowerLabel) != null;
                 if (sunset == 1) Check("the first sunset doesn't offer a slower sun", Now == GameFlow.State.Failed && !offered, $"{Now}, offered {offered}");
                 else Check("the second sunset on the same day offers a slower sun", Now == GameFlow.State.Failed && offered, $"{Now}, offered {offered}");
+                if (sunset == 2) break;
+                // "Try again" (selected when the card opens) goes straight back into the day
+                yield return Press(Key.Enter);
+                yield return WaitFor(() => Now == GameFlow.State.Playing, 6f);
+                Check("Try again goes straight back into the day, with no postcard", Now == GameFlow.State.Playing && !GameFlow.I.PostcardOpen && L.Def.id == "level03" && L.Hour <= L.Def.startHour + 0.05f,
+                      $"{Now}, postcard {GameFlow.I.PostcardOpen}, {L?.Def.id}, hour {L?.Hour:0.00}");
             }
             var slower = GameObject.Find("Btn_" + FailCard.SlowerLabel);
             if (slower != null)
             {
                 EventSystem.current.SetSelectedGameObject(slower);
                 yield return Press(Key.Enter);
-                yield return WaitFor(() => Now == GameFlow.State.Intro || Now == GameFlow.State.Playing, 6f);
-                yield return new WaitForSecondsRealtime(1.0f);
-                if (Now == GameFlow.State.Intro) { yield return Press(Key.Enter); yield return WaitFor(() => Now == GameFlow.State.Playing, 5f); }
-                Check("Slower sun turns relaxed days on and goes back into the day",
-                      GameSettings.RelaxedDays && Now == GameFlow.State.Playing && L.Def.id == "level03" && L.Pace < 1f && L.Hour < L.Def.startHour + 0.5f,
+                yield return WaitFor(() => Now == GameFlow.State.Playing, 6f);
+                Check("Slower sun turns relaxed days on and goes straight back into the day",
+                      GameSettings.RelaxedDays && Now == GameFlow.State.Playing && !GameFlow.I.PostcardOpen && L.Def.id == "level03" && L.Pace < 1f && L.Hour < L.Def.startHour + 0.5f,
                       $"relaxed {GameSettings.RelaxedDays}, {Now}, {L?.Def.id}, pace {L?.Pace:0.00}, hour {L?.Hour:0.00}");
             }
             GameSettings.RelaxedDays = false;
