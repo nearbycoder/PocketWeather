@@ -342,6 +342,7 @@ namespace PocketWeather
         Image icon, stripe, parIcon;
         JuicyButton startBtn, encoreBtn;
         bool showingEncore;
+        public const string RelaxedParLine = "Relaxed day: no par stamp";
         public const string EncoreStory = "A scorcher! The sun races, the beds dry out as you watch, and Pip sets off half-empty.";
 
         protected override void Build()
@@ -408,8 +409,10 @@ namespace PocketWeather
             story.text = def.encore ? EncoreStory : def.story;
             icon.sprite = Ui.IconSprite(string.IsNullOrEmpty(def.icon) ? "flower" : def.icon);
             stripe.color = def.encore ? Res.Hex("FFD9B8") : Res.Hex("CFE6F7");
-            parIcon.sprite = Ui.IconSprite(def.encore ? "stamp_encore" : "clock");
-            parText.text = def.encore ? "The scorcher stamp for saving it" : $"Stamp for finishing before {FormatHour(def.par)}";
+            // Settings > Relaxed days: a slower sun, and the par stamp kept for the usual pace
+            bool relaxed = !def.encore && GameSettings.RelaxedDays;
+            parIcon.sprite = Ui.IconSprite(def.encore ? "stamp_encore" : relaxed ? "snail" : "clock");
+            parText.text = def.encore ? "The scorcher stamp for saving it" : relaxed ? RelaxedParLine : $"Stamp for finishing before {FormatHour(def.par)}";
             bool encoreOpen = SaveData.EncoreUnlocked(def.id);
             encoreBtn.gameObject.SetActive(encoreOpen);
             PlaceButtons();
@@ -630,8 +633,9 @@ namespace PocketWeather
         /// <summary>Each row with its place in the usual layout (one column) and the short one (two).</summary>
         readonly List<(RectTransform rt, Vector2 usual, Vector2 shortPos)> rows = new();
         UnityEngine.UI.Slider musicSlider;
-        UnityEngine.UI.Toggle fullscreenToggle;
+        UnityEngine.UI.Toggle fullscreenToggle, relaxedToggle;
         bool confirmReset;
+        public const string RelaxedLabel = "Relaxed days (slower sun)";
 
         static string TouchButtonsLabel() => GameSettings.TouchButtons switch { 1 => "On", 2 => "Off", _ => "Auto" };
 
@@ -649,10 +653,10 @@ namespace PocketWeather
             panel = p.rectTransform;
             Ui.Label(p.transform, "Settings", 70, Ui.Ink, new Vector2(600, 90), new Vector2(0, 455), true);
             float y = 362;
-            musicSlider = Ui.Slider(p.transform, "Music", GameSettings.Music, new Vector2(0, y), v => { GameSettings.Music = v; }, 640); y -= 78;
-            Ui.Slider(p.transform, "Sounds", GameSettings.Sfx, new Vector2(0, y), v => { GameSettings.Sfx = v; }, 640); y -= 78;
-            Ui.Slider(p.transform, "Ambience", GameSettings.Ambience, new Vector2(0, y), v => { GameSettings.Ambience = v; }, 640); y -= 78;
-            Ui.Slider(p.transform, "Tilt-shift", GameSettings.TiltShift, new Vector2(0, y), v => { GameSettings.TiltShift = v; PostFx.ApplySettings(); }, 640); y -= 80;
+            musicSlider = Ui.Slider(p.transform, "Music", GameSettings.Music, new Vector2(0, y), v => { GameSettings.Music = v; }, 640); y -= 76;
+            Ui.Slider(p.transform, "Sounds", GameSettings.Sfx, new Vector2(0, y), v => { GameSettings.Sfx = v; }, 640); y -= 76;
+            Ui.Slider(p.transform, "Ambience", GameSettings.Ambience, new Vector2(0, y), v => { GameSettings.Ambience = v; }, 640); y -= 76;
+            Ui.Slider(p.transform, "Tilt-shift", GameSettings.TiltShift, new Vector2(0, y), v => { GameSettings.TiltShift = v; PostFx.ApplySettings(); }, 640); y -= 78;
             // graphics: tap to cycle Auto / High / Low
             var gfxRow = Ui.Rect("Row_Graphics", p.transform, new Vector2(0.5f, 0.5f), new Vector2(640, 76), new Vector2(0, y));
             Ui.Label(gfxRow, "Graphics", 34, Ui.Ink, new Vector2(300, 60), new Vector2(-170, 0), false, TextAnchor.MiddleLeft);
@@ -662,9 +666,9 @@ namespace PocketWeather
                 if (GameSettings.Graphics == 0) Quality.ResetAuto(); else Quality.Apply();
                 gfxButton.SetLabel(GraphicsLabel());
             }, null, null, 30, "Graphics");
-            y -= 78;
-            Ui.Toggle(p.transform, "Screen shake", GameSettings.ScreenShake, new Vector2(0, y), v => GameSettings.ScreenShake = v, 640); y -= 72;
-            Ui.Toggle(p.transform, "Hints", GameSettings.Hints, new Vector2(0, y), v => GameSettings.Hints = v, 640); y -= 72;
+            y -= 76;
+            Ui.Toggle(p.transform, "Screen shake", GameSettings.ScreenShake, new Vector2(0, y), v => GameSettings.ScreenShake = v, 640); y -= 71;
+            Ui.Toggle(p.transform, "Hints", GameSettings.Hints, new Vector2(0, y), v => GameSettings.Hints = v, 640); y -= 71;
             // touch buttons: tap to cycle Auto (when touch is used) / On / Off
             var touchRow = Ui.Rect("Row_TouchButtons", p.transform, new Vector2(0.5f, 0.5f), new Vector2(640, 76), new Vector2(0, y));
             Ui.Label(touchRow, "Touch buttons", 34, Ui.Ink, new Vector2(330, 60), new Vector2(-155, 0), false, TextAnchor.MiddleLeft);
@@ -673,13 +677,17 @@ namespace PocketWeather
                 GameSettings.TouchButtons = (GameSettings.TouchButtons + 1) % 3;
                 touchButton.SetLabel(TouchButtonsLabel());
             }, null, null, 30, "TouchButtons");
-            y -= 78;
-            Ui.Toggle(p.transform, "Tap to rain (no holding)", GameSettings.RainToggle, new Vector2(0, y), v => GameSettings.RainToggle = v, 640); y -= 72;
+            y -= 71;
+            Ui.Toggle(p.transform, "Tap to rain (no holding)", GameSettings.RainToggle, new Vector2(0, y), v => GameSettings.RainToggle = v, 640); y -= 71;
             fullscreenToggle = Ui.Toggle(p.transform, "Fullscreen", UnityEngine.Screen.fullScreen, new Vector2(0, y), v =>
             {
                 UnityEngine.Screen.fullScreenMode = v ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
             }, 640);
-            y -= 100;
+            y -= 71;
+            // a slower sun on ordinary days, for anyone who keeps running out of daylight (the sunset
+            // card offers it too, from a day's second sunset)
+            relaxedToggle = Ui.Toggle(p.transform, RelaxedLabel, GameSettings.RelaxedDays, new Vector2(0, y), v => GameSettings.RelaxedDays = v, 640);
+            y -= 88;
             resetBtn = Ui.Button(p.transform, "Reset progress", Ui.Coral, new Vector2(300, 84), new Vector2(-170, y), () =>
             {
                 if (!confirmReset) { confirmReset = true; resetBtn.SetLabel("Sure?"); return; }
@@ -693,10 +701,10 @@ namespace PocketWeather
             // buttons along the bottom (the panel's children, in the order they were made)
             Vector2[] shortPos =
             {
-                new(0, 285),
-                new(-350, 190), new(-350, 112), new(-350, 34), new(-350, -44), new(-350, -122),
-                new(350, 190), new(350, 114), new(350, 38), new(350, -40), new(350, -116),
-                new(-200, -250), new(200, -250),
+                new(0, 295),
+                new(-350, 205), new(-350, 129), new(-350, 53), new(-350, -23), new(-350, -99),
+                new(350, 205), new(350, 135), new(350, 65), new(350, -5), new(350, -75), new(350, -145),
+                new(-200, -262), new(200, -262),
             };
             if (p.transform.childCount != shortPos.Length) Debug.LogWarning($"[PW] settings has {p.transform.childCount} rows, the short layout places {shortPos.Length}");
             for (int i = 0; i < p.transform.childCount && i < shortPos.Length; i++)
@@ -722,6 +730,7 @@ namespace PocketWeather
             touchButton.SetLabel(TouchButtonsLabel());
             musicSlider.SetValueWithoutNotify(GameSettings.Music);   // M may have muted it since
             fullscreenToggle.SetIsOnWithoutNotify(UnityEngine.Screen.fullScreen);   // and the browser, a phone's first tap or Esc may have changed this
+            relaxedToggle.SetIsOnWithoutNotify(GameSettings.RelaxedDays);   // and the sunset card's "Slower sun"
         }
 
         void Update()
@@ -837,14 +846,18 @@ namespace PocketWeather
             Layout(Ui.MenuLayout);
         }
 
-        public void Show(LevelDef def, int stampsEarnedThisRun, int fresh, float finishHour, bool isLast, float previousBest = 99f)
+        /// <summary>The par stamp's label on a relaxed day that hasn't earned it before.</summary>
+        public const string RelaxedParLabel = "Usual pace only";
+
+        /// <param name="relaxed">the day ran relaxed: no par stamp or best time this time, and the card says so</param>
+        public void Show(LevelDef def, int stampsEarnedThisRun, int fresh, float finishHour, bool isLast, float previousBest = 99f, bool relaxed = false)
         {
             title.text = "Day saved!";
             ShowNote((fresh & SaveData.StampSaved) != 0);
             for (int i = 0; i < 3; i++) stamps[i].transform.parent.gameObject.SetActive(true);
             subtitle.text = string.IsNullOrEmpty(def.thanks) ? "Everyone is happy!" : def.thanks;
-            timeLine.text = TimeLine(finishHour, previousBest);
-            stampLabels[1].text = $"Before {Postcard.FormatHour(def.par)}";
+            timeLine.text = relaxed ? $"Finished at {Postcard.FormatHour(finishHour)} on a relaxed day" : TimeLine(finishHour, previousBest);
+            stampLabels[1].text = relaxed && !SaveData.Has(def.id, SaveData.StampPar) ? RelaxedParLabel : $"Before {Postcard.FormatHour(def.par)}";
             stampLabels[2].text = SaveData.Has(def.id, SaveData.StampDelight) ? def.delight.title : "Secret delight";
             next.SetLabel(isLast ? "The end" : "Next day");
             var save = SaveData.Get(def.id);
@@ -923,9 +936,13 @@ namespace PocketWeather
     // ===================================================================== Sunset (fail)
     public class FailCard : MenuScreen
     {
-        public Action OnRetry, OnMap;
-        RectTransform card, row, heading, subLine, tipPill, mapBtn, retryBtn;
+        public Action OnRetry, OnMap, OnSlower;
+        RectTransform card, row, heading, subLine, tipPill, mapBtn, retryBtn, slowerBtn;
         Text tip;
+        bool offerSlower;
+        /// <summary>The "Slower sun" offer is showing (for the self-tests).</summary>
+        public bool OfferingSlower => IsOpen && offerSlower;
+        public const string SlowerLabel = "Slower sun";
 
         protected override void Build()
         {
@@ -941,30 +958,54 @@ namespace PocketWeather
             mapBtn = (RectTransform)Ui.Button(card, "Map", Ui.Lilac, new Vector2(240, 96), new Vector2(-180, -225), () => OnMap?.Invoke(), null, null, 42).transform;
             var r = Ui.Button(card, "Try again", Ui.Coral, new Vector2(320, 104), new Vector2(160, -225), () => OnRetry?.Invoke(), null, null, 46);
             retryBtn = (RectTransform)r.transform;
+            // from a day's second sunset: Settings > Relaxed days, offered where it's needed
+            slowerBtn = (RectTransform)Ui.Button(card, SlowerLabel, Ui.Sky, new Vector2(290, 96), new Vector2(-40, -225), () => OnSlower?.Invoke(), "snail", null, 34).transform;
+            slowerBtn.gameObject.SetActive(false);
             firstSelected = r.gameObject;
         }
 
         /// <summary>Narrow: a taller card, with the line under the heading and the tip each wrapping
-        /// over more lines.</summary>
+        /// over more lines. With "Slower sun" on offer, three buttons share the bottom row; narrow,
+        /// it gets a row of its own above Map and Try again, in a card taller again.</summary>
         protected override void Layout(MenuForm form)
         {
             bool n = form == MenuForm.Narrow;
-            card.sizeDelta = n ? new Vector2(840, 800) : new Vector2(980, 640);
+            float up = n && offerSlower ? 40f : 0f;   // narrow with the offer: everything above the buttons moves up
+            card.sizeDelta = n ? new Vector2(840, 800 + 2 * up) : new Vector2(980, 640);
             heading.sizeDelta = new Vector2(n ? 780 : 900, 90);
-            heading.anchoredPosition = new Vector2(0, n ? 315 : 235);
+            heading.anchoredPosition = new Vector2(0, (n ? 315 : 235) + up);
             subLine.sizeDelta = n ? new Vector2(760, 100) : new Vector2(900, 50);
-            subLine.anchoredPosition = new Vector2(0, n ? 215 : 160);
+            subLine.anchoredPosition = new Vector2(0, (n ? 215 : 160) + up);
             row.sizeDelta = new Vector2(n ? 760 : 800, 120);
-            row.anchoredPosition = new Vector2(0, n ? 85 : 55);
+            row.anchoredPosition = new Vector2(0, (n ? 85 : 55) + up);
             tipPill.sizeDelta = n ? new Vector2(760, 150) : new Vector2(880, 96);
-            tipPill.anchoredPosition = new Vector2(0, n ? -75 : -78);
+            tipPill.anchoredPosition = new Vector2(0, (n ? -75 : -78) + up);
             tip.rectTransform.sizeDelta = n ? new Vector2(710, 140) : new Vector2(840, 90);
-            mapBtn.anchoredPosition = new Vector2(-180, n ? -305 : -225);
-            retryBtn.anchoredPosition = new Vector2(160, n ? -305 : -225);
+            if (!offerSlower)
+            {
+                mapBtn.anchoredPosition = new Vector2(-180, n ? -305 : -225);
+                retryBtn.anchoredPosition = new Vector2(160, n ? -305 : -225);
+            }
+            else if (n)
+            {
+                slowerBtn.anchoredPosition = new Vector2(0, -185);
+                mapBtn.anchoredPosition = new Vector2(-180, -335);
+                retryBtn.anchoredPosition = new Vector2(160, -335);
+            }
+            else
+            {
+                mapBtn.anchoredPosition = new Vector2(-325, -225);
+                slowerBtn.anchoredPosition = new Vector2(-40, -225);
+                retryBtn.anchoredPosition = new Vector2(285, -225);
+            }
         }
 
-        public void Show(Level level)
+        /// <param name="offerSlower">show "Slower sun" (Settings > Relaxed days) beside "Try again"</param>
+        public void Show(Level level, bool offerSlower = false)
         {
+            this.offerSlower = offerSlower;
+            slowerBtn.gameObject.SetActive(offerSlower);
+            Layout(Ui.MenuLayout);
             foreach (Transform c in row) Destroy(c.gameObject);
             var unmet = new List<Need>();
             foreach (var n in level.Needs) if (n.Required && !n.Met) unmet.Add(n);

@@ -30,6 +30,11 @@ namespace PocketWeather
         public float Hour { get; private set; }
         public float Elapsed { get; private set; }
         public float TimeScale = 1f;               // the day clock speed (timelapse at the end)
+        /// <summary>How fast the sun runs for the player: 2/3 on an ordinary day with Settings >
+        /// Relaxed days, else 1 (Encores are the challenge, so they keep their pace).</summary>
+        public float Pace => Def.encore || !GameSettings.RelaxedDays ? 1f : 1f / LevelLibrary.RelaxedDayScale;
+        /// <summary>Some of this day ran relaxed: its par stamp and best time are kept for the usual pace.</summary>
+        public bool WasRelaxed { get; private set; }
         public int Oopses { get; private set; }
         public bool AllMet { get; private set; }
         public event Action OnAllMet;
@@ -315,7 +320,9 @@ namespace PocketWeather
             {
                 Elapsed += dt;
                 float hoursPerSecond = (Def.endHour - Def.startHour) / Mathf.Max(10f, Def.dayLength);
-                Hour = Mathf.Min(Def.endHour + 1.5f, Hour + hoursPerSecond * dt * TimeScale);
+                float pace = Pace;
+                if (pace < 1f) WasRelaxed = true;
+                Hour = Mathf.Min(Def.endHour + 1.5f, Hour + hoursPerSecond * dt * TimeScale * pace);
             }
             Day?.SetHour(Hour);
             if (WetMap != null && Day != null) WetMap.SunFactor = Day.Heat;

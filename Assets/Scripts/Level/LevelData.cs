@@ -165,6 +165,7 @@ namespace PocketWeather
         public const float EncoreDayScale = 0.75f;    // the sun crosses the sky in 3/4 of the time
         public const float EncoreWaterScale = 0.5f;   // Pip sets off half as full
         public const float EncoreDryRate = 0.35f;     // beds dry out (the Heatwave's own 0.55 stays)
+        public const float RelaxedDayScale = 1.5f;    // Settings > Relaxed days: the sun takes half as long again
 
         public static LevelDef MakeEncore(LevelDef d)
         {

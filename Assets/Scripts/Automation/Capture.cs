@@ -44,6 +44,7 @@ namespace PocketWeather
                 case "phonehud": yield return PhoneHud(); break;
                 case "menus": yield return Menus(); break;
                 case "bouquet": yield return BouquetShots(); break;
+                case "relaxed": yield return RelaxedShots(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -349,6 +350,32 @@ namespace PocketWeather
             while (s.BouquetComing) { C.Input.Virtual(spot, false); yield return null; }
             yield return new WaitForSeconds(0.4f);
             yield return Shot("b03_caught");
+        }
+
+        /// <summary>Round 10: Relaxed days in settings, the sunset card's offer, and a relaxed day's
+        /// postcard and results.</summary>
+        IEnumerator RelaxedShots()
+        {
+            var f = GameFlow.I;
+            f.DebugStart(2, true);
+            yield return new WaitForSeconds(1.0f);
+            f.DebugPause(); yield return new WaitForSecondsRealtime(0.6f);
+            f.DebugSettings(); yield return new WaitForSecondsRealtime(1.0f);
+            yield return Shot("r01_settings");
+            f.DebugCloseSettings(); yield return new WaitForSecondsRealtime(0.4f);
+            f.DebugResume(); yield return new WaitForSeconds(0.5f);
+            f.DebugSunset(true); yield return new WaitForSecondsRealtime(3.2f);
+            yield return Shot("r02_sunset_offer");
+            GameSettings.RelaxedDays = true;
+            f.DebugStart(2, false); yield return new WaitForSecondsRealtime(1.8f);
+            yield return Shot("r03_postcard_relaxed");
+            f.DebugCloseMenus();
+            f.DebugStart(2, true); yield return new WaitForSeconds(1.0f);
+            f.DebugSaveDay();
+            while (f.Current != GameFlow.State.Results) yield return null;
+            yield return new WaitForSecondsRealtime(2.0f);
+            yield return Shot("r04_results_relaxed");
+            GameSettings.RelaxedDays = false;
         }
 
         IEnumerator Menus()

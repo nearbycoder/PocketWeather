@@ -396,6 +396,16 @@ namespace PocketWeather
             f.DebugCloseMenus();
             f.DebugStart(1, true); yield return Settle(1.2f);
             f.DebugSunset(); yield return Settle(3.2f); Audit("sunset");
+            f.DebugStart(1, true); yield return Settle(1.2f);
+            f.DebugSunset(true); yield return Settle(3.2f); Audit("sunset, offering a slower sun");
+            // Settings > Relaxed days: the postcard's par line and the results card's par stamp say so
+            GameSettings.RelaxedDays = true;
+            f.DebugStart(2, false); yield return Settle(1.6f); Audit("postcard, relaxed day");
+            f.DebugCloseMenus();
+            f.DebugStart(2, true); yield return Settle(1.2f);
+            f.DebugResults(false, true); yield return Settle(1.6f); Audit("results, relaxed day");
+            f.DebugCloseMenus();
+            GameSettings.RelaxedDays = false;
             f.DebugEnding(); yield return Settle(4f); Audit("ending");
             f.DebugStart(3, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 4");
             f.DebugStart(11, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 12 (7 needs)");

@@ -98,6 +98,13 @@ namespace PocketWeather
             results.OnMap = () => Transition(ShowMapNow);
             fail.OnRetry = () => StartLevel(LevelIndex, Encore);
             fail.OnMap = () => Transition(ShowMapNow);
+            fail.OnSlower = () =>
+            {
+                GameSettings.RelaxedDays = true;
+                GameSettings.Save();
+                Debug.Log("[PW] relaxed days: on, from the sunset card");
+                StartLevel(LevelIndex, Encore);
+            };
             ending.OnDone = () => Transition(ShowMapNow);
         }
 
@@ -145,16 +152,20 @@ namespace PocketWeather
         public void DebugSettings() => OpenSettings(pause);
         public void DebugCloseSettings() => CloseSettings();
         public void DebugResume() => Resume();
-        public void DebugSunset() => OnSunset();
+        /// <param name="offerSlower">show the sunset card's "Slower sun" whatever the count (screenshots, UI audit)</param>
+        public void DebugSunset(bool offerSlower = false) { forceSlowerOffer = offerSlower; OnSunset(); }
+        bool forceSlowerOffer;
         /// <param name="firstSave">as if the day had just been saved for the first time (the Encore note shows)</param>
-        public void DebugResults(bool firstSave = false)
+        /// <param name="relaxed">as if the day had run relaxed (no par stamp, and the card says why)</param>
+        public void DebugResults(bool firstSave = false, bool relaxed = false)
         {
             if (Level == null) return;
             Level.Running = false;
             Current = State.Results;
             Hud.SetVisible(false, 0.2f);
-            results.Show(Level.Def, SaveData.StampSaved | SaveData.StampPar, firstSave ? SaveData.StampSaved | SaveData.StampPar : 0, Level.Def.par - 1f, false,
-                         firstSave ? 99f : Level.Def.par - 1.5f);
+            int earned = relaxed ? SaveData.StampSaved : SaveData.StampSaved | SaveData.StampPar;
+            results.Show(Level.Def, earned, firstSave ? earned : 0, Level.Def.par - 1f, false,
+                         firstSave ? 99f : Level.Def.par - 1.5f, relaxed);
         }
         public bool ResultsEncoreNote => results.EncoreNoteShown;
         public void DebugCloseMenus() => CloseAll();
@@ -369,19 +380,26 @@ namespace PocketWeather
                 Debug.Log($"[PW] level {lvl.Def.id} encore saved at {finish:0.00} fresh={freshEncore != 0} oopses={lvl.Oopses}");
                 yield break;
             }
+            // a relaxed day (Settings > Relaxed days, for any of it) is saved and finds its delight as
+            // usual; "before par" and the best time are about pace, so they wait for the usual sun
+            bool relaxed = lvl.WasRelaxed;
             int stamps = SaveData.StampSaved;
-            if (finish <= lvl.Def.par + 1e-3f) stamps |= SaveData.StampPar;
+            if (finish <= lvl.Def.par + 1e-3f && !relaxed) stamps |= SaveData.StampPar;
             if (DelightFoundThisRun) stamps |= SaveData.StampDelight;
             int before = SaveData.Get(lvl.Def.id).stamps;
             int fresh = SaveData.Award(lvl.Def.id, stamps & ~SaveData.StampDelight);
             fresh |= (DelightFoundThisRun && (before & SaveData.StampDelight) == 0) ? SaveData.StampDelight : 0;
             float previousBest = SaveData.Get(lvl.Def.id).bestHour;
-            SaveData.RecordFinish(lvl.Def.id, finish);
+            if (!relaxed) SaveData.RecordFinish(lvl.Def.id, finish);
             Current = State.Results;
             bool last = LevelIndex >= LevelLibrary.Campaign.Length - 1;
-            results.Show(lvl.Def, stamps, fresh, finish, last, previousBest);
-            Debug.Log($"[PW] level {lvl.Def.id} saved at {finish:0.00} (par {lvl.Def.par}) stamps={stamps} fresh={fresh} oopses={lvl.Oopses}");
+            results.Show(lvl.Def, stamps, fresh, finish, last, previousBest, relaxed);
+            Debug.Log($"[PW] level {lvl.Def.id} saved at {finish:0.00} (par {lvl.Def.par}){(relaxed ? " relaxed" : "")} stamps={stamps} fresh={fresh} oopses={lvl.Oopses}");
         }
+
+        /// <summary>Sunsets per day since the game started.</summary>
+        readonly System.Collections.Generic.Dictionary<string, int> sunsets = new();
+        public bool SunsetOffersSlower => fail.OfferingSlower;
 
         void OnSunset()
         {
@@ -407,8 +425,14 @@ namespace PocketWeather
                 yield return null;
             }
             Hud.SetVisible(false, 0.4f);
-            fail.Show(lvl);
-            Debug.Log($"[PW] level {lvl.Def.id} sunset failed");
+            // a second sunset on the same day offers a slower sun (Settings > Relaxed days)
+            string key = lvl.Def.encore ? lvl.Def.id + " encore" : lvl.Def.id;
+            sunsets.TryGetValue(key, out int count);
+            sunsets[key] = ++count;
+            bool offer = forceSlowerOffer || (count >= 2 && !lvl.Def.encore && !GameSettings.RelaxedDays);
+            forceSlowerOffer = false;
+            fail.Show(lvl, offer);
+            Debug.Log($"[PW] level {lvl.Def.id} sunset failed (sunset {count} on this day{(offer ? ", offering a slower sun" : "")})");
         }
 
         void NextLevel()

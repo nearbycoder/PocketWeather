@@ -23,6 +23,17 @@ namespace PocketWeather
         public static int Graphics { get => PlayerPrefs.GetInt("pw.gfx", 0); set => PlayerPrefs.SetInt("pw.gfx", value); }
         /// <summary>Accessibility: a press starts the rain and another stops it, instead of holding.</summary>
         public static bool RainToggle { get => PlayerPrefs.GetInt("pw.raintoggle", 0) == 1; set => PlayerPrefs.SetInt("pw.raintoggle", value ? 1 : 0); }
+        /// <summary>Accessibility: on an ordinary day the sun takes half as long again to cross the sky
+        /// (Encores keep their scorcher pace). Takes effect at once, even mid-day.</summary>
+        public static bool RelaxedDays
+        {
+            // read every frame by the day clock. Bots and self-tests start with it off whatever their
+            // sandbox's prefs say, so one test turning it on can't slow the next one's days
+            // (-pwRelaxed starts them with it on)
+            get => relaxed ??= GameRoot.HasArg("-pwRelaxed") || (!GameRoot.Automated && PlayerPrefs.GetInt("pw.relaxed", 0) == 1);
+            set { relaxed = value; PlayerPrefs.SetInt("pw.relaxed", value ? 1 : 0); }
+        }
+        static bool? relaxed;
         public static bool Hints { get => PlayerPrefs.GetInt("pw.hints", 1) == 1; set => PlayerPrefs.SetInt("pw.hints", value ? 1 : 0); }
         /// <summary>0 auto (when touch is used), 1 always, 2 never.</summary>
         public static int TouchButtons { get => PlayerPrefs.GetInt("pw.touchbtn", 0); set => PlayerPrefs.SetInt("pw.touchbtn", value); }

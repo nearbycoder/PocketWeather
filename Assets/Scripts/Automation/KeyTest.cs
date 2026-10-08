@@ -342,6 +342,71 @@ namespace PocketWeather
             }
             C.Input.VirtualMode = false;
 
+            // --- Settings > Relaxed days: an ordinary day's sun runs at 2/3, an Encore's doesn't
+            GameFlow.I.DebugCloseMenus();
+            GameSettings.RelaxedDays = true;
+            foreach (bool encore in new[] { false, true })
+            {
+                GameFlow.I.DebugStart(0, true, encore);
+                yield return new WaitForSeconds(0.5f);
+                float h0 = L.Hour, e0 = L.Elapsed;
+                yield return new WaitForSeconds(2.5f);
+                float rate = (L.Hour - h0) / Mathf.Max(0.001f, L.Elapsed - e0);
+                float usual = (L.Def.endHour - L.Def.startHour) / L.Def.dayLength;   // an Encore's dayLength is already its scorcher's
+                float want = encore ? usual : usual / LevelLibrary.RelaxedDayScale;
+                Check(encore ? "relaxed days leave an Encore's scorcher pace alone" : "relaxed days run an ordinary day's sun at 2/3",
+                      Mathf.Abs(rate / want - 1f) < 0.03f, $"{rate * 60f:0.000} h/min over {L.Elapsed - e0:0.0}s, want {want * 60f:0.000} (usual {usual * 60f:0.000})");
+            }
+
+            // --- a relaxed day is saved (stamp and all) but keeps "before par" and the best time for the usual pace
+            GameFlow.I.DebugCloseMenus();
+            SaveData.DebugForget("level02");
+            GameFlow.I.DebugStart(1, true);
+            yield return new WaitForSeconds(1.0f);
+            GameFlow.I.DebugSaveDay();
+            yield return WaitFor(() => Now == GameFlow.State.Results, 10f);
+            yield return new WaitForSecondsRealtime(1.0f);
+            var rel = SaveData.Get("level02");
+            Check("a relaxed day is saved without the par stamp or a best time",
+                  Now == GameFlow.State.Results && SaveData.Has("level02", SaveData.StampSaved) && !SaveData.Has("level02", SaveData.StampPar) && rel.bestHour > 90f,
+                  $"{Now}, stamps {rel.stamps}, best {rel.bestHour:0.00}");
+            Check("its results card says the par stamp needs the usual pace", TextShowing(ResultsCard.RelaxedParLabel) && TextShowing("on a relaxed day"));
+            GameFlow.I.DebugCloseMenus();
+            GameFlow.I.DebugStart(1, false);
+            GameFlow.I.DebugShowPostcard();
+            yield return new WaitForSecondsRealtime(1.0f);
+            Check("a relaxed day's postcard says so", TextShowing(Postcard.RelaxedParLine));
+            GameFlow.I.DebugCloseMenus();
+
+            // --- the sunset card offers a slower sun from the day's second sunset, and it works
+            GameSettings.RelaxedDays = false;
+            for (int sunset = 1; sunset <= 2; sunset++)
+            {
+                GameFlow.I.DebugStart(2, true);
+                yield return new WaitForSeconds(0.5f);
+                L.SetHour(L.Def.endHour - 0.02f);
+                yield return WaitFor(() => Now == GameFlow.State.Failed, 5f);
+                yield return new WaitForSecondsRealtime(2.5f);
+                bool offered = GameFlow.I.SunsetOffersSlower && GameObject.Find("Btn_" + FailCard.SlowerLabel) != null;
+                if (sunset == 1) Check("the first sunset doesn't offer a slower sun", Now == GameFlow.State.Failed && !offered, $"{Now}, offered {offered}");
+                else Check("the second sunset on the same day offers a slower sun", Now == GameFlow.State.Failed && offered, $"{Now}, offered {offered}");
+            }
+            var slower = GameObject.Find("Btn_" + FailCard.SlowerLabel);
+            if (slower != null)
+            {
+                EventSystem.current.SetSelectedGameObject(slower);
+                yield return Press(Key.Enter);
+                yield return WaitFor(() => Now == GameFlow.State.Intro || Now == GameFlow.State.Playing, 6f);
+                yield return new WaitForSecondsRealtime(1.0f);
+                if (Now == GameFlow.State.Intro) { yield return Press(Key.Enter); yield return WaitFor(() => Now == GameFlow.State.Playing, 5f); }
+                Check("Slower sun turns relaxed days on and goes back into the day",
+                      GameSettings.RelaxedDays && Now == GameFlow.State.Playing && L.Def.id == "level03" && L.Pace < 1f && L.Hour < L.Def.startHour + 0.5f,
+                      $"relaxed {GameSettings.RelaxedDays}, {Now}, {L?.Def.id}, pace {L?.Pace:0.00}, hour {L?.Hour:0.00}");
+            }
+            GameSettings.RelaxedDays = false;
+            GameSettings.Save();
+            GameFlow.I.DebugCloseMenus();
+
             // --- a save from before Encore best times (round 6) loads with its stamps and none
             var old = SaveData.DebugParse("{\"levels\":[{\"id\":\"level01\",\"stamps\":15,\"bestHour\":10.5,\"plays\":3}],\"seenTitle\":true}");
             Check("a round-6 save loads with its stamps and no scorcher best", old != null && old.Count == 1 && old[0].stamps == 15 && Mathf.Approximately(old[0].bestHour, 10.5f) && !old[0].HasEncoreBest,
