@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Builds the store-page feature trailer from a scripted capture.
 
-    R=$PWD/Recordings
-    PW_W=1920 PW_H=1080 Tools/play.sh -pwTrailer -pwFreshSave -pwVideo $R/trailer -pwVideoQuality 95 \
-        -logFile $R/trailer.log
-    Tools/.venv/bin/python Tools/make_trailer.py docs/media/pocket-weather-trailer.mp4 $R/trailer $R/trailer.log
+    R=$PWD/Recordings/trailer-capture
+    PW_CONFIG=$R/config PW_W=1920 PW_H=1080 Tools/play.sh -pwTrailer -pwFreshSave -pwVideo $R/frames \
+        -pwVideoQuality 95 -logFile $R/trailer.log
+    Tools/.venv/bin/python Tools/make_trailer.py docs/media/pocket-weather-trailer.mp4 $R/frames $R/trailer.log
+
+The capture is shot at Settings > Graphics: Ultra (-pwTrailerGraphics high picks another step) and
+keeps its 30 fps whatever that costs, since the game clock waits for every frame.
 
 More "<frames dir> <log>" pairs can follow: a later capture's shots replace same-named ones, so a
 few shots can be re-recorded with -pwShots (e.g. -pwShots 6,map) without redoing the rest.
@@ -15,7 +18,7 @@ draws the captions, title card and end card with ImageMagick in the game's own f
 colours, chains the beats with ffmpeg crossfades, and mixes a music bed from the game's own tracks
 under the captured sound effects (ducked whenever they speak up), loudness-normalised.
 It also writes the README's logo, teaser loop and trailer poster next to the trailer, and two
-frames per beat (into Recordings/trailer_work/check) for checking.
+frames per beat (into <capture's parent>/trailer_work/check) for checking.
 
 Needs ffmpeg, ImageMagick 7 (`magick`) and numpy + scipy (Tools/.venv).
 """
@@ -36,7 +39,8 @@ RES = os.path.join(ROOT, "Assets", "Resources")
 FONT_HEAD = os.path.join(RES, "Fonts", "Fredoka-SemiBold.ttf")
 FONT_BODY = os.path.join(RES, "Fonts", "Nunito-Bold.ttf")
 ICONS = os.path.join(RES, "Icons")
-MUSIC = os.path.join(ROOT, "Assets", "Music")
+MUSIC = os.path.join(ROOT, "Assets", "Music")                  # the tracks (asset bundles in a build)
+STINGS = os.path.join(RES, "Audio", "Music")                    # the stingers stayed in Resources
 
 W, H, FPS, SR = 1920, 1080, 30, 48000
 SPF = SR // FPS                       # recorded audio samples per video frame
@@ -59,15 +63,17 @@ TIMELINE = [
     dict(id="cold_rainbow", parts=[("w_rainbow", 0.6, 4.4)], trans=("fade", 0.3)),
     dict(id="title", kind="title", parts=[("title_bg", 0.6, 4.8)], trans=("fadewhite", 0.6)),
     # one beat per feature
-    dict(id="pip", parts=[("pip_meet", 0.0, 5.0)], trans=FADE,
+    dict(id="pip", parts=[("pip_meet", 0.0, 4.6)], trans=FADE,
          cap=("pip", SKY, "Meet Pip, a tiny cloud", "Glide anywhere: Pip squishes after your mouse or finger")),
     dict(id="rain", parts=[("rain_bloom", 0.4, 5.0)], trans=FADE,
          cap=("drop", SKY, "Hold to rain", "Soil darkens, grass greens, flowers pop, and every drop plays a note")),
     dict(id="drink", parts=[("drink", 0.2, 4.2)], trans=FADE,
          cap=("drop", MINT, "Drink to refill", "Water is your only resource: float over ponds and the sea")),
-    dict(id="band", parts=[("just_right", 0.5, 4.9)], trans=FADE,
-         cap=("carrot", BUTTER, "Not too much, not too little", "Overwater a bed and it goes soggy")),
-    dict(id="shade", parts=[("shade", 0.5, 6.6)], trans=FADE,
+    # band and shade: each caption leaves before the game's own after-a-mistake hint pops up below it
+    # (the band's part starts in the still lead-in before its shot, so the caption has time to read)
+    dict(id="band", parts=[("just_right", -0.6, 6.8)], trans=FADE, cap_until=4.15,
+         cap=("carrot", BUTTER, "Not too much, not too little", "Each bed has a just-right band. Too much and it goes soggy")),
+    dict(id="shade", parts=[("shade", 0.3, 7.4)], trans=FADE, cap_until=6.1,
          cap=("sheep", BUTTER, "Shade the hot animals", "Your shadow cools them down, but rain on a sheep and it sulks")),
     dict(id="gust", parts=[("gust_boat", 0.3, 6.6)], trans=FADE,
          cap=("wind", MINT, "Flick to blow a gust", "Puff becalmed boats home to the harbour")),
@@ -75,12 +81,10 @@ TIMELINE = [
          cap=("shirt", SKY, "Gusts dry the washing", "...and rain soaks it again, so mind what you water")),
     dict(id="rainbow", parts=[("rainbow", 0.0, 5.3)], trans=FADE,
          cap=("rainbow", LILAC, "Make rainbows", "Rain, then step aside: sunshine on the mist makes a rainbow")),
-    dict(id="windmill", parts=[("windmill", 0.6, 4.8)], trans=FADE,
-         cap=("windmill", MINT, "Spin up the windmill", "A few strong gusts get the sails turning")),
     dict(id="pond", parts=[("pond", 0.0, 5.0)], trans=FADE,
          cap=("duck", SKY, "Not every pond is endless", "Drink the duck pond below its line and the ducks fret")),
     dict(id="fire", parts=[("fire", 0.0, 5.0)], trans=FADE,
-         cap=("fire", CORAL, "Rain out the fires", "...before they spread, but keep the campers' campfire lit")),
+         cap=("fire", CORAL, "Rain out the fires", "They light up the night, and spread if you let them")),
     dict(id="regatta", parts=[("regatta", 0.6, 3.4), ("castle", 1.2, 2.6)], trans=FADE,
          cap=("boat", SKY, "Race the regatta", "Boats to their buoys, and keep the sandcastle dry")),
     dict(id="heat", parts=[("heatwave", 0.4, 5.2)], trans=FADE,
@@ -92,8 +96,12 @@ TIMELINE = [
          cap=("stamp_sun", BUTTER, "Save the day", "Meet every need at once, then collect all three stamps")),
     dict(id="map", parts=[("map", 0.3, 2.7), ("postcard", 0.4, 2.4)], trans=FADE,
          cap=("heart", CORAL, "Twelve days, one summer", "From Rosa's first flower bed to her wedding with Tom")),
-    dict(id="play", parts=[("touch", 0.3, 3.2), ("settings", 1.15, 1.6)], trans=FADE, cap_until=3.35,
-         cap=("hand", LILAC, "Play your way", "Mouse, keyboard, gamepad or touch, with tap-to-rain and more")),
+    dict(id="encore", parts=[("encore_card", 1.0, 2.5), ("encore_play", 0.2, 3.6)], trans=FADE,
+         cap=("stamp_encore", "#FF9A5C", "Then play it again as an Encore", "A saved day comes back as a scorcher, for a fourth stamp")),
+    # the settings part has no caption (the panel fills the middle): the focus ring climbs to Graphics,
+    # which steps Medium, High, Ultra
+    dict(id="play", parts=[("touch", 0.3, 3.2), ("settings", 1.2, 4.1)], trans=FADE, cap_until=3.35,
+         cap=("hand", LILAC, "Play your way", "Mouse, keys, gamepad or touch, with tap-to-rain and relaxed days")),
     # escalation montage: hard cuts on the beat (the bed is 92 bpm, so two beats = 1.304 s)
     dict(id="montage", parts=[("m_fire", 0.6, 1.304), ("m_boat", 0.5, 1.304), ("m_windmill", 0.1, 1.304),
                               ("m_rainbow", 3.1, 1.304), ("delight_campfire", 0.15, 1.304), ("w_sneeze", 5.9, 1.304),
@@ -398,8 +406,8 @@ def build_audio(timeline, starts, total, work):
     gain[i0:i1] = db(-1)                                      # the montage leans in
     place(bed, main * gain[:, None], title_t)
     # stingers: a rainbow run as the logo pops, the day-saved fanfare on the end card
-    place(bed, decode(os.path.join(MUSIC, "sting_rainbow.ogg")), title_t + 0.3, db(-2))
-    place(bed, decode(os.path.join(MUSIC, "sting_day_saved.ogg")), end_t + 0.4, db(-2))
+    place(bed, decode(os.path.join(STINGS, "sting_rainbow.ogg")), title_t + 0.3, db(-2))
+    place(bed, decode(os.path.join(STINGS, "sting_day_saved.ogg")), end_t + 0.4, db(-2))
 
     # duck the bed under the captured sound: up to 7 dB when the game speaks up
     env = envelope(game)

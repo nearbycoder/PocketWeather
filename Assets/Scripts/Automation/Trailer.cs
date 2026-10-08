@@ -2,6 +2,9 @@ using System;
 using System.Collections;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 
 namespace PocketWeather
 {
@@ -11,7 +14,10 @@ namespace PocketWeather
     /// through the same virtual input the bots use, and logs <c>[PW] mark &lt;frame&gt; shot &lt;name&gt;
     /// begin|end</c> so <c>Tools/make_trailer.py</c> can cut the beats out of the recording. The
     /// in-game music is muted (the trailer lays its own bed) but keeps playing the bed's track, so
-    /// the musical raindrops stay in key with it. <c>-pwShots title,1,12,map,end</c> records a subset.
+    /// the musical raindrops stay in key with it. <c>-pwShots title,1,12,map,encore,end</c> records a subset.
+    /// It's shot at Settings &gt; Graphics: Ultra (<c>-pwTrailerGraphics low|medium|high|ultra</c> picks
+    /// another step): <c>-pwVideo</c>'s fixed clock gives every frame the time it needs, so the capture
+    /// keeps its 30 fps at any step. The setting is put back before the game quits.
     /// </summary>
     public class Trailer : MonoBehaviour
     {
@@ -29,6 +35,9 @@ namespace PocketWeather
         GameFlow Flow => GameFlow.I;
 
         // the camera's focus offset eases toward a target (or follows Pip) while the director owns it
+        static Quality.Mode TrailerGfx =>
+            Enum.TryParse(GameRoot.Arg("-pwTrailerGraphics", "ultra"), true, out Quality.Mode m) && m != Quality.Mode.Auto ? m : Quality.Mode.Ultra;
+
         bool owning;
         bool followPip;
         Vector3 focusTarget;
@@ -37,6 +46,10 @@ namespace PocketWeather
         IEnumerator Start()
         {
             AudioHub.MuteMusic = true;
+            int gfx0 = GameSettings.Graphics;
+            GameSettings.Graphics = (int)TrailerGfx;
+            Quality.Apply();
+            Log($"trailer graphics: {Quality.ModeName(TrailerGfx)} (tier {Quality.Current})");
             yield return Wait(1.0f);
             string only = GameRoot.Arg("-pwShots");
             bool Want(string k) => only == null || only.Split(',').Contains(k);
@@ -54,8 +67,12 @@ namespace PocketWeather
             if (Want("11")) yield return Day11();
             if (Want("12")) yield return Day12();
             if (Want("map")) yield return MapAndPostcard();
+            if (Want("encore")) yield return EncoreDay();
             if (Want("end")) yield return EndBackdrop();
             Log("trailer done");
+            GameSettings.Graphics = gfx0;
+            Quality.Apply();
+            GameSettings.Save();
             AudioHub.MuteMusic = false;
             Hud.ForceTouchButtons = false;
             yield return Wait(0.3f);
@@ -80,8 +97,10 @@ namespace PocketWeather
             // the title screen's live diorama without the menu: the trailer draws its own logo on top
             owning = false;
             Flow.DebugShowTitle();
-            Flow.DebugCloseMenus();
             BedTrack();
+            yield return WaitU(2.0f);
+            yield return Shot("title_menu", WaitU(1.5f));    // the README's title screenshot, not in the cut
+            Flow.DebugCloseMenus();
             yield return Wait(2.0f);
             yield return Shot("title_bg", Wait(6.0f));
         }
@@ -213,6 +232,7 @@ namespace PocketWeather
             var carrots = (BedNeed)L.FindNeed("carrots");
             var cabbages = (BedNeed)L.FindNeed("cabbages");
             Frame((carrots.transform.position + cabbages.transform.position) * 0.5f, 0.62f, true);
+            MistakeHints();
             yield return Wait(0.8f);
             yield return Shot("just_right", JustRight(carrots, cabbages));
         }
@@ -239,6 +259,7 @@ namespace PocketWeather
             var sheep2 = (ShadeNeed)L.FindNeed("sheep2");
             var lamb = L.FindNeed("lamb");
             Frame((sheep1.transform.position + sheep2.transform.position) * 0.5f, 0.6f, true);
+            MistakeHints();
             yield return Wait(0.8f);
             yield return Shot("shade", Shade(sheep1, sheep2));
 
@@ -320,14 +341,48 @@ namespace PocketWeather
             yield return Wait(1.2f);
         }
 
+        /// <summary>With the keys: the focus ring climbs the settings to Graphics, and Right steps it up
+        /// two notches to the trailer's own setting, applied as it goes.</summary>
         IEnumerator Settings()
         {
+            var kb = InputSystem.AddDevice<Keyboard>("TrailerKeyboard");
+            int target = Quality.SliderIndex(TrailerGfx);
+            int from = Mathf.Max(1, target - 2);
+            GameSettings.Graphics = (int)Quality.SliderModes[from];
+            Quality.Apply();
             Flow.DebugPause();
-            yield return WaitU(1.2f);
+            yield return WaitU(1.0f);
             Flow.DebugSettings();
-            yield return WaitU(2.6f);
+            yield return WaitU(0.7f);
+            var slider = Flow.Settings.GraphicsSlider.gameObject;
+            for (int i = 0; i < 16 && EventSystem.current.currentSelectedGameObject != slider; i++)
+            {
+                yield return Press(kb, Key.UpArrow);
+                yield return WaitU(0.1f);
+            }
+            yield return WaitU(0.7f);
+            for (int i = from; i < target; i++)
+            {
+                yield return Press(kb, Key.RightArrow);
+                yield return WaitU(0.75f);
+            }
+            Log($"settings: graphics {Quality.ModeName((Quality.Mode)GameSettings.Graphics)}, tier {Quality.Current}");
+            yield return WaitU(0.6f);
             Flow.DebugCloseSettings();
             Flow.DebugResume();
+            InputSystem.RemoveDevice(kb);
+            GameSettings.Graphics = (int)TrailerGfx;
+            Quality.Apply();
+        }
+
+        static IEnumerator Press(Keyboard kb, Key k)
+        {
+            InputSystem.QueueStateEvent(kb, new KeyboardState(k));
+            yield return null;
+            yield return null;
+            InputSystem.QueueStateEvent(kb, new KeyboardState());
+            yield return null;
+            yield return null;
         }
 
         IEnumerator Day6()
@@ -616,6 +671,24 @@ namespace PocketWeather
             yield return Shot("postcard", WaitU(3.6f));
         }
 
+        IEnumerator EncoreDay()
+        {
+            // a saved day's Encore: its postcard, then the scorcher itself, with the sun racing and
+            // the bed drying as Pip rains on it (Day 2 is saved by the map's stamps above)
+            owning = false;
+            Flow.Hud.SetChrome(true);
+            Flow.DebugStart(1, false, true);
+            Flow.DebugShowPostcard();
+            BedTrack();
+            yield return Shot("encore_card", WaitU(3.6f));
+            yield return Open(2, 9.6f, 50f, new Vector3(-4.6f, 0, -2.6f), "morning", true, 0.1f);
+            var carrots = (BedNeed)L.FindNeed("carrots");
+            var c = carrots.transform.position;
+            C.Teleport(c + new Vector3(-1.6f, 0, 0.5f));
+            Frame(c, 0.66f, true);
+            yield return Shot("encore_play", RainBed(carrots, 1.4f));
+        }
+
         IEnumerator EndBackdrop()
         {
             // the ending's sunset celebration, without its card
@@ -631,9 +704,9 @@ namespace PocketWeather
 
         // ------------------------------------------------------------------ staging helpers
 
-        IEnumerator Open(int day, float hour, float water, Vector3 pipAt, string music = "morning")
+        IEnumerator Open(int day, float hour, float water, Vector3 pipAt, string music = "morning", bool encore = false, float settle = 1.0f)
         {
-            Flow.DebugStart(day - 1, true);
+            Flow.DebugStart(day - 1, true, encore);
             yield return null;
             // no tutorial hints or ghost hands in the trailer
             var ob = Flow.GetComponent<Onboarding>();
@@ -649,7 +722,21 @@ namespace PocketWeather
             followPip = false;
             focusRate = 3f;
             Frame(Vector3.zero, 1f, true);
-            yield return Wait(1.0f);
+            yield return Wait(settle);
+        }
+
+        /// <summary>Open() removes the onboarding with its day hints and ghost hands; this keeps the part
+        /// that answers a mistake, in the game's own words (once per kind, as in play).</summary>
+        void MistakeHints()
+        {
+            var shown = new System.Collections.Generic.HashSet<string>();
+            L.OnOops += n =>
+            {
+                var (kind, text, icon) = Onboarding.RecoveryFor(n);
+                if (kind == null || !shown.Add(kind)) return;
+                Flow.Hud.ShowHint(text, icon, 4.5f);
+                Log($"after a mistake ({kind}, {n.Id}): {text}");
+            };
         }
 
         /// <summary>Menus switch the (muted) music; put the bed's track back so any rain notes stay in key.</summary>
