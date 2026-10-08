@@ -2561,7 +2561,19 @@ opened in a private KWin on a virtual screen, and every tool run used a throwawa
 `Recordings/r12/`. The machine's load average was 18 to 63 during the round; runs are noted with
 their load.
 
-FINAL_SELFTEST_PLACEHOLDER
+The full self-test, run inside its private KWin on a Linux build of `5fb8e94` (the round's code;
+load 22 at the start, 16 at the end), **passed every row** (`Recordings/r12/selftest-final.txt`):
+- validator and loop seams
+- the Linux launcher with stand-in games (9 cases), and the real build booting through it
+- keyboard 78 checks (was 67), gamepad 37 (was 32) and touch 23
+- the UI audit at eight sizes, 28 checks each, now with every menu control's focus ring
+- the AutoPilot campaign 12/12 with **12/12 delights**, no exceptions
+- prefs in the game's own folder, and all 13 windows on the private KWin's display with no X11
+
+The real prefs files' `pw.` entries were identical before the round's first tool run and after the
+last, and the game's own prefs file was byte-identical (the shared `unity3d/unknown/unknown/prefs`
+changed outside its `pw.` entries; other Unity games write it). No helper from this repo's private
+KWins was left running: no `pw-nested` socket, KWin or D-Bus session remained after the runs.
 
 ### R12-1. A Graphics Fidelity slider: done
 
@@ -2571,27 +2583,30 @@ keys or the d-pad, and each step ticks a little higher. It's saved in the same p
 three-way button (`pw.gfx`, with Medium and Ultra as new values), so a player's Auto, High or Low
 carries over. Auto is unchanged: High, dropping to Low if the GPU can't keep up, remembered.
 
-| Step | What it changes | GPU ms a frame (Days 10 / 9 night / 12) | Whole frame, avg ms (Days 10 / 9 / 12) |
+| Step | What it changes | GPU ms a frame (Days 10 / 9 night / 12) | Whole frame, avg ms (p95) (Days 10 / 9 / 12) |
 | --- | --- | --- | --- |
-| **Low** | 75% resolution (FSR 1 upscale on desktop), no MSAA, no ambient occlusion, gaussian depth of field, one 1024 shadow cascade at 28 m with cheap soft shadows, no lights besides the sun, 0.6x particles | 1.06 / 1.00 / 0.84 | 23.7 / 16.6 / 9.1 |
-| **Medium** | full resolution, 2x MSAA, no ambient occlusion, bokeh depth of field, a 2048 shadow map with medium soft shadows | 1.37 / 1.43 / 1.12 | 20.1 / 22.6 / 9.9 |
-| **High** (Auto's default) | the original look: 4x MSAA, ambient occlusion, bokeh, two 4096 cascades, high-quality bloom; now also the fires' light (R12-2) | 1.62 / 1.91 / 1.62 | 23.1 / 21.5 / 9.7 |
-| **Ultra** | rendered at 1.5x and downsampled, four shadow cascades, ambient occlusion at high samples and blur and 1.4x deeper, high-quality bokeh sampling, a 64-step colour LUT, a 512-wide wetness map (crisper wet and green edges), 1.6x particles and a second scatter of tufts and wildflowers | 3.29 / 3.66 / 3.02 | 28.8 / 16.2 / 10.5 |
+| **Low** | 75% resolution (FSR 1 upscale on desktop), no MSAA, no ambient occlusion, gaussian depth of field, one 1024 shadow cascade at 28 m with cheap soft shadows, no lights besides the sun, 0.6x particles | 0.85 / 0.88 / 0.89 | 10.3 (18.1) / 11.3 (20.1) / 12.6 (21.6) |
+| **Medium** | full resolution, 2x MSAA, no ambient occlusion, bokeh depth of field, a 2048 shadow map with medium soft shadows | 1.22 / 1.16 / 1.15 | 12.2 (21.8) / 12.2 (21.8) / 12.1 (19.7) |
+| **High** (Auto's default) | the original look: 4x MSAA, ambient occlusion, bokeh, two 4096 cascades, high-quality bloom; now also the fires' light (R12-2) | 1.58 / 1.47 / 1.48 | 10.1 (17.6) / 12.9 (22.4) / 12.8 (21.1) |
+| **Ultra** | rendered at 1.5x and downsampled, four shadow cascades, ambient occlusion at high samples and blur and 1.4x deeper, high-quality bokeh sampling, a 64-step colour LUT, a 512-wide wetness map (crisper wet and green edges), 1.6x particles and a second scatter of tufts and wildflowers | 2.97 / 2.97 / 2.79 | 17.2 (25.0) / 16.4 (25.6) / 16.5 (27.3) |
 
-Measured by `-pwBench` (Vulkan, 1600x900, in the private KWin, `Recordings/r12/bench-vk-r12.log`),
-8 s of the same raining figure-of-eight per step, each step run twice (Low to Ultra, then back) and
-averaged; load 22 at the start, 33 at the end. **The GPU column is the honest one.** The whole-frame
-times are set by the CPU, which the other sessions were competing for: the same build gave 5.8 to
-12.5 ms on Day 12 Low and 21.6 to 25.9 ms on Day 10 Low between passes. The GPU's own time is only
-reported on Vulkan here (OpenGL in the private KWin returns none), so the benchmark ran on Vulkan.
+Measured by `-pwBench` on the round's final build (`5fb8e94`; Vulkan, 1600x900, vsync off, in the
+private KWin, `Recordings/r12/bench-vk2-r12.log`): 8 s of the same raining figure-of-eight per step,
+each step run twice (Low to Ultra, then back) and averaged, at load 16. **The GPU column is the
+steady one.** The whole-frame times are set by the CPU, which other sessions share: the two passes of
+one step differed by up to 12 ms (Ultra on Day 10: 11.3 and 23.2), and an earlier run of the same
+steps at load 22 to 33 (`bench-vk-r12.log`) averaged 16 to 29 ms, with GPU times up to 0.7 ms
+higher (Ultra on Day 9) and the same order. The GPU's own time is only reported on Vulkan here (OpenGL in the private KWin returns none),
+so the benchmark ran on Vulkan.
 
 - **High matches round 11's High, and Low its Low.** The same benchmark file was built into round
   11's code (`2f91efd`) and the two builds were run in turn, twice each, 5 s per step (load 18 to 31,
   `Recordings/r12/ab-*.log`): High's GPU time averaged 1.68 ms against round 11's 1.64 ms (runs of
   1.53 to 1.78 and 1.52 to 1.81), Low's 0.95 ms against 0.99 ms. Whole-frame times swung between 9
   and 41 ms for both builds with no consistent difference.
-- **Low costs about 40% less GPU time than High and Ultra about twice High's.** Day 9's night shows
-  the fires' lights: High is 0.3 ms dearer there than on the other days.
+- **Low costs about 40% less GPU time than High, and Ultra about twice High's.** In whole frames on
+  this machine Ultra cost about 4 to 7 ms more than High, and Low wasn't measurably faster than High:
+  the CPU sets the pace here, not the GPU.
 - **Same-frame screenshots** (`-pwScript fidelity`): the game is frozen and the same moment is
   shot at each step. Under the tilt-shift blur, Ultra's differences are mostly fine detail (cleaner
   edges, the extra wildflowers, softer shadow edges, crisper puddle edges); Low is visibly coarser at
@@ -2643,7 +2658,9 @@ turned most of the island yellow. Lights are off at Low.
 
 ![closer](media/improvements/round12/2b-night-light-close.jpg)
 
-- **Cost:** see R12-1's table (Day 9 at High, 0.3 ms of GPU time more than the other days).
+- **Cost:** within run-to-run spread. Day 9's night with every fire lit took 1.47 ms of GPU time at
+  High against 1.58 and 1.48 on the other days (R12-1's table); in the noisier first run, 1.91 against
+  1.62. In the interleaved runs, round 12's High on Day 9 averaged 1.70 ms against round 11's 1.64.
 - The web build compiles and runs it: `web_smoke` passed in all six modes with 0 console errors (see
   R12-4); the headless browsers' screenshots are daytime, so the web's night light was not looked at.
 
@@ -2679,7 +2696,7 @@ turned most of the island yellow. Lights are off at Low.
   (`Recordings/r12/web2-*.log`). An earlier web build of `c9b476c` passed all six too (`web-*.log`).
   The download before the title is **17,650,199 bytes** in `Build/` (17,623,061 in round 11): the
   slider, the focus ring and the light loop's shader variants added 27 KB.
-- The real prefs files' `pw.` entries: see the end of this section.
+- The full self-test and the prefs check: see the top of these results.
 
 ### Found along the way, not fixed
 

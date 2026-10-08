@@ -604,9 +604,10 @@ None of it is in a release yet. What has been verified (on the Linux build unles
 - Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
   off, 99% of frames under 17 ms, on both OpenGL Core (the default) and Vulkan
   (`-force-vulkan`), measured in earlier rounds on a quieter machine. Round 12's GPU times at
-  1600x900 (Vulkan): Low about 1.0 ms, Medium 1.1 to 1.4, High 1.6 to 1.9 (the same as round 11's
-  High) and Ultra 3.0 to 3.7. Whole-frame times that round were set by the machine's load (9 to 41
-  ms for every step and for round 11's build alike), so they say little about the game.
+  1600x900 (Vulkan): Low 0.85 to 0.9 ms, Medium 1.15 to 1.2, High 1.5 to 1.6 (the same as round 11's
+  High) and Ultra 2.8 to 3.0. Whole frames averaged 10 to 13 ms from Low to High and 16 to 17 ms at
+  Ultra with the machine at load 16; they're set by the CPU there, and swung from 9 to 41 ms at
+  higher loads for round 11's build and round 12's alike.
 - The audio mix sits around -14 LUFS with no clipped samples, and every loop is seamless.
 
 Rough edges, honestly:
