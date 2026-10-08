@@ -10,7 +10,10 @@ namespace PocketWeather
     /// </summary>
     public class WetMap : MonoBehaviour
     {
-        const int Size = 256;
+        // texels across the island: Ultra doubles it, for smoother edges where rain darkened the soil
+        // and greened the grass (only shaders read the map, so gameplay is the same at every tier)
+        static int SizeFor(Quality.Tier tier) => tier == Quality.Tier.Ultra ? 512 : 256;
+        int size;
         const int MaxStamps = 64;
 
         RenderTexture a, b;
@@ -27,8 +30,10 @@ namespace PocketWeather
         {
             float pad = 0.6f;
             rect = new Rect(-w / 2 - pad, -d / 2 - pad, w + pad * 2, d + pad * 2);
+            size = SizeFor(Quality.Current);
             a = NewRT();
             b = NewRT();
+            Quality.Changed += OnQualityChanged;
             mat = new Material(Res.Template("PW_WetMapUpdate"));
             Shader.SetGlobalVector("_PW_WetRect", new Vector4(rect.xMin, rect.yMin, 1f / rect.width, 1f / rect.height));
             Shader.SetGlobalTexture("_PW_WetMap", a);
@@ -36,7 +41,7 @@ namespace PocketWeather
 
         RenderTexture NewRT()
         {
-            var rt = new RenderTexture(Size, Mathf.RoundToInt(Size * 0.7f), 0, RenderTextureFormat.ARGBHalf)
+            var rt = new RenderTexture(size, Mathf.RoundToInt(size * 0.7f), 0, RenderTextureFormat.ARGBHalf)
             {
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
@@ -44,6 +49,20 @@ namespace PocketWeather
             };
             rt.Create();
             return rt;
+        }
+
+        /// <summary>The fidelity changed mid-day: carry the map over at the new resolution.</summary>
+        void OnQualityChanged()
+        {
+            int want = SizeFor(Quality.Current);
+            if (a == null || want == size) return;
+            size = want;
+            var na = NewRT();
+            Graphics.Blit(a, na);
+            a.Release(); b.Release();
+            a = na;
+            b = NewRT();
+            Shader.SetGlobalTexture("_PW_WetMap", a);
         }
 
         public Vector2 ToUV(Vector3 p) => new Vector2((p.x - rect.xMin) / rect.width, (p.z - rect.yMin) / rect.height);
@@ -79,6 +98,7 @@ namespace PocketWeather
 
         void OnDestroy()
         {
+            Quality.Changed -= OnQualityChanged;
             if (a != null) a.Release();
             if (b != null) b.Release();
             Shader.SetGlobalTexture("_PW_WetMap", Texture2D.blackTexture);

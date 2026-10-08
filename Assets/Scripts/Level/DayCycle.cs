@@ -60,6 +60,7 @@ namespace PocketWeather
             d.Sun.shadowBias = 0.03f;
             d.Sun.shadowNormalBias = 0.25f;
             RenderSettings.sun = d.Sun;
+            Quality.SunShadows(Quality.Current);
             d.Sky = Res.New("PW_Sky");
             RenderSettings.skybox = d.Sky;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;

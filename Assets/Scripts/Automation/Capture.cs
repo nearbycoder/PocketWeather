@@ -10,7 +10,7 @@ namespace PocketWeather
     /// Scripted screenshot tour, active only with <c>-pwCapture &lt;dir&gt; [-pwScript name]</c>.
     /// Drives Pip through the virtual input API, saves PNGs and quits. Log lines start [PW].
     /// </summary>
-    public class Capture : MonoBehaviour
+    public partial class Capture : MonoBehaviour
     {
         string outDir;
         string script;
@@ -47,6 +47,8 @@ namespace PocketWeather
                 case "relaxed": yield return RelaxedShots(); break;
                 case "late": yield return LateShot(); break;
                 case "mistakes": yield return MistakeShots(); break;
+                case "fidelity": yield return FidelityShots(); break;
+                case "nightlight": yield return NightLightShots(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");

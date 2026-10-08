@@ -237,6 +237,44 @@ namespace PocketWeather
             yield return WaitFor(() => Now == GameFlow.State.Map, 6f);
             Check("pause > Map early in a day goes straight to the map", Now == GameFlow.State.Map, Now.ToString());
 
+            // --- Settings > Graphics: a stepped slider (Auto, Low, Medium, High, Ultra), reached and
+            // moved with the arrow keys, saved and applied at once
+            int gfx0 = GameSettings.Graphics;
+            GameSettings.Graphics = (int)Quality.Mode.Medium;
+            Quality.Apply();
+            GameFlow.I.DebugSettingsFromMap();
+            yield return new WaitForSecondsRealtime(0.6f);
+            var gfx = GameFlow.I.Settings.GraphicsSlider;
+            for (int i = 0; i < 16 && EventSystem.current.currentSelectedGameObject != gfx.gameObject; i++)
+            {
+                yield return Press(Key.UpArrow);
+                yield return new WaitForSecondsRealtime(0.1f);
+            }
+            Check("the arrow keys reach the graphics slider", EventSystem.current.currentSelectedGameObject == gfx.gameObject,
+                  EventSystem.current.currentSelectedGameObject?.name ?? "none");
+            string StepName() => gfx.transform.Find("StepName")?.GetComponent<UnityEngine.UI.Text>()?.text ?? "";
+            Check("the graphics slider shows the saved step", Mathf.RoundToInt(gfx.value) == 2 && StepName() == "Medium", $"{gfx.value}, '{StepName()}'");
+            yield return Press(Key.RightArrow);
+            yield return new WaitForSecondsRealtime(0.2f);
+            Check("Right steps Medium to High, saved and applied", GameSettings.Graphics == (int)Quality.Mode.High && Quality.Current == Quality.Tier.High && StepName() == "High",
+                  $"pref {GameSettings.Graphics}, tier {Quality.Current}, '{StepName()}'");
+            yield return Press(Key.RightArrow);
+            yield return new WaitForSecondsRealtime(0.2f);
+            var urp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
+            Check("Right again is Ultra: supersampled, four shadow cascades", Quality.Current == Quality.Tier.Ultra && StepName() == "Ultra" && urp != null && urp.renderScale > 1.2f && urp.shadowCascadeCount == 4,
+                  $"tier {Quality.Current}, '{StepName()}', scale {urp?.renderScale:0.00}, cascades {urp?.shadowCascadeCount}");
+            for (int i = 0; i < 3; i++) { yield return Press(Key.LeftArrow); yield return new WaitForSecondsRealtime(0.15f); }
+            Check("Left back to Low: 75% resolution, no MSAA", GameSettings.Graphics == (int)Quality.Mode.Low && Quality.Current == Quality.Tier.Low && urp != null && urp.renderScale < 0.8f && urp.msaaSampleCount == 1,
+                  $"pref {GameSettings.Graphics}, tier {Quality.Current}, scale {urp?.renderScale:0.00}, msaa {urp?.msaaSampleCount}");
+            yield return Press(Key.LeftArrow);
+            yield return new WaitForSecondsRealtime(0.2f);
+            Check("and once more is Auto (High on this machine)", GameSettings.Graphics == (int)Quality.Mode.Auto && Quality.Current == Quality.Tier.High && StepName() == "Auto",
+                  $"pref {GameSettings.Graphics}, tier {Quality.Current}, '{StepName()}'");
+            yield return Press(Key.Escape);
+            yield return new WaitForSecondsRealtime(0.5f);
+            GameSettings.Graphics = gfx0;
+            Quality.Apply();
+
             GameFlow.I.DebugStart(0, true);
             yield return new WaitForSeconds(1.0f);
             GameFlow.I.DebugResults();

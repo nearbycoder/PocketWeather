@@ -253,6 +253,31 @@ namespace PocketWeather
             yield return new WaitForSeconds(0.3f);
             Check("RB also gusts", C.WaterUsed >= used0 + Cloud.GustCost - 0.01f, $"water used {C.WaterUsed - used0:0.0}");
 
+            // --- Settings > Graphics with the d-pad: up to the slider, right a step, B to close
+            int gfx0 = GameSettings.Graphics;
+            GameSettings.Graphics = (int)Quality.Mode.Low;
+            Quality.Apply();
+            GameFlow.I.DebugShowMap();
+            yield return new WaitForSecondsRealtime(0.8f);
+            GameFlow.I.DebugSettingsFromMap();
+            yield return new WaitForSecondsRealtime(0.6f);
+            var gfx = GameFlow.I.Settings.GraphicsSlider;
+            for (int i = 0; i < 16 && Selected != gfx.name; i++)
+            {
+                yield return Press(GamepadButton.DpadUp);
+                yield return new WaitForSecondsRealtime(0.1f);
+            }
+            Check("the d-pad reaches the graphics slider", Selected == gfx.name, Selected);
+            yield return Press(GamepadButton.DpadRight);
+            yield return new WaitForSecondsRealtime(0.2f);
+            Check("d-pad right steps Low to Medium, saved and applied", GameSettings.Graphics == (int)Quality.Mode.Medium && Quality.Current == Quality.Tier.Medium,
+                  $"pref {GameSettings.Graphics}, tier {Quality.Current}");
+            yield return Press(GamepadButton.East);
+            yield return new WaitForSecondsRealtime(0.5f);
+            Check("B closes settings", !GameFlow.I.Settings.IsOpen, Now.ToString());
+            GameSettings.Graphics = gfx0;
+            Quality.Apply();
+
             Debug.Log($"[PadTest] done: {passes} passed, {fails} failed");
             yield return new WaitForSecondsRealtime(0.3f);
             Application.Quit();

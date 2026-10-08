@@ -17,12 +17,14 @@ namespace PocketWeather
             ("clover", 7, true), ("pebbles_a", 4, false), ("pebbles_b", 3, false), ("pebbles_c", 3, false), ("mushrooms", 1.5f, true),
         };
 
-        public static void Dress(Level level, Transform parent)
+        /// <param name="ultra">Ultra's extra pass: 60% as many again, from a seed of its own, so the
+        /// usual scatter is the same at every tier.</param>
+        public static void Dress(Level level, Transform parent, bool ultra = false)
         {
             var def = level.Def;
-            float density = 3.2f * def.island.scatter;
+            float density = 3.2f * def.island.scatter * (ultra ? 0.6f : 1f);
             int count = Mathf.RoundToInt(def.island.w * def.island.d * density);
-            var rnd = new System.Random(def.id.GetHashCode() ^ 0x5eed);
+            var rnd = new System.Random(def.id.GetHashCode() ^ (ultra ? 0x0a17a : 0x5eed));
             float total = 0;
             foreach (var k in Kinds) total += k.weight;
             var avoid = new List<(Vector3 p, float r)>();

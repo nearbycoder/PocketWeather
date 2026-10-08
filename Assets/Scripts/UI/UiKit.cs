@@ -338,6 +338,60 @@ namespace PocketWeather
             return s;
         }
 
+        /// <summary>A slider that snaps to named steps: a notch on the track for each, the step's name to
+        /// the right, and a tick that rises in pitch with each step. Arrow keys and the d-pad move it one
+        /// step at a time.</summary>
+        public static Slider StepSlider(Transform parent, string label, int steps, int index, Vector2 pos, Action<int> onChange, Func<int, string> stepName, float width = 560)
+        {
+            var root = Rect("Slider_" + label, parent, new Vector2(0.5f, 0.5f), new Vector2(width, 80), pos);
+            Label(root, label, 34, Ink, new Vector2(200, 60), new Vector2(-width / 2 + 100, 0), false, TextAnchor.MiddleLeft);
+            const float nameW = 160;
+            float trackW = width - 250 - nameW;
+            float trackX = width / 2 - nameW - 24 - trackW / 2;
+            var value = Label(root, stepName(index), 30, Res.Hex("2F7FB0"), new Vector2(nameW, 60), new Vector2(width / 2 - nameW / 2, 0), true, TextAnchor.MiddleRight);
+            value.name = "StepName";
+            var track = Image(root, Rounded, PaperShade, new Vector2(trackW, 22), new Vector2(trackX, 0), null, "Track");
+            track.pixelsPerUnitMultiplier = 52f / 11f;
+            var fillArea = Rect("FillArea", track.transform, new Vector2(0.5f, 0.5f), new Vector2(trackW, 22), Vector2.zero);
+            fillArea.anchorMin = Vector2.zero; fillArea.anchorMax = Vector2.one; fillArea.offsetMin = Vector2.zero; fillArea.offsetMax = Vector2.zero;
+            var fill = Image(fillArea, Rounded, Sky, new Vector2(0, 22), Vector2.zero, null, "Fill");
+            fill.pixelsPerUnitMultiplier = 52f / 11f;
+            fill.rectTransform.anchorMin = new Vector2(0, 0); fill.rectTransform.anchorMax = new Vector2(0, 1);
+            fill.rectTransform.sizeDelta = new Vector2(0, 0);
+            // a notch at each step, over the fill so it shows on both sides of the handle
+            for (int i = 0; i < steps; i++)
+            {
+                var notch = Image(track.transform, Circle, new Color(1, 1, 1, 0.85f), new Vector2(10, 10), new Vector2(-trackW / 2 + trackW * i / (steps - 1), 0), null, "Notch" + i);
+                notch.raycastTarget = false;
+            }
+            var handleArea = Rect("HandleArea", track.transform, new Vector2(0.5f, 0.5f), new Vector2(trackW, 22), Vector2.zero);
+            handleArea.anchorMin = Vector2.zero; handleArea.anchorMax = Vector2.one; handleArea.offsetMin = Vector2.zero; handleArea.offsetMax = Vector2.zero;
+            var handle = Image(handleArea, Circle, White, new Vector2(54, 54), Vector2.zero, null, "Handle");
+            handle.raycastTarget = true;
+            Image(handle.transform, Ring, Sky, new Vector2(54, 54), Vector2.zero, null, "HandleRing");
+            var s = root.gameObject.AddComponent<UnityEngine.UI.Slider>();
+            s.fillRect = fill.rectTransform;
+            s.handleRect = handle.rectTransform;
+            s.targetGraphic = handle;
+            s.direction = UnityEngine.UI.Slider.Direction.LeftToRight;
+            s.wholeNumbers = true;
+            s.minValue = 0; s.maxValue = steps - 1;
+            s.SetValueWithoutNotify(index);
+            var sync = root.gameObject.AddComponent<StepSliderSync>();
+            sync.slider = s; sync.value = value; sync.stepName = stepName;
+            s.onValueChanged.AddListener(v =>
+            {
+                int i = Mathf.RoundToInt(v);
+                value.text = stepName(i);
+                Sfx.Ui("ui_tick", 0.8f, 0.9f + 0.1f * i);
+                Tween.Punch(handle.transform, 0.18f, 0.25f);
+                onChange(i);
+            });
+            var bg = root.gameObject.AddComponent<Image>();
+            bg.color = new Color(0, 0, 0, 0);
+            return s;
+        }
+
         public static Toggle Toggle(Transform parent, string label, bool value, Vector2 pos, Action<bool> onChange, float width = 560)
         {
             var root = Rect("Toggle_" + label, parent, new Vector2(0.5f, 0.5f), new Vector2(width, 76), pos);
@@ -550,6 +604,21 @@ namespace PocketWeather
             if (toggle == null || toggle.isOn == shown) return;
             shown = toggle.isOn;
             show?.Invoke(shown);
+        }
+    }
+
+    /// <summary>Keeps a step slider's name in step when its value is set without a notification (the
+    /// settings menu reopening, or Auto graphics dropping to Low behind it).</summary>
+    public class StepSliderSync : MonoBehaviour
+    {
+        public UnityEngine.UI.Slider slider;
+        public Text value;
+        public Func<int, string> stepName;
+        void LateUpdate()
+        {
+            if (slider == null || value == null || stepName == null) return;
+            var s = stepName(Mathf.RoundToInt(slider.value));
+            if (value.text != s) value.text = s;
         }
     }
 

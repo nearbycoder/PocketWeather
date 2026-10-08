@@ -275,8 +275,10 @@ namespace PocketWeather
         void Update()
         {
             float i = Mathf.Clamp01(Intensity);
-            var e1 = flames.emission; e1.rateOverTime = 42f * i * Size;
-            var e2 = embers.emission; e2.rateOverTime = 6f * i * Size;
+            float density = Quality.ParticleDensity;
+            var e1 = flames.emission; e1.rateOverTime = 42f * i * Size * density;
+            var e2 = embers.emission; e2.rateOverTime = 6f * i * Size * density;
+            glow.enabled = Quality.ExtraLights;
             glow.intensity = i * (1.6f + 0.5f * Mathf.PerlinNoise(Time.time * 6f, 0f)) * (0.6f + (Level.Current != null && Level.Current.Day != null ? Level.Current.Day.Night * 1.6f : 0));
             smokeTimer -= Time.deltaTime;
             if (i > 0.02f && smokeTimer <= 0)

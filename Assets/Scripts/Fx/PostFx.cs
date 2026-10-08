@@ -71,10 +71,12 @@ namespace PocketWeather
             if (dof == null) return;
             dof.active = GameSettings.TiltShift > 0.01f;
             dof.aperture.Override(Mathf.Lerp(16f, 1.6f, GameSettings.TiltShift) * zoomScale);
-            // Low quality: gaussian blur of the far/near bands instead of the costlier bokeh
-            dof.mode.Override(Quality.Low ? DepthOfFieldMode.Gaussian : DepthOfFieldMode.Bokeh);
-            if (Quality.Low) dof.highQualitySampling.Override(false);
-            if (bloom != null) bloom.highQualityFiltering.Override(!Quality.Low);
+            // Low: gaussian blur of the far band instead of the costlier bokeh. Ultra: the bokeh and
+            // gaussian passes sample at high quality, and bloom filters at high quality from High up
+            var tier = Quality.Current;
+            dof.mode.Override(tier == Quality.Tier.Low ? DepthOfFieldMode.Gaussian : DepthOfFieldMode.Bokeh);
+            dof.highQualitySampling.Override(tier == Quality.Tier.Ultra);
+            if (bloom != null) bloom.highQualityFiltering.Override(tier >= Quality.Tier.High);
         }
 
         /// <param name="zoom">The camera's push-in (CameraRig.Zoom). Closer cameras defocus faster

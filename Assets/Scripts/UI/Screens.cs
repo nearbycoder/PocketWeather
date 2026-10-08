@@ -628,7 +628,10 @@ namespace PocketWeather
     public class SettingsMenu : MenuScreen
     {
         public Action OnClose;
-        JuicyButton resetBtn, gfxButton, touchButton;
+        JuicyButton resetBtn, touchButton;
+        UnityEngine.UI.Slider gfxSlider;
+        /// <summary>The graphics slider (for the self-tests).</summary>
+        public UnityEngine.UI.Slider GraphicsSlider => gfxSlider;
         RectTransform panel;
         /// <summary>Each row with its place in the usual layout (one column) and the short one (two).</summary>
         readonly List<(RectTransform rt, Vector2 usual, Vector2 shortPos)> rows = new();
@@ -638,13 +641,6 @@ namespace PocketWeather
         public const string RelaxedLabel = "Relaxed days (slower sun)";
 
         static string TouchButtonsLabel() => GameSettings.TouchButtons switch { 1 => "On", 2 => "Off", _ => "Auto" };
-
-        static string GraphicsLabel() => GameSettings.Graphics switch
-        {
-            1 => "High",
-            2 => "Low",
-            _ => Quality.AutoDowngraded ? "Auto (low)" : "Auto",
-        };
 
         protected override void Build()
         {
@@ -657,15 +653,13 @@ namespace PocketWeather
             Ui.Slider(p.transform, "Sounds", GameSettings.Sfx, new Vector2(0, y), v => { GameSettings.Sfx = v; }, 640); y -= 76;
             Ui.Slider(p.transform, "Ambience", GameSettings.Ambience, new Vector2(0, y), v => { GameSettings.Ambience = v; }, 640); y -= 76;
             Ui.Slider(p.transform, "Tilt-shift", GameSettings.TiltShift, new Vector2(0, y), v => { GameSettings.TiltShift = v; PostFx.ApplySettings(); }, 640); y -= 78;
-            // graphics: tap to cycle Auto / High / Low
-            var gfxRow = Ui.Rect("Row_Graphics", p.transform, new Vector2(0.5f, 0.5f), new Vector2(640, 76), new Vector2(0, y));
-            Ui.Label(gfxRow, "Graphics", 34, Ui.Ink, new Vector2(300, 60), new Vector2(-170, 0), false, TextAnchor.MiddleLeft);
-            gfxButton = Ui.Button(gfxRow, GraphicsLabel(), Ui.Sky, new Vector2(230, 66), new Vector2(205, 0), () =>
+            // graphics fidelity: Auto, Low, Medium, High, Ultra (see Quality)
+            gfxSlider = Ui.StepSlider(p.transform, "Graphics", Quality.SliderModes.Length, Quality.SliderIndex((Quality.Mode)GameSettings.Graphics), new Vector2(0, y), i =>
             {
-                GameSettings.Graphics = (GameSettings.Graphics + 1) % 3;
-                if (GameSettings.Graphics == 0) Quality.ResetAuto(); else Quality.Apply();
-                gfxButton.SetLabel(GraphicsLabel());
-            }, null, null, 30, "Graphics");
+                var mode = Quality.SliderModes[i];
+                GameSettings.Graphics = (int)mode;
+                if (mode == Quality.Mode.Auto) Quality.ResetAuto(); else Quality.Apply();
+            }, i => Quality.ModeName(Quality.SliderModes[i]), 640);
             y -= 76;
             Ui.Toggle(p.transform, "Screen shake", GameSettings.ScreenShake, new Vector2(0, y), v => GameSettings.ScreenShake = v, 640); y -= 71;
             Ui.Toggle(p.transform, "Hints", GameSettings.Hints, new Vector2(0, y), v => GameSettings.Hints = v, 640); y -= 71;
@@ -726,7 +720,7 @@ namespace PocketWeather
         {
             confirmReset = false;
             resetBtn.SetLabel("Reset progress");
-            gfxButton.SetLabel(GraphicsLabel());
+            gfxSlider.SetValueWithoutNotify(Quality.SliderIndex((Quality.Mode)GameSettings.Graphics));
             touchButton.SetLabel(TouchButtonsLabel());
             musicSlider.SetValueWithoutNotify(GameSettings.Music);   // M may have muted it since
             fullscreenToggle.SetIsOnWithoutNotify(UnityEngine.Screen.fullScreen);   // and the browser, a phone's first tap or Esc may have changed this

@@ -74,8 +74,24 @@ namespace PocketWeather
             return lvl;
         }
 
+        Transform extraDressing;
+
+        /// <summary>Ultra adds a second scatter of tufts and wildflowers between the usual ones (made
+        /// the first time it's needed, hidden at other tiers; the usual scatter never changes).</summary>
+        void ApplyFidelity()
+        {
+            if (Quality.Ultra && extraDressing == null)
+            {
+                extraDressing = new GameObject("ScatterUltra").transform;
+                extraDressing.SetParent(transform, false);
+                Scatter.Dress(this, extraDressing, true);
+            }
+            if (extraDressing != null) extraDressing.gameObject.SetActive(Quality.Ultra);
+        }
+
         void OnDestroy()
         {
+            Quality.Changed -= ApplyFidelity;
             if (Current == this) Current = null;
         }
 
@@ -160,6 +176,8 @@ namespace PocketWeather
             var dressing = new GameObject("Scatter").transform;
             dressing.SetParent(transform, false);
             Scatter.Dress(this, dressing);
+            Quality.Changed += ApplyFidelity;
+            ApplyFidelity();
             Phase("scatter");
 
             Cloud = Cloud.Create(this, new Vector3(Def.cloudX, 0, Def.cloudZ), Def.startWater);

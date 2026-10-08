@@ -152,6 +152,9 @@ namespace PocketWeather
         public void DebugPause() => Pause();
         public void DebugSettings() => OpenSettings(pause);
         public void DebugCloseSettings() => CloseSettings();
+        /// <summary>Automation: open settings over the map, as its gear button does.</summary>
+        public void DebugSettingsFromMap() => OpenSettings(map);
+        public SettingsMenu Settings => settings;
         public void DebugResume() => Resume();
         /// <param name="offerSlower">show the sunset card's "Slower sun" whatever the count (screenshots, UI audit)</param>
         public void DebugSunset(bool offerSlower = false) { forceSlowerOffer = offerSlower; OnSunset(); }

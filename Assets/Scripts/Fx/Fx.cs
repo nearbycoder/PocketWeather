@@ -85,7 +85,7 @@ namespace PocketWeather
             main.loop = true;
             main.duration = 1;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = max;
+            main.maxParticles = Mathf.CeilToInt(max * 1.6f);   // room for Ultra's denser effects
             main.gravityModifier = gravity;
             main.startLifetime = 1;
             main.startSpeed = 0;
@@ -159,11 +159,15 @@ namespace PocketWeather
         }
 
         // ------------------------------------------------------------------ effects
+        /// <summary>A burst's particle count at the current graphics fidelity (thinner at Low, denser
+        /// at Ultra); never fewer than one.</summary>
+        static int Count(int n) => n <= 0 ? 0 : Mathf.Max(1, Mathf.RoundToInt(n * Quality.ParticleDensity));
+
         public static void Splash(Vector3 pos, Surface surface, float scale = 1f)
         {
             if (splash == null) return;
             Color c = surface == Surface.Water ? new Color(0.85f, 0.95f, 1f, 0.85f) : new Color(0.75f, 0.88f, 1f, 0.8f);
-            int n = surface == Surface.Leaf ? 2 : 3;
+            int n = Count(surface == Surface.Leaf ? 2 : 3);
             for (int i = 0; i < n; i++)
             {
                 var v = new Vector3(Random.Range(-0.6f, 0.6f), Random.Range(0.9f, 1.6f), Random.Range(-0.6f, 0.6f)) * scale;
@@ -183,7 +187,8 @@ namespace PocketWeather
         public static void Sparkles(Vector3 pos, int count, Color color, float spread = 0.4f, float speed = 1.5f, float size = 0.16f)
         {
             if (sparkle == null) return;
-            for (int i = 0; i < count; i++)
+            int n = Count(count);
+            for (int i = 0; i < n; i++)
             {
                 var d = Random.insideUnitSphere;
                 Emit(sparkle, pos + d * spread * 0.3f, d * speed + Vector3.up * 0.6f, size * Random.Range(0.6f, 1.3f), Random.Range(0.5f, 0.9f), color);
@@ -193,7 +198,8 @@ namespace PocketWeather
         public static void Petals(Vector3 pos, Color color, int count = 10, float speed = 1.6f)
         {
             if (petals == null) return;
-            for (int i = 0; i < count; i++)
+            int n = Count(count);
+            for (int i = 0; i < n; i++)
             {
                 var d = Random.insideUnitSphere; d.y = Mathf.Abs(d.y) + 0.6f;
                 var c = Color.Lerp(color, Color.white, Random.Range(0f, 0.25f));
@@ -205,7 +211,8 @@ namespace PocketWeather
         {
             if (leaves == null) return;
             var baseC = color ?? new Color(0.45f, 0.75f, 0.3f, 1);
-            for (int i = 0; i < count; i++)
+            int n = Count(count);
+            for (int i = 0; i < n; i++)
             {
                 var v = dir * Random.Range(2f, 4f) + Random.insideUnitSphere * 0.8f + Vector3.up * Random.Range(0.3f, 1.2f);
                 var c = Color.Lerp(baseC, new Color(0.85f, 0.75f, 0.3f, 1), Random.Range(0f, 0.35f));
@@ -216,7 +223,8 @@ namespace PocketWeather
         public static void WindStreaks(Vector3 origin, Vector3 dir, float range, float halfAngle, int count = 22)
         {
             if (wind == null) return;
-            for (int i = 0; i < count; i++)
+            int n = Count(count);
+            for (int i = 0; i < n; i++)
             {
                 float ang = Random.Range(-halfAngle, halfAngle) * 0.8f;
                 var d = Quaternion.Euler(0, ang, 0) * dir;
@@ -231,7 +239,8 @@ namespace PocketWeather
         {
             if (steam == null) return;
             var c = color ?? new Color(1, 1, 1, 0.55f);
-            for (int i = 0; i < count; i++)
+            int n = Count(count);
+            for (int i = 0; i < n; i++)
                 Emit(steam, pos + Random.insideUnitSphere * spread, new Vector3(Random.Range(-0.15f, 0.15f), Random.Range(0.4f, 0.9f), Random.Range(-0.15f, 0.15f)),
                      Random.Range(0.18f, 0.32f), Random.Range(1.0f, 1.6f), c);
         }
@@ -272,7 +281,8 @@ namespace PocketWeather
         {
             if (confetti == null) return;
             Color[] cols = { Res.Hex("FF6F61"), Res.Hex("FFD45C"), Res.Hex("6FC3E8"), Res.Hex("B79CFF"), Res.Hex("8FD16A"), Res.Hex("FF9EC4") };
-            for (int i = 0; i < count; i++)
+            int n = Count(count);
+            for (int i = 0; i < n; i++)
             {
                 var v = new Vector3(Random.Range(-1f, 1f) * spread, Random.Range(2.5f, 4.5f), Random.Range(-1f, 1f) * spread);
                 Emit(confetti, pos, v, Random.Range(0.05f, 0.09f), Random.Range(2f, 3.2f), cols[Random.Range(0, cols.Length)], Random.Range(0, 360f));
