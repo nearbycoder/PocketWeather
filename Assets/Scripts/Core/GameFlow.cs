@@ -312,6 +312,7 @@ namespace PocketWeather
             Hud.SetVisible(true);
             SaveData.RecordPlay(Level.Def.id);
             Sfx.Ui("level_start");
+            lateWarned = false;
             onboarding = gameObject.AddComponent<Onboarding>();
             onboarding.Init(Level, Hud);
             Level.Cloud.Visual.Emote(CloudVisual.Determined, 0.8f);
@@ -555,6 +556,27 @@ namespace PocketWeather
 
         bool? wasFullscreen;
 
+        /// <summary>How far through the day "Not long left" is said (as the sun track starts to pulse).</summary>
+        public const float LateWarningAt = 0.85f;
+        bool lateWarned;
+        static readonly bool trailer = GameRoot.HasArg("-pwTrailer");   // the trailer's shots set late hours of their own
+        public static string LateWarning(int left) => $"Not long left! {left} still {(left == 1 ? "needs" : "need")} you";
+
+        /// <summary>Once a day, when the sun track starts to pulse, say how many friends are still
+        /// waiting: eyes are on Pip, not on the track at the top of the screen. It waits for a toast
+        /// already showing (a fire, the finale).</summary>
+        void WarnLate()
+        {
+            if (lateWarned || Current != State.Playing || Level == null || !Level.Running || Level.AllMet || trailer) return;
+            if (Level.DayProgress < LateWarningAt || Hud.ToastShowing) return;
+            int left = 0;
+            foreach (var n in Level.Needs) if (n.Required && !n.Met) left++;
+            if (left == 0) return;
+            lateWarned = true;
+            Hud.Toast(LateWarning(left), "clock", 3f, Res.Hex("FFC9B5"));
+            Debug.Log($"[PW] not long left: {left} still waiting at {Level.Hour:0.00}");
+        }
+
         void Update()
         {
             if (wasFullscreen != Screen.fullScreen)
@@ -562,6 +584,7 @@ namespace PocketWeather
                 if (wasFullscreen != null) Debug.Log($"[PW] fullscreen: {(Screen.fullScreen ? "on" : "off")}");
                 wasFullscreen = Screen.fullScreen;
             }
+            WarnLate();
             var kb = UnityEngine.InputSystem.Keyboard.current;
             var pad = UnityEngine.InputSystem.Gamepad.current;
             if (Current == State.Playing && Time.frameCount != pauseToggleFrame)   // the press that resumed mustn't re-pause

@@ -407,6 +407,35 @@ namespace PocketWeather
             GameSettings.Save();
             GameFlow.I.DebugCloseMenus();
 
+            // --- "Not long left": once, as 85% of the day goes by, with the count of friends waiting
+            GameFlow.I.DebugStart(3, true);
+            var hudL = GameFlow.I.Hud;
+            yield return WaitFor(() => !hudL.ToastShowing, 5f);
+            L.SetHour(Mathf.Lerp(L.Def.startHour, L.Def.endHour, GameFlow.LateWarningAt - 0.006f));
+            yield return new WaitForSeconds(0.2f);
+            bool early = hudL.ToastText.StartsWith("Not long left");
+            yield return WaitFor(() => L.DayProgress >= GameFlow.LateWarningAt, 5f);
+            float crossed = Time.unscaledTime;
+            yield return WaitFor(() => hudL.ToastText.StartsWith("Not long left"), 2f);
+            float after = Time.unscaledTime - crossed;
+            int waiting = 0;
+            foreach (var n in L.Needs) if (n.Required && !n.Met) waiting++;
+            string said = hudL.ToastText;
+            Check("\"Not long left\" comes as 85% of the day goes by, with the count",
+                  !early && said == GameFlow.LateWarning(waiting) && after <= 1f, $"'{said}' {after:0.00}s after crossing, {waiting} waiting, early {early}");
+            yield return WaitFor(() => !hudL.ToastShowing, 6f);
+            bool again = false;
+            for (float w = 0; w < 2f; w += Time.unscaledDeltaTime) { again |= hudL.ToastText.StartsWith("Not long left"); yield return null; }
+            Check("\"Not long left\" is said only once a day", !again && Now == GameFlow.State.Playing, $"{Now}");
+            // a day being saved sweeps its clock past 85% in the timelapse: nobody's waiting, so nothing's said
+            GameFlow.I.DebugStart(3, true);
+            yield return WaitFor(() => !hudL.ToastShowing, 5f);
+            GameFlow.I.DebugSaveDay();
+            bool saidOnSave = false;
+            for (float w = 0; w < 6f && Now != GameFlow.State.Results; w += Time.unscaledDeltaTime) { saidOnSave |= hudL.ToastText.StartsWith("Not long left"); yield return null; }
+            Check("a day being saved doesn't say \"Not long left\"", !saidOnSave && Now == GameFlow.State.Results, $"{Now}, said {saidOnSave}");
+            GameFlow.I.DebugCloseMenus();
+
             // --- a save from before Encore best times (round 6) loads with its stamps and none
             var old = SaveData.DebugParse("{\"levels\":[{\"id\":\"level01\",\"stamps\":15,\"bestHour\":10.5,\"plays\":3}],\"seenTitle\":true}");
             Check("a round-6 save loads with its stamps and no scorcher best", old != null && old.Count == 1 && old[0].stamps == 15 && Mathf.Approximately(old[0].bestHour, 10.5f) && !old[0].HasEncoreBest,

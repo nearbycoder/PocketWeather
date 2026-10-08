@@ -162,6 +162,9 @@ namespace PocketWeather
         /// <summary>A hint caption is on screen (faded in and not hidden behind the pause menu).</summary>
         public bool HintVisible => hintRoot != null && hintRoot.gameObject.activeInHierarchy && hintGroup.alpha > 0.5f;
         public string HintText => hintText != null ? hintText.text : "";
+        /// <summary>A toast is on screen (or still sliding away).</summary>
+        public bool ToastShowing => toast != null && toast.gameObject.activeSelf;
+        public string ToastText => ToastShowing ? toastText.text : "";
         public bool HandVisible => hand != null && hand.gameObject.activeInHierarchy;
         /// <summary>Trailer capture: show the on-screen touch buttons without touching the saved setting.</summary>
         public static bool ForceTouchButtons;

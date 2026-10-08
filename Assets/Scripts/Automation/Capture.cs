@@ -45,6 +45,7 @@ namespace PocketWeather
                 case "menus": yield return Menus(); break;
                 case "bouquet": yield return BouquetShots(); break;
                 case "relaxed": yield return RelaxedShots(); break;
+                case "late": yield return LateShot(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -376,6 +377,17 @@ namespace PocketWeather
             yield return new WaitForSecondsRealtime(2.0f);
             yield return Shot("r04_results_relaxed");
             GameSettings.RelaxedDays = false;
+        }
+
+        /// <summary>Round 10: "Not long left" as 85% of Day 4 goes by.</summary>
+        IEnumerator LateShot()
+        {
+            GameFlow.I.DebugStart(3, true);
+            yield return new WaitForSeconds(1.0f);
+            L.SetHour(Mathf.Lerp(L.Def.startHour, L.Def.endHour, GameFlow.LateWarningAt - 0.002f));
+            while (!GameFlow.I.Hud.ToastText.StartsWith("Not long left")) yield return null;
+            yield return new WaitForSeconds(0.8f);
+            yield return Shot("l01_not_long_left");
         }
 
         IEnumerator Menus()

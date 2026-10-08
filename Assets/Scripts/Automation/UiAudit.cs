@@ -230,7 +230,7 @@ namespace PocketWeather
             if (!hud.TouchButtonsVisible) problems.Add("touch buttons not shown");
             int hints = 0, toasts = 0, wrapped = 0;
             float widest = 0, smallest = 99f;
-            var toastTexts = new List<string> { "Rain into the pond to fill it back up!", "Careful! The ducks need their pond", "Oh no! Make them a rainbow!", "Encore: a scorcher!" };
+            var toastTexts = new List<string> { "Rain into the pond to fill it back up!", "Careful! The ducks need their pond", "Oh no! Make them a rainbow!", "Encore: a scorcher!", GameFlow.LateWarning(7) };
             foreach (var id in LevelLibrary.Campaign)
             {
                 var def = LevelLibrary.Load(id);
