@@ -36,6 +36,17 @@ namespace PocketWeather
             return false;
         }
 
+        /// <summary>The focus ring is showing, settled around this control.</summary>
+        static bool RingAround(GameObject go, out string detail)
+        {
+            if (go == null) { detail = "nothing selected"; return false; }
+            var want = FocusRing.RectFor((RectTransform)go.transform, out _);
+            var r = FocusRing.ScreenRect;
+            float off = Vector2.Distance(r.center, want.center);
+            detail = $"visible {FocusRing.Visible}, around {(FocusRing.Target != null ? FocusRing.Target.name : "none")}, {off:0.0} px off centre, {r.width:0}x{r.height:0} for {want.width:0}x{want.height:0}";
+            return FocusRing.Visible && FocusRing.Target == go.transform && off < 3f && r.width >= want.width - 2f && r.height >= want.height - 2f;
+        }
+
         void Check(string name, bool ok, string detail = "")
         {
             Debug.Log($"[KeyTest] {(ok ? "PASS" : "FAIL")} {name}{(detail != "" ? " (" + detail + ")" : "")}");
@@ -105,6 +116,8 @@ namespace PocketWeather
             yield return new WaitForSecondsRealtime(0.2f);
             var sel = EventSystem.current.currentSelectedGameObject;
             Check("arrow keys move between cards", sel != null && sel.name == "Card1", sel != null ? sel.name : "none");
+            yield return new WaitForSecondsRealtime(0.35f);
+            Check("the focus ring glides to the selected card", RingAround(sel, out var ringMap), ringMap);
             yield return Press(Key.LeftArrow);
             yield return new WaitForSecondsRealtime(0.2f);
             yield return Press(Key.Enter);
@@ -212,6 +225,8 @@ namespace PocketWeather
             yield return new WaitForSecondsRealtime(0.2f);
             var cur = EventSystem.current.currentSelectedGameObject;
             Check("arrows move through the pause menu", cur != null && cur.name == "Btn_Restart", cur != null ? cur.name : "none");
+            yield return new WaitForSecondsRealtime(0.3f);
+            Check("the focus ring is around Restart", RingAround(cur, out var ringPause), ringPause);
             var pauseMenu = GameObject.Find("PauseScreen")?.GetComponent<PauseMenu>();
             yield return Press(Key.Enter);
             yield return new WaitForSecondsRealtime(0.6f);
@@ -252,10 +267,23 @@ namespace PocketWeather
             }
             Check("the arrow keys reach the graphics slider", EventSystem.current.currentSelectedGameObject == gfx.gameObject,
                   EventSystem.current.currentSelectedGameObject?.name ?? "none");
+            yield return new WaitForSecondsRealtime(0.35f);
+            Check("the focus ring is around the graphics slider", RingAround(gfx.gameObject, out var ringGfx), ringGfx);
+            // the mouse moving hides it; the next key brings it back
+            var mouse = InputSystem.AddDevice<Mouse>("KeyTestMouse");
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = new Vector2(5, 5), delta = new Vector2(30, 12) });
+            yield return null;
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = new Vector2(35, 17), delta = Vector2.zero });
+            yield return new WaitForSecondsRealtime(0.4f);
+            Check("moving the mouse hides the focus ring", !FocusRing.NavMode && !FocusRing.Visible, $"nav {FocusRing.NavMode}, visible {FocusRing.Visible}");
+            InputSystem.RemoveDevice(mouse);
+            EventSystem.current.SetSelectedGameObject(gfx.gameObject);
             string StepName() => gfx.transform.Find("StepName")?.GetComponent<UnityEngine.UI.Text>()?.text ?? "";
             Check("the graphics slider shows the saved step", Mathf.RoundToInt(gfx.value) == 2 && StepName() == "Medium", $"{gfx.value}, '{StepName()}'");
             yield return Press(Key.RightArrow);
             yield return new WaitForSecondsRealtime(0.2f);
+            yield return new WaitForSecondsRealtime(0.35f);
+            Check("a key brings the focus ring back", RingAround(gfx.gameObject, out var ringBack), ringBack);
             Check("Right steps Medium to High, saved and applied", GameSettings.Graphics == (int)Quality.Mode.High && Quality.Current == Quality.Tier.High && StepName() == "High",
                   $"pref {GameSettings.Graphics}, tier {Quality.Current}, '{StepName()}'");
             yield return Press(Key.RightArrow);

@@ -73,5 +73,32 @@ namespace PocketWeather
             Quality.DebugNoExtraLights = false;
             Time.timeScale = 1f;
         }
+
+        /// <summary>R12-3: the focus ring on the map, the pause menu and the settings' graphics slider.</summary>
+        IEnumerator FocusShots()
+        {
+            var f = GameFlow.I;
+            yield return new WaitForSeconds(1.0f);
+            f.DebugShowMap();
+            yield return new WaitForSecondsRealtime(1.2f);
+            FocusRing.DebugKeysUsed();
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(GameObject.Find("Card0"));
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("k01_map_ring");
+            f.DebugStart(0, true);
+            yield return new WaitForSeconds(1.2f);
+            f.DebugPause();
+            yield return new WaitForSecondsRealtime(0.8f);
+            FocusRing.DebugKeysUsed();
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(GameObject.Find("Btn_Settings"));
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("k02_pause_ring");
+            f.DebugSettings();
+            yield return new WaitForSecondsRealtime(0.8f);
+            FocusRing.DebugKeysUsed();
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(f.Settings.GraphicsSlider.gameObject);
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("k03_settings_ring");
+        }
     }
 }

@@ -63,6 +63,17 @@ namespace PocketWeather
             yield return null;
         }
 
+        /// <summary>The focus ring is showing, settled around this control.</summary>
+        static bool RingAround(GameObject go, out string detail)
+        {
+            if (go == null) { detail = "nothing selected"; return false; }
+            var want = FocusRing.RectFor((RectTransform)go.transform, out _);
+            var r = FocusRing.ScreenRect;
+            float off = Vector2.Distance(r.center, want.center);
+            detail = $"visible {FocusRing.Visible}, around {(FocusRing.Target != null ? FocusRing.Target.name : "none")}, {off:0.0} px off centre, {r.width:0}x{r.height:0} for {want.width:0}x{want.height:0}";
+            return FocusRing.Visible && FocusRing.Target == go.transform && off < 3f && r.width >= want.width - 2f && r.height >= want.height - 2f;
+        }
+
         IEnumerator WaitFor(Func<bool> cond, float timeout)
         {
             float t = 0;
@@ -184,6 +195,8 @@ namespace PocketWeather
             yield return new WaitForSecondsRealtime(0.5f);
             Check("Start pauses", Now == GameFlow.State.Paused, Now.ToString());
             Check("pause menu has a selection", Selected != "none", Selected);
+            yield return new WaitForSecondsRealtime(0.3f);
+            Check("the focus ring is around the pause menu's selection", RingAround(EventSystem.current.currentSelectedGameObject, out var ringPause), ringPause);
             var pauseText = GameObject.Find("PauseScreen")?.GetComponent<PauseMenu>()?.ControlsText ?? "";
             Check("the pause menu lists the gamepad controls", pauseText.Contains("hold A"), pauseText);
             yield return Press(GamepadButton.East);
@@ -268,6 +281,8 @@ namespace PocketWeather
                 yield return new WaitForSecondsRealtime(0.1f);
             }
             Check("the d-pad reaches the graphics slider", Selected == gfx.name, Selected);
+            yield return new WaitForSecondsRealtime(0.35f);
+            Check("the focus ring is around the graphics slider", RingAround(gfx.gameObject, out var ringGfx), ringGfx);
             yield return Press(GamepadButton.DpadRight);
             yield return new WaitForSecondsRealtime(0.2f);
             Check("d-pad right steps Low to Medium, saved and applied", GameSettings.Graphics == (int)Quality.Mode.Medium && Quality.Current == Quality.Tier.Medium,

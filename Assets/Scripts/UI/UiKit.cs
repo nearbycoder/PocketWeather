@@ -30,7 +30,9 @@ namespace PocketWeather
         public static Font Heading => heading ??= Resources.Load<Font>("Fonts/Fredoka-SemiBold");
         public static Font Body => body ??= Resources.Load<Font>("Fonts/Nunito-Bold");
 
-        static Sprite rounded, circle, ring, softShadow, ringThin, arrow;
+        static Sprite rounded, circle, ring, softShadow, ringThin, arrow, roundedOutline;
+        /// <summary>A rounded rectangle's outline (the focus ring): radius 52, line 9.</summary>
+        public static Sprite RoundedOutline => roundedOutline ??= MakeRounded(128, 52, false, 9f);
         public static Sprite Rounded => rounded ??= MakeRounded(128, 52, false);
         public static Sprite SoftShadow => softShadow ??= MakeRounded(128, 52, true);
         public static Sprite Circle => circle ??= MakeCircle(128, 0f);
@@ -55,7 +57,7 @@ namespace PocketWeather
             return s;
         }
 
-        static Sprite MakeRounded(int size, int radius, bool shadow)
+        static Sprite MakeRounded(int size, int radius, bool shadow, float outline = 0)
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
             var px = new Color32[size * size];
@@ -67,6 +69,7 @@ namespace PocketWeather
                 float qy = Mathf.Abs(y + 0.5f - half) - (half - radius);
                 float d = Mathf.Sqrt(Mathf.Max(qx, 0) * Mathf.Max(qx, 0) + Mathf.Max(qy, 0) * Mathf.Max(qy, 0)) + Mathf.Min(Mathf.Max(qx, qy), 0) - radius;
                 float a = shadow ? Mathf.Clamp01(1f - (d + radius * 0.7f) / (radius * 0.75f)) : Mathf.Clamp01(0.5f - d);
+                if (outline > 0) a = Mathf.Min(a, Mathf.Clamp01(d + outline + 0.5f));
                 if (shadow) a = a * a * (3 - 2 * a);
                 px[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255));
             }
@@ -324,11 +327,13 @@ namespace PocketWeather
             handleArea.anchorMin = Vector2.zero; handleArea.anchorMax = Vector2.one; handleArea.offsetMin = Vector2.zero; handleArea.offsetMax = Vector2.zero;
             var handle = Image(handleArea, Circle, White, new Vector2(54, 54), Vector2.zero, null, "Handle");
             handle.raycastTarget = true;
-            Image(handle.transform, Ring, Sky, new Vector2(54, 54), Vector2.zero, null, "HandleRing");
+            var handleRing = Image(handle.transform, Ring, Sky, new Vector2(54, 54), Vector2.zero, null, "HandleRing");
             var s = root.gameObject.AddComponent<UnityEngine.UI.Slider>();
             s.fillRect = fill.rectTransform;
             s.handleRect = handle.rectTransform;
             s.targetGraphic = handle;
+            s.transition = Selectable.Transition.None;
+            root.gameObject.AddComponent<HoverGrow>().target = handleRing.transform;
             s.direction = UnityEngine.UI.Slider.Direction.LeftToRight;
             s.minValue = 0; s.maxValue = 1;
             s.value = value;
@@ -368,11 +373,13 @@ namespace PocketWeather
             handleArea.anchorMin = Vector2.zero; handleArea.anchorMax = Vector2.one; handleArea.offsetMin = Vector2.zero; handleArea.offsetMax = Vector2.zero;
             var handle = Image(handleArea, Circle, White, new Vector2(54, 54), Vector2.zero, null, "Handle");
             handle.raycastTarget = true;
-            Image(handle.transform, Ring, Sky, new Vector2(54, 54), Vector2.zero, null, "HandleRing");
+            var handleRing = Image(handle.transform, Ring, Sky, new Vector2(54, 54), Vector2.zero, null, "HandleRing");
             var s = root.gameObject.AddComponent<UnityEngine.UI.Slider>();
             s.fillRect = fill.rectTransform;
             s.handleRect = handle.rectTransform;
             s.targetGraphic = handle;
+            s.transition = Selectable.Transition.None;
+            root.gameObject.AddComponent<HoverGrow>().target = handleRing.transform;
             s.direction = UnityEngine.UI.Slider.Direction.LeftToRight;
             s.wholeNumbers = true;
             s.minValue = 0; s.maxValue = steps - 1;
@@ -403,6 +410,8 @@ namespace PocketWeather
             var knob = Image(track.transform, Circle, White, new Vector2(46, 46), new Vector2(-27, 0), null, "Knob");
             var t = root.gameObject.AddComponent<UnityEngine.UI.Toggle>();
             t.targetGraphic = track;
+            t.transition = Selectable.Transition.None;
+            root.gameObject.AddComponent<HoverGrow>().target = knob.transform;
             t.isOn = value;
             void Visual(bool on, bool animate)
             {
@@ -604,6 +613,39 @@ namespace PocketWeather
             if (toggle == null || toggle.isOn == shown) return;
             shown = toggle.isOn;
             show?.Invoke(shown);
+        }
+    }
+
+    /// <summary>Hover and focus feedback for sliders and toggles, like a button's lift: the handle's
+    /// ring or the switch's knob grows a little, and the pointer arriving or the keys landing on it
+    /// tick.</summary>
+    public class HoverGrow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
+    {
+        public Transform target;
+        public float grow = 0.14f;
+        bool hovered, selected;
+        float k;
+
+        public void OnPointerEnter(PointerEventData e)
+        {
+            hovered = true;
+            if (e.pointerId < 0) Sfx.Ui("ui_tick", 0.6f);
+        }
+        public void OnPointerExit(PointerEventData e) => hovered = false;
+        public void OnSelect(BaseEventData e)
+        {
+            selected = true;
+            if (!(e is PointerEventData)) Sfx.Ui("ui_tick", 0.5f);
+        }
+        public void OnDeselect(BaseEventData e) => selected = false;
+        void OnDisable() { hovered = selected = false; k = 0; if (target != null) target.localScale = Vector3.one; }
+
+        void Update()
+        {
+            if (target == null) return;
+            k = Mathf.MoveTowards(k, hovered || selected ? 1 : 0, Clock.UnscaledDelta * 8f);
+            float s = 1f + grow * Ease.OutBack(k);
+            target.localScale = new Vector3(s, s, 1);
         }
     }
 

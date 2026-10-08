@@ -73,6 +73,7 @@ namespace PocketWeather
             fail = Make<FailCard>(menus.transform, "Fail");
             ending = Make<EndingScreen>(menus.transform, "Ending");
             settings = Make<SettingsMenu>(menus.transform, "Settings");
+            FocusRing.Create(transform);
             wipe = CloudWipe.Create(transform);
 
             // a brand-new player goes straight to Day 1's postcard: a map with one card to pick is

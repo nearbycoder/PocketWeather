@@ -17,8 +17,18 @@ namespace PocketWeather
         /// <summary>True on the frame the screen opened, so the press that opened it isn't read again.</summary>
         protected bool JustOpened => Time.frameCount == openedFrame;
 
+        static readonly List<MenuScreen> all = new();
+        /// <summary>The menu a control is drawn on (its content lives under the canvas, not under the
+        /// screen's own object), or null.</summary>
+        public static MenuScreen Owning(Transform t)
+        {
+            foreach (var m in all) if (m != null && m.root != null && t.IsChildOf(m.root)) return m;
+            return null;
+        }
+
         public void Setup(Transform parent, string name)
         {
+            all.Add(this);
             root = Ui.Stretch(name, parent);
             group = Ui.Group(root.gameObject);
             group.alpha = 0;

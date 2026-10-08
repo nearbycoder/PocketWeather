@@ -32,7 +32,7 @@ namespace PocketWeather
             var es = EventSystem.current;
             var problems = new List<string>();
             var controls = new List<(Selectable sel, Rect r)>();
-            int count = 0;
+            int count = 0, rings = 0;
             // while a menu is open it's modal: whatever sits behind it (the HUD) is meant to be covered
             bool menuOpen = false;
             foreach (var g in FindObjectsByType<CanvasGroup>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
@@ -55,6 +55,17 @@ namespace PocketWeather
                 string name = Path(sel.transform);
                 if (min.x < -1 || min.y < -1 || max.x > Screen.width + 1 || max.y > Screen.height + 1)
                     problems.Add($"{name} off-screen ({min.x:0},{min.y:0})-({max.x:0},{max.y:0})");
+                // the focus ring a key or pad would draw around it stays on screen and around it
+                if (MenuScreen.Owning(sel.transform) != null && FocusRing.Rings(sel.gameObject))
+                {
+                    var ring = FocusRing.RectFor(rt, out float rs);
+                    float g = FocusRing.MaxGrow * rs;
+                    if (ring.xMin - g < -1 || ring.yMin - g < -1 || ring.xMax + g > Screen.width + 1 || ring.yMax + g > Screen.height + 1)
+                        problems.Add($"{name}: its focus ring runs off screen ({ring.xMin - g:0},{ring.yMin - g:0})-({ring.xMax + g:0},{ring.yMax + g:0})");
+                    else if (!ring.Contains(new Vector2(Mathf.Max(min.x, 0), Mathf.Max(min.y, 0))) || !ring.Contains(new Vector2(Mathf.Min(max.x, Screen.width) - 0.5f, Mathf.Min(max.y, Screen.height) - 0.5f)))
+                        problems.Add($"{name}: its focus ring doesn't go round it");
+                    rings++;
+                }
                 var centre = (min + max) / 2f;
                 hits.Clear();
                 es.RaycastAll(new PointerEventData(es) { position = centre }, hits);
@@ -82,7 +93,7 @@ namespace PocketWeather
                 return;
             }
             bool ok = problems.Count == 0 && count > 0;
-            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} {screen}: {count} controls{texts} at {Screen.width}x{Screen.height}" +
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} {screen}: {count} controls ({rings} focus rings){texts} at {Screen.width}x{Screen.height}" +
                       (problems.Count > 0 ? "\n    " + string.Join("\n    ", problems) : count == 0 ? " (none found)" : ""));
             if (ok) passes++; else fails++;
         }

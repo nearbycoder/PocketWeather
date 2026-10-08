@@ -49,6 +49,7 @@ namespace PocketWeather
                 case "mistakes": yield return MistakeShots(); break;
                 case "fidelity": yield return FidelityShots(); break;
                 case "nightlight": yield return NightLightShots(); break;
+                case "focus": yield return FocusShots(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
