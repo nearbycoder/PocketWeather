@@ -2349,8 +2349,21 @@ Implemented on `improvements-11`, one commit per item. Screenshots are in
 opened in a private KWin on a virtual screen, every tool run used a throwaway config folder in
 `Recordings/r11/`, and none of the private KWins left a helper behind (a scan of `/proc` for this
 repo's sockets and folders found nothing after the runs). The machine's load average was 3 to 65
-during the round; runs are noted with their load. The full self-test on the round's final code is
-reported at the end.
+during the round; runs are noted with their load.
+
+The full self-test, run inside its private KWin on a Linux build of the round's final code
+(`fab1156`; load 18 at the start, 16 at the end), **passed every row**
+(`Recordings/r11/selftest-final2.txt`):
+- validator and loop seams
+- the Linux launcher with stand-in games (9 cases), and the real build booting through it
+- keyboard 67 checks (was 59), gamepad 32 and touch 23
+- the UI audit at eight sizes, 28 checks each (was 27)
+- the AutoPilot campaign 12/12 with **12/12 delights**, no exceptions
+- prefs in the game's own folder, and all 13 windows on the private KWin's display with no X11
+
+An earlier full self-test, on `77ea973` (load 20 at the start, 23 at the end), failed two rows;
+see R11-5. The real prefs files' `pw.` entries were identical before the round's first tool run and
+after the last.
 
 ### R11-1. A mistake says how to put it right: done
 
@@ -2424,6 +2437,20 @@ changed. The web build logged it 20 times in round 10's build (`Recordings/r11/w
   `--portrait`; `--firefox` and `--firefox --phone`) on a web build of `f4f1c7c` (the round's code),
   with 0 console errors and no browser dialogs, at load 25 to 65 (`Recordings/r11/web-*.log`). The
   download before the title is 17,623,061 bytes in `Build/` (17,626,084 in round 10).
+
+- **The first full self-test** (on `77ea973`) failed two rows. The UI audit at 1600x900 measured
+  "Hold still to rain" in a 0x0 pill. Its log shows why: Day 5's own hint ("Blow the washing dry")
+  waits 1.2 s of game time, the audit started its caption loop after 1.2 s of real time, and under
+  load the day's hint popped the pill in from nothing while the audit was measuring the caption
+  before. In the passing logs it landed before the measuring started. That race predates this round
+  (it fits round 10's "Drag to fly" flake too). **The fix** (`fab1156`, test only): the audit
+  switches off the day's own hints while it shows every caption itself. The touch test's "drag
+  moves Pip to the finger" missed by 0.80 units in the same second the game logged a 105 ms frame
+  (Auto graphics dropping to Low); that check comes before anything this round changed, and it's
+  the private KWin's uneven frame pacing noted in round 9.
+- **Then, on `fab1156`:** the touch test passed 5 of 5 and the UI audit at 1600x900 5 of 5 (load 15
+  to 22, `Recordings/r11/repeat.txt`), and the full self-test passed every row (above). Ten runs
+  can't show either flake is gone.
 
 ### Found along the way, not fixed
 
