@@ -86,7 +86,7 @@ namespace PocketWeather
             if ((Mode)GameSettings.Graphics == Mode.Auto && PlayerPrefs.GetInt(RememberKey, 0) == 1 && !GameRoot.Automated)
                 AutoDowngraded = true;
             Apply();
-            Debug.Log($"[PW] graphics: {Current.ToString().ToLowerInvariant()} ({(Mode)GameSettings.Graphics}), GPU frame timing {(FrameTimingManager.IsFeatureEnabled() ? "enabled" : "unavailable")}, {SystemInfo.graphicsDeviceName} / {SystemInfo.graphicsDeviceType}");
+            Debug.Log($"[PW] graphics: {Current.ToString().ToLowerInvariant()} ({(Mode)GameSettings.Graphics}), GPU frame timing {(FrameTimingManager.IsFeatureEnabled() ? "enabled" : "unavailable")}, FSR {(FsrAvailable ? "yes" : "no")}, {SystemInfo.graphicsDeviceName} / {SystemInfo.graphicsDeviceType}");
         }
 
         /// <summary>The tier a setting draws at right now.</summary>
@@ -122,8 +122,10 @@ namespace PocketWeather
                     Tier.Ultra => Mathf.Min(1.5f, baseRenderScale * 1.5f),
                     _ => baseRenderScale,
                 };
-                // Low's 75% picture is upscaled with AMD's FSR 1 (edge-aware, sharpened), not bilinear
-                urp.upscalingFilter = tier == Tier.Low ? UpscalingFilterSelection.FSR : UpscalingFilterSelection.Auto;
+                // Low's 75% picture is upscaled with AMD's FSR 1 (edge-aware, sharpened), not bilinear,
+                // where the build has its shader: the web build strips it, and URP then skips every
+                // post-processing pass rather than fall back
+                urp.upscalingFilter = tier == Tier.Low && FsrAvailable ? UpscalingFilterSelection.FSR : UpscalingFilterSelection.Auto;
                 urp.msaaSampleCount = tier switch { Tier.Low => 1, Tier.Medium => Mathf.Min(2, baseMsaa), Tier.Ultra => Mathf.Max(4, baseMsaa), _ => baseMsaa };
                 urp.shadowDistance = tier == Tier.Low ? 28f : baseShadowDistance;
                 urp.shadowCascadeCount = tier switch { Tier.Low => 1, Tier.Ultra => 4, _ => baseCascades };
@@ -135,6 +137,9 @@ namespace PocketWeather
             PostFx.ApplySettings();
             Changed?.Invoke();
         }
+
+        static bool? fsr;
+        static bool FsrAvailable => fsr ??= Shader.Find("Hidden/Universal Render Pipeline/Edge Adaptive Spatial Upsampling") != null;
 
         /// <summary>The sun's soft-shadow filter: Low's cheapest, Medium's middling, High and Ultra the
         /// softest (the renderer's own setting).</summary>
