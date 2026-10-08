@@ -24,6 +24,50 @@ namespace PocketWeather
             hud = h;
             teach = l.Def.teach ?? "";
             wait = 1.2f;
+            level.OnOops += OnOops;
+        }
+
+        void OnDestroy() { if (level != null) level.OnOops -= OnOops; }
+
+        // ------------------------------------------------------------------ after a mistake
+        /// <summary>Kinds of mistake whose way back has been shown since the game started.</summary>
+        static readonly HashSet<string> recoveryShown = new();
+        /// <summary>Tests: forget which mistakes have been explained.</summary>
+        public static void DebugForgetRecoveries() => recoveryShown.Clear();
+        /// <summary>Tests: how many mistakes have said how to put them right since the game started.</summary>
+        public static int RecoveriesShown { get; private set; }
+
+        const string SunnyBack = "Fly off and let the sun in", SoggyBack = "Too wet! The sun will dry it",
+            ShadeBack = "They wanted shade, not rain", LaundryBack = "Wet again! Blow it dry",
+            CampfireBack = "It'll relight. Keep rain off it", KeepDryBack = "It'll be fixed. Keep rain off it";
+        static readonly string[] RecoveryHints = { SunnyBack, SoggyBack, ShadeBack, LaundryBack, CampfireBack, KeepDryBack };
+
+        /// <summary>What to do after each kind of mistake: (kind, caption, icon). The pond says it
+        /// with a toast of its own.</summary>
+        public static (string kind, string text, string icon) RecoveryFor(Need n) => n switch
+        {
+            SunnyNeed s when s.ProblemIcon == "sun" => ("sunny", SunnyBack, "sunflower"),
+            BedNeed _ => ("soggy", SoggyBack, "soggy"),
+            ShadeNeed _ => ("shade", ShadeBack, "grumpy"),
+            LaundryNeed _ => ("laundry", LaundryBack, "wind"),
+            CampfireNeed _ => ("campfire", CampfireBack, "campfire"),
+            KeepDryNeed k => ("keepdry", KeepDryBack, k.Icon),
+            _ => (null, null, null),
+        };
+
+        /// <summary>The first mistake of each kind in a sitting says how to put it right, unless a
+        /// hint is waiting for the player to do something (Day 1's fly and rain), the finale's
+        /// sneeze did it, or it's an Encore (only open once the day has been saved).</summary>
+        void OnOops(Need n)
+        {
+            var (kind, text, icon) = RecoveryFor(n);
+            if (kind == null || recoveryShown.Contains(kind) || !GameSettings.Hints) return;
+            if (level.Def.encore || level.HoldCompletion > 0 || !level.Cloud.Input.Enabled) return;
+            if (teach.Contains("move") && (step == 1 || step == 2)) return;
+            recoveryShown.Add(kind);
+            RecoveriesShown++;
+            hud.ShowHint(text, icon, 4.5f);
+            Debug.Log($"[PW] after a mistake ({kind}, {n.Id}): {text}");
         }
 
         CloudInput.Device Dev => level.Cloud.Input.LastDevice;
@@ -70,6 +114,7 @@ namespace PocketWeather
             yield return "Rain on the fire!";
             yield return "Don't drain the duck pond";
             yield return "Sunflowers want sun";
+            foreach (var r in RecoveryHints) yield return r;
         }
 
         /// <summary>The flick hand, aimed across a gust-need from Pip's side.</summary>

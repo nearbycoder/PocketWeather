@@ -62,6 +62,17 @@ namespace PocketWeather
 
         float Dist2D(Vector3 a, Vector3 b) => Vector2.Distance(new Vector2(a.x, a.z), new Vector2(b.x, b.z));
 
+        /// <summary>Flies Pip over a need and rains (topping up its water) until the condition holds.</summary>
+        IEnumerator RainUntil(Need n, Func<bool> done, float timeout)
+        {
+            var at = n.transform.position;
+            C.Input.Virtual(at, false);
+            yield return WaitFor(() => Dist2D(C.GroundPoint, at) < 0.2f && C.Velocity.magnitude < 0.3f, 4f);
+            C.Input.Virtual(at, true);
+            float t = 0;
+            while (!done() && t < timeout) { C.SetWater(90f); t += Time.unscaledDeltaTime; yield return null; }
+        }
+
         IEnumerator Start()
         {
             kb = InputSystem.AddDevice<Keyboard>();
@@ -438,6 +449,54 @@ namespace PocketWeather
             bool saidOnSave = false;
             for (float w = 0; w < 6f && Now != GameFlow.State.Results; w += Time.unscaledDeltaTime) { saidOnSave |= hudL.ToastText.StartsWith("Not long left"); yield return null; }
             Check("a day being saved doesn't say \"Not long left\"", !saidOnSave && Now == GameFlow.State.Results, $"{Now}, said {saidOnSave}");
+            GameFlow.I.DebugCloseMenus();
+
+            // --- the first mistake of each kind says how to put it right, once a sitting, and only with hints on
+            Onboarding.DebugForgetRecoveries();
+            GameSettings.Hints = true;
+            GameFlow.I.DebugStart(1, true);
+            BedNeed wet = null;
+            foreach (var n in L.Needs) if (n is BedNeed b && !(n is SunnyNeed) && n.Required) { wet = b; break; }
+            yield return WaitFor(() => !hudL.HintVisible, 3f);
+            int shown0 = Onboarding.RecoveriesShown;
+            yield return RainUntil(wet, () => wet.Soggy, 10f);
+            float soggyAt = Time.unscaledTime;
+            yield return WaitFor(() => hudL.HintVisible && hudL.HintText == Onboarding.RecoveryFor(wet).text, 1f);
+            Check("a soggy bed says the sun will dry it", hudL.HintVisible && hudL.HintText == Onboarding.RecoveryFor(wet).text && Time.unscaledTime - soggyAt <= 1f,
+                  $"'{hudL.HintText}' {Time.unscaledTime - soggyAt:0.00}s after it went soggy, moisture {wet.Moisture:0.0} of {wet.BandMax:0.0}");
+            C.Input.Virtual(C.GroundPoint, false);
+            yield return WaitFor(() => !wet.Soggy, 6f);
+            int oops0 = L.Oopses;
+            yield return RainUntil(wet, () => wet.Soggy && L.Oopses > oops0, 10f);
+            yield return new WaitForSeconds(0.5f);
+            Check("a second soggy bed doesn't say it again", wet.Soggy && Onboarding.RecoveriesShown == shown0 + 1, $"soggy {wet.Soggy}, {Onboarding.RecoveriesShown - shown0} said");
+            C.Input.Virtual(C.GroundPoint, false);
+            // a sheep soaked on Day 3
+            GameFlow.I.DebugStart(2, true);
+            ShadeNeed sheep = null;
+            foreach (var n in L.Needs) if (n is ShadeNeed sh && n.Required && sh.Def.dislike != "none" && sh.Def.dislike != "love") { sheep = sh; break; }
+            yield return WaitFor(() => !hudL.HintVisible, 10f);
+            oops0 = L.Oopses;
+            yield return RainUntil(sheep, () => L.Oopses > oops0, 8f);
+            float soakedAt = Time.unscaledTime;
+            yield return WaitFor(() => hudL.HintVisible && hudL.HintText == Onboarding.RecoveryFor(sheep).text, 1f);
+            Check("a soaked sheep says it wanted shade, not rain", L.Oopses > oops0 && hudL.HintVisible && hudL.HintText == Onboarding.RecoveryFor(sheep).text && Time.unscaledTime - soakedAt <= 1f,
+                  $"'{hudL.HintText}', {L.Oopses - oops0} oopses");
+            C.Input.Virtual(C.GroundPoint, false);
+            // with Settings > Hints off, nothing
+            Onboarding.DebugForgetRecoveries();
+            GameSettings.Hints = false;
+            GameFlow.I.DebugStart(2, true);
+            sheep = null;
+            foreach (var n in L.Needs) if (n is ShadeNeed sh && n.Required && sh.Def.dislike != "none" && sh.Def.dislike != "love") { sheep = sh; break; }
+            int shown1 = Onboarding.RecoveriesShown;
+            oops0 = L.Oopses;
+            yield return RainUntil(sheep, () => L.Oopses > oops0, 8f);
+            yield return new WaitForSeconds(0.5f);
+            Check("with hints off, a mistake says nothing", L.Oopses > oops0 && Onboarding.RecoveriesShown == shown1 && !hudL.HintVisible, $"{L.Oopses - oops0} oopses, {Onboarding.RecoveriesShown - shown1} said");
+            C.Input.Virtual(C.GroundPoint, false);
+            GameSettings.Hints = true;
+            GameSettings.Save();
             GameFlow.I.DebugCloseMenus();
 
             // --- a save from before Encore best times (round 6) loads with its stamps and none
