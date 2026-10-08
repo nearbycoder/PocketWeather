@@ -44,6 +44,8 @@ Shader "PW/CloudPuff"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS
 
             struct Varyings
             {
@@ -82,6 +84,8 @@ Shader "PW/CloudPuff"
                 half fres = pow(1.0 - saturate(dot(n, v)), 3.0);
                 c += fres * lerp(half3(1, 1, 1), light.color, 0.5) * (0.22 + 0.25 * wrap) * (1 - _Fill * 0.5);
                 c += albedo * _Glow;
+                // a fire beside Pip warms the side facing it
+                c += pw_extra_lights(albedo, n, i.positionWS, i.positionCS) * 0.8;
                 c = lerp(c, half3(1.6, 1.6, 1.8), _Flash);
                 return half4(c, 1);
             }

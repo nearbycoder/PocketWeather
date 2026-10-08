@@ -46,7 +46,8 @@ namespace PocketWeather
             yield return FidelityScene("fid_d09", 8, 21.3f, 1.4f, -2.2f, false);  // campfire night: fires and their light
         }
 
-        /// <summary>Day 9 at night with its fires burning, for R12-2's before and after.</summary>
+        /// <summary>Day 9 at night with its fires burning (R12-2): with the fires' lights, then the same
+        /// frozen moment without them, as the shaders drew it before they read them.</summary>
         IEnumerator NightLightShots()
         {
             GameFlow.I.DebugStart(8, true);
@@ -55,16 +56,22 @@ namespace PocketWeather
             foreach (var n in L.Needs) if (n is FireNeed f) f.Ignite(0.9f);
             for (float t = 0; t < 1.5f; t += Time.deltaTime) { L.SetHour(21.3f); yield return null; }
             yield return MoveTo(-1.0f, -3.4f, 0.4f);
-            L.SetHour(21.3f);
-            yield return Shot("n01_night_fires");
+            for (float t = 0; t < 0.6f; t += Time.deltaTime) { L.SetHour(21.3f); yield return null; }
             Time.timeScale = 0f;
-            Quality.Forced = Quality.Tier.Low;   // Low draws no lights besides the sun
-            Quality.Apply();
-            yield return new WaitForSecondsRealtime(0.5f);
-            yield return Shot("n02_night_fires_low");
+            yield return new WaitForSecondsRealtime(0.3f);
+            yield return Shot("n01_night_fires_lit");
+            Quality.DebugNoExtraLights = true;
+            yield return new WaitForSecondsRealtime(0.4f);
+            yield return Shot("n02_night_fires_before");
+            Quality.DebugNoExtraLights = false;
+            L.SetHour(15f);
+            yield return new WaitForSecondsRealtime(0.4f);
+            yield return Shot("n03_afternoon_lit");
+            Quality.DebugNoExtraLights = true;
+            yield return new WaitForSecondsRealtime(0.4f);
+            yield return Shot("n04_afternoon_before");
+            Quality.DebugNoExtraLights = false;
             Time.timeScale = 1f;
-            Quality.Forced = null;
-            Quality.Apply();
         }
     }
 }

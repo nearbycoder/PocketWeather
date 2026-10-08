@@ -69,6 +69,7 @@ Shader "PW/Toon"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS
             #pragma multi_compile_instancing
 
             struct Varyings
@@ -119,6 +120,7 @@ Shader "PW/Toon"
                     ao = aoF.directAmbientOcclusion * aoF.indirectAmbientOcclusion;
                 #endif
                 half3 c = pw_toon_light(s, i.positionWS, i.positionCS, atten, ao);
+                c += pw_extra_lights(s.albedo, s.normal, i.positionWS, i.positionCS);
                 c = lerp(c, half3(1, 1, 1), _Flash);
                 return half4(c, 1);
             }

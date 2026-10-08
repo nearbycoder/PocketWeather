@@ -46,6 +46,7 @@ Shader "PW/Ground"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS
 
             struct Varyings
             {
@@ -113,6 +114,7 @@ Shader "PW/Ground"
                     ao = aoF.directAmbientOcclusion * aoF.indirectAmbientOcclusion;
                 #endif
                 half3 c = pw_toon_light(s, p, i.positionCS, atten, ao);
+                c += pw_extra_lights(s.albedo, s.normal, p, i.positionCS);
                 // puddles mirror a little sky
                 half3 v = GetWorldSpaceNormalizeViewDir(p);
                 c += puddle * _PW_AmbientTop.rgb * 0.35 * pow(1 - saturate(dot(v, n)), 2);

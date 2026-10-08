@@ -43,7 +43,9 @@ namespace PocketWeather
         /// <summary>Particle counts are multiplied by this (thinner at Low, denser at Ultra).</summary>
         public static float ParticleDensity => Current switch { Tier.Low => 0.6f, Tier.Ultra => 1.6f, _ => 1f };
         /// <summary>Lights other than the sun (fires, the campfire) are drawn from Medium up.</summary>
-        public static bool ExtraLights => Current != Tier.Low;
+        public static bool ExtraLights => Current != Tier.Low && !DebugNoExtraLights;
+        /// <summary>Captures: draw High without them, as the game did before its shaders read them.</summary>
+        public static bool DebugNoExtraLights;
         public static float GpuMs { get; private set; }    // smoothed, 0 if the platform doesn't report it
         public static bool AutoDowngraded { get; private set; }
         public static event System.Action Changed;

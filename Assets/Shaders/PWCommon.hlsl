@@ -118,6 +118,28 @@ half3 pw_toon_light(PWSurface s, float3 positionWS, float4 positionCS, half shad
     return diffuse + spec * light.color + rim + s.emission;
 }
 
+// Lights besides the sun (the fires and the campfire carry one): a warm pool on the ground and the
+// sides of things that face it, through a softer, wrapped version of the sun's ramp and without a
+// highlight. Forward+ on desktop walks the light clusters; the web's forward renderer, its per-object
+// list. Lights are switched off at Low graphics, which leaves the loop with nothing to do.
+half3 pw_extra_lights(half3 albedo, half3 n, float3 positionWS, float4 positionCS)
+{
+    half3 c = 0;
+#if defined(_ADDITIONAL_LIGHTS)
+    uint pixelLightCount = GetAdditionalLightsCount();
+    InputData inputData = (InputData)0;
+    inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(positionCS);
+    inputData.positionWS = positionWS;
+    LIGHT_LOOP_BEGIN(pixelLightCount)
+        Light l = GetAdditionalLight(lightIndex, positionWS);
+        half ramp = smoothstep(-0.25, 0.45, dot(n, l.direction));
+        // inverse-square falloff, capped so whatever's right beside the light glows rather than burns out
+        c += albedo * l.color * (min(l.distanceAttenuation, 1.0) * ramp * 0.4);
+    LIGHT_LOOP_END
+#endif
+    return c;
+}
+
 // Gentle sway for foliage: weight grows with local height; gusts push along _PW_Wind.
 float3 pw_sway(float3 positionWS, float heightWeight, float amount)
 {

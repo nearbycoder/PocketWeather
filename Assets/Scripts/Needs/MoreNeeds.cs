@@ -224,7 +224,7 @@ namespace PocketWeather
             f.glow = lgo.AddComponent<Light>();
             f.glow.type = LightType.Point;
             f.glow.color = new Color(1f, 0.6f, 0.25f);
-            f.glow.range = 2.8f * size;
+            f.glow.range = 1.8f * size;   // a pool around the fire (the toon and ground shaders light by it)
             f.glow.intensity = 0;
             f.glow.shadows = LightShadows.None;
             return f;
