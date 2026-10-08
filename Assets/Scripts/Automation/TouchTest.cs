@@ -172,8 +172,11 @@ namespace PocketWeather
                   $"{GameFlow.I.Current}, hour {L.Hour:0.00} (was {hour0:0.00}), 'Sure?' {(sure != null ? "showing" : "missing")}");
             if (sure != null) yield return Tap(UiCenter(sure));
             waited = 0;
-            while (!(GameFlow.I.Current == GameFlow.State.Intro || (GameFlow.I.Current == GameFlow.State.Playing && L.Hour < hour0 - 0.01f)) && waited < 6f) { waited += Time.unscaledDeltaTime; yield return null; }
-            Check("a second tap restarts the day", L != null && L.Hour <= L.Def.startHour + 0.05f, $"{GameFlow.I.Current}, hour {L?.Hour:0.00}");
+            // wait for play to start again (after the wipe and the 0.35 s lead-in): the day must be
+            // running from its start with no postcard in the way
+            while (!(GameFlow.I.Current == GameFlow.State.Playing && L.Hour < hour0 - 0.01f) && waited < 6f) { waited += Time.unscaledDeltaTime; yield return null; }
+            Check("a second tap restarts the day, straight into play", L != null && GameFlow.I.Current == GameFlow.State.Playing && L.Running && !GameFlow.I.PostcardOpen && L.Hour <= L.Def.startHour + 0.05f,
+                  $"{GameFlow.I.Current}, running {L?.Running}, postcard {GameFlow.I.PostcardOpen}, hour {L?.Hour:0.00}");
 
             // --- level 4: flick to gust the boat
             GameFlow.I.DebugStart(3, true);
