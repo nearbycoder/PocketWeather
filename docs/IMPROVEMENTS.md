@@ -2552,3 +2552,146 @@ last.
 - Real phones, Safari, controllers, audio by ear and the Encores' difficulty still need people.
 - Hosting, releases and tags, the trailer, licences, signing and Windows Build Support are the
   owner's; so are whether a relaxed day may earn "Before par" and when the slower sun is offered.
+
+## Round 12 results
+
+Implemented on `improvements-12`, one commit per item. Screenshots are in
+[`docs/media/improvements/round12/`](media/improvements/round12/). Every game window this round
+opened in a private KWin on a virtual screen, and every tool run used a throwaway config folder in
+`Recordings/r12/`. The machine's load average was 18 to 63 during the round; runs are noted with
+their load.
+
+FINAL_SELFTEST_PLACEHOLDER
+
+### R12-1. A Graphics Fidelity slider: done
+
+Settings → Graphics is a stepped slider, **Auto · Low · Medium · High · Ultra**, with the step's name
+beside it and a notch for each step. It's dragged or tapped, or moved a step at a time with the arrow
+keys or the d-pad, and each step ticks a little higher. It's saved in the same pref as the old
+three-way button (`pw.gfx`, with Medium and Ultra as new values), so a player's Auto, High or Low
+carries over. Auto is unchanged: High, dropping to Low if the GPU can't keep up, remembered.
+
+| Step | What it changes | GPU ms a frame (Days 10 / 9 night / 12) | Whole frame, avg ms (Days 10 / 9 / 12) |
+| --- | --- | --- | --- |
+| **Low** | 75% resolution (FSR 1 upscale on desktop), no MSAA, no ambient occlusion, gaussian depth of field, one 1024 shadow cascade at 28 m with cheap soft shadows, no lights besides the sun, 0.6x particles | 1.06 / 1.00 / 0.84 | 23.7 / 16.6 / 9.1 |
+| **Medium** | full resolution, 2x MSAA, no ambient occlusion, bokeh depth of field, a 2048 shadow map with medium soft shadows | 1.37 / 1.43 / 1.12 | 20.1 / 22.6 / 9.9 |
+| **High** (Auto's default) | the original look: 4x MSAA, ambient occlusion, bokeh, two 4096 cascades, high-quality bloom; now also the fires' light (R12-2) | 1.62 / 1.91 / 1.62 | 23.1 / 21.5 / 9.7 |
+| **Ultra** | rendered at 1.5x and downsampled, four shadow cascades, ambient occlusion at high samples and blur and 1.4x deeper, high-quality bokeh sampling, a 64-step colour LUT, a 512-wide wetness map (crisper wet and green edges), 1.6x particles and a second scatter of tufts and wildflowers | 3.29 / 3.66 / 3.02 | 28.8 / 16.2 / 10.5 |
+
+Measured by `-pwBench` (Vulkan, 1600x900, in the private KWin, `Recordings/r12/bench-vk-r12.log`),
+8 s of the same raining figure-of-eight per step, each step run twice (Low to Ultra, then back) and
+averaged; load 22 at the start, 33 at the end. **The GPU column is the honest one.** The whole-frame
+times are set by the CPU, which the other sessions were competing for: the same build gave 5.8 to
+12.5 ms on Day 12 Low and 21.6 to 25.9 ms on Day 10 Low between passes. The GPU's own time is only
+reported on Vulkan here (OpenGL in the private KWin returns none), so the benchmark ran on Vulkan.
+
+- **High matches round 11's High, and Low its Low.** The same benchmark file was built into round
+  11's code (`2f91efd`) and the two builds were run in turn, twice each, 5 s per step (load 18 to 31,
+  `Recordings/r12/ab-*.log`): High's GPU time averaged 1.68 ms against round 11's 1.64 ms (runs of
+  1.53 to 1.78 and 1.52 to 1.81), Low's 0.95 ms against 0.99 ms. Whole-frame times swung between 9
+  and 41 ms for both builds with no consistent difference.
+- **Low costs about 40% less GPU time than High and Ultra about twice High's.** Day 9's night shows
+  the fires' lights: High is 0.3 ms dearer there than on the other days.
+- **Same-frame screenshots** (`-pwScript fidelity`): the game is frozen and the same moment is
+  shot at each step. Under the tilt-shift blur, Ultra's differences are mostly fine detail (cleaner
+  edges, the extra wildflowers, softer shadow edges, crisper puddle edges); Low is visibly coarser at
+  edges but sharper in the middle distance, because its gaussian depth of field blurs only the far
+  band.
+
+![every step on Day 10](media/improvements/round12/1-fidelity-d10.jpg)
+
+![every step on Day 6](media/improvements/round12/1-fidelity-d06.jpg)
+
+![every step on Day 9's night](media/improvements/round12/1-fidelity-d09.jpg)
+
+![Low, High and Ultra at 2x](media/improvements/round12/1b-fidelity-zoom.jpg)
+
+- **Keyboard test** (78 checks, was 67; load 27 to 33, `Recordings/r12/KeyTest-5.log`): the arrow keys
+  reach the slider from Done; it shows the saved Medium; Right steps to High (saved, applied, labelled),
+  again to Ultra (render scale 1.50, four cascades), Left three times to Low (0.75, no MSAA) and once
+  more to Auto (High on this machine). **Gamepad** (37, was 32; `PadTest-5.log`): the d-pad reaches
+  the slider and steps Low to Medium, and B closes settings. **UI audit:** the new row passes at all
+  eight sizes in the final self-test.
+- **A false alarm on the web:** `web_smoke`'s console logs URP's "Edge Adaptive Spatial Upsampling
+  is not supported or has been stripped ... PostProcessing render passes will not execute" three times
+  a visit. I first took it for Low's FSR upscaler breaking the web's post-processing and made Low use
+  FSR only where its shader is found (`4eb6ca5`). That was wrong: round 11's web consoles log it
+  three times too, it appears at High as well, and the web screenshots show the depth of field,
+  vignette and grading at both High and Low. The check stays (it's harmless, and the web build does
+  find the shader), with its comment corrected (`4615eff`). The web's Ultra has no ambient
+  occlusion (its renderer never had it) and renders at 1.2x (its renderer starts at 0.8).
+- **Also fixed:** a hint race the keyboard test caught at load 33: a sheep soaked in Day 3's first
+  second said "They wanted shade, not rain" and was replaced by the day's "Shade the hot sheep" at
+  once. A mistake's hint now holds the pill for its 4.5 s before the day's own hint (`9b3f9fb`).
+
+### R12-2. Warm light at night: done
+
+Every fire and the campfire has carried a warm point light since v0.1.0, but the toon, ground and
+cloud shaders only read the sun, so it lit nothing. They now take URP's additional lights (Forward+
+light clusters on desktop, the forward renderer's list on the web) through a softer, wrapped version
+of the sun's ramp, with the falloff capped beside the light so the hay glows instead of burning out,
+and no highlight. A burning haystack now lights its own hay and a pool of grass around it, the
+campfire lights the two campers and the ground at their feet, and Pip's side facing a fire warms.
+The light's range was cut from 2.8x the fire's size to 1.8x: at 2.8x, once the shaders read it, it
+turned most of the island yellow. Lights are off at Low.
+
+- **Before and after** (`-pwScript nightlight`, the same frozen moment, with the lights switched off
+  for "before", which is how the old shaders drew it): Day 9 at 21:10 with every fire burning. In
+  daylight (15:00, same capture) the difference is a slightly brighter haystack.
+
+![Day 9's night, before and after](media/improvements/round12/2-night-light.jpg)
+
+![closer](media/improvements/round12/2b-night-light-close.jpg)
+
+- **Cost:** see R12-1's table (Day 9 at High, 0.3 ms of GPU time more than the other days).
+- The web build compiles and runs it: `web_smoke` passed in all six modes with 0 console errors (see
+  R12-4); the headless browsers' screenshots are daytime, so the web's night light was not looked at.
+
+### R12-3. Focus you can see, and controls that answer: done
+
+- With the keys or a gamepad, the selected control on every menu wears a blue ring with a faint halo
+  that glides from control to control (it eases in about 0.15 s) and breathes a few pixels in and
+  out. Moving the mouse, clicking or touching hides it; the next key or button brings it back. Near
+  the screen's edge its margin gives way so it stays on screen, and the title's full-screen "tap
+  anywhere" backdrop gets none (its prompt already says what Enter does).
+- Sliders and toggles now answer like buttons: the slider's handle ring or the switch's knob grows
+  under the mouse or when focused, and arriving on one ticks. Their near-invisible default tint is
+  gone.
+- **Keyboard test** (`KeyTest-5.log`): the ring settles exactly (0.0 px off centre) on the selected
+  map card, the pause menu's Restart and the graphics slider; a mouse move hides it; a key brings it
+  back. **Gamepad test:** around the pause menu's selection and the graphics slider. **UI audit:**
+  every menu control's ring is on screen and goes round it, at 1600x900, 360x800 and 740x360
+  (`ui-5-*.log`) and at all eight sizes in the final self-test. The touch test still passes 23 of 23
+  (`TouchTest-1.log`).
+- The first version's halo was a filled sprite that tinted the control underneath; it's an outline
+  now.
+
+![the ring on the settings' graphics slider](media/improvements/round12/3-focus-settings.jpg)
+
+![on a map card and a pause button](media/improvements/round12/3b-focus-map-pause.jpg)
+
+### R12-4. Proof runs
+
+- **Web:** `web_smoke` passed (exit 0) in all six modes (Chrome desktop, `--mouse`, `--phone` and
+  `--portrait`; `--firefox` and `--firefox --phone`) on a web build of `4eb6ca5` (the round's code;
+  `4615eff` after it only changes a comment), with 0 console errors and no browser dialogs, and Chrome
+  still remembering Auto's drop to Low on the next visit, at load 20 to 43
+  (`Recordings/r12/web2-*.log`). An earlier web build of `c9b476c` passed all six too (`web-*.log`).
+  The download before the title is **17,650,199 bytes** in `Build/` (17,623,061 in round 11): the
+  slider, the focus ring and the light loop's shader variants added 27 KB.
+- The real prefs files' `pw.` entries: see the end of this section.
+
+### Found along the way, not fixed
+
+- Auto graphics drops to Low in some test runs inside the private KWin (frames of 40 to 330 ms under
+  load, with no GPU timing on OpenGL there). Round 11's logs show the same. It only affects those
+  runs, which don't judge looks.
+- Ultra's look is held back by the tilt-shift blur that is the game's style: most of what it adds is
+  fine detail that the blur softens. Settings → Tilt-shift turned down shows more of it.
+- The sunset card's "hot animals" wording (round 11) is unchanged.
+
+### Decisions for the owner (unchanged)
+
+Whether a relaxed day may earn "Before par" and when the slower sun is offered; hosting the web
+build, a new release zip (v0.1.0 predates all twelve rounds), the trailer, licences, signing and
+Windows Build Support.

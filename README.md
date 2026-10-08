@@ -61,7 +61,8 @@ The camera looks down at an angle, so Pip floats above your cursor or finger and
 
 M mutes the music and brings it back at your own volume. The pause menu shows a one-line reminder of
 the controls for whatever you're playing with. Every menu works with mouse, touch, keyboard and
-gamepad (d-pad or stick to move, A to choose, B to go back). **Settings → Tap to rain** turns rain
+gamepad (d-pad or stick to move, A to choose, B to go back); with the keys or a pad, a ring
+glides to the control that Enter or A will press, and hides again when the mouse moves. **Settings → Tap to rain** turns rain
 into a toggle for anyone who finds holding a button tiring, and **Settings → Touch buttons** can be
 Auto (shown once you touch the screen), On or Off. **Settings → Relaxed days** gives the sun half as
 long again to cross the sky, for anyone who keeps running out of daylight (the sunset card offers it
@@ -169,7 +170,7 @@ earns that day's fourth stamp, and its postcard keeps your best scorcher time to
 
 Also included: a title screen over the diorama of the day you're up to, a map of Pocketvale with
 your stamps, a postcard before each day, pause and settings (music, sound and ambience volume,
-graphics Auto/High/Low, fullscreen, screen shake, tilt-shift blur, hints, touch buttons,
+a Graphics slider from Low to Ultra or Auto, fullscreen, screen shake, tilt-shift blur, hints, touch buttons,
 tap-to-rain, relaxed days, reset progress), your best finishing time on each postcard and results card, a sunset
 card with a tip for each kind of friend left undone and a straight-back-in "Try again", an ending, wordless device-aware onboarding hints,
 a hint saying how to put each kind of mistake right the first time it happens (a soggy bed dries in the sun), and
@@ -298,8 +299,10 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
 - **Audio loop seams** (`Tools/.venv/bin/python Tools/audio/check_loops.py`): no click or level
   jump where any looping clip wraps.
 - **Keyboard, gamepad and touch self-tests** (`-pwKeyTest`, `-pwPadTest`, `-pwTouchTest`): virtual
-  devices drive the real Input System from the title screen through menus and play (67, 32 and
-  23 checks), including a new player's first tap going straight to Day 1, the pause menu's
+  devices drive the real Input System from the title screen through menus and play (78, 37 and
+  23 checks), including the Graphics slider stepped with the arrows and the d-pad (its label, the
+  saved setting and the renderer's settings at each step), the focus ring settling on the selected
+  map card, pause button and slider and hiding when the mouse moves, a new player's first tap going straight to Day 1, the pause menu's
   controls line, Restart asking "Sure?" well into a day, hints hiding behind pause, the Touch
   buttons Off setting, best times, the hint on each day that brings in a new idea, and opening an
   Encore from its postcard, saving it, and
@@ -321,7 +324,8 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   fully on screen, at 16:9, 20:9, 4:3, two phones held sideways (844x390 and 740x360) and three
   portrait sizes (720x1280, and 390x844 and 360x800 phones). No two controls may overlap, and no
   menu text may run off screen, into a control it isn't part of, or out of the card, pill or
-  button it's drawn on. The HUD's gauge, sun track, needs tray and pause button must not overlap, the UI
+  button it's drawn on, and the focus ring a key or pad would draw around each menu control must
+  stay on screen and go round it. The HUD's gauge, sun track, needs tray and pause button must not overlap, the UI
   must be drawn at its design scale, a desktop's tray must keep its full size (Day 12 included),
   and on a phone-sized screen the pause button must be at least 44 px, the clock's text 15 px and
   the tray's items no smaller than the old layout drew them. On a phone held either way, the
@@ -341,6 +345,11 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   used. `-pwDelights` also chases each secret (with a second try for most of them),
   `-pwNewcomer` plays like a hesitant first-timer, `-pwEncore` plays every day as its Encore, and
   `-pwPerf` logs frame-time statistics.
+- **Graphics fidelity** (`Tools/play.sh -pwCapture $PWD/Recordings/fid -pwScript fidelity`): the same
+  frozen moment on three days at Low, Medium, High and Ultra. `Tools/play.sh -force-vulkan -pwPerf
+  -pwBench` flies the same raining figure-of-eight on three days at each step, forwards then back,
+  and logs `[Bench]` frame times and the GPU's own time (Vulkan reports it; OpenGL in the private
+  KWin doesn't). `-pwScript nightlight` shoots Day 9's night with and without the fires' light.
 - **Web smoke test** (`node Tools/web_smoke.mjs`, `--phone` for an emulated phone): boots the
   WebGL build in headless Chrome and plays it with real browser touch events, then reloads to
   check that a downgraded Auto graphics setting is remembered. `--throttle 20` emulates a 20 Mbps
@@ -384,12 +393,12 @@ Assets/
                  rainbow wish, fire, campfire, keep-dry, pond line, delights)
     World/       WaterBody, WetMap, Rainbows, Motes, Critter, Scatter, AmbientLife
     Fx/          Fx (particles, splashes, ripples), CameraRig, PostFx (tilt-shift DoF, bloom,
-                 grading), Quality (Auto/High/Low)
+                 grading), Quality (Auto, Low, Medium, High, Ultra)
     Audio/       AudioHub (music, ambience, buses), Sfx (pooled one-shots, musical rain notes),
                  MasterLimiter (look-ahead limiter on the listener)
     UI/          UiKit (runtime uGUI kit), Hud, Screens (title, map, postcard, pause, settings,
-                 results, ending), Onboarding
-    Automation/  AutoPilot, Capture, KeyTest / PadTest / TouchTest, UiAudit, PerfProbe,
+                 results, ending), Onboarding, FocusRing (keyboard and pad focus)
+    Automation/  AutoPilot, Capture, KeyTest / PadTest / TouchTest, UiAudit, PerfProbe, FidelityBench,
                  Recorder (fixed-clock video), Trailer (the trailer's shot list)
   Editor/        BuildScript (batch builds), ProjectSetup (URP asset, renderer, volume)
   WebGLTemplates/PocketWeather/  the web page: full-window canvas, loading card, link previews
@@ -482,7 +491,7 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, eleven improvement rounds (see
+every input method. Since then, twelve improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
@@ -532,6 +541,13 @@ every input method. Since then, eleven improvement rounds (see
 - a hint, the first time each kind of mistake happens, saying how to put it right (a soggy bed
   dries in the sun, a soaked sheep wanted shade, wet washing can be blown dry again)
 - a sunset card with a tip for each kind of friend left, in turn, not just the first
+- a Graphics Fidelity slider (Auto, Low, Medium, High, Ultra): Ultra supersamples and adds finer
+  ambient occlusion, four shadow cascades, a finer wetness map, denser particles and more
+  wildflowers; Low drops ambient occlusion and extra lights for weak GPUs
+- fires and the campfire that light the hay, grass, campers and Pip around them at night (their
+  lights were there, but the shaders ignored them)
+- a focus ring that shows which menu control the keys or a pad will press, and sliders and toggles
+  that answer hover and focus like the buttons
 - "Not long left" pulses the bubbles of the friends still waiting, and toasts show in their own
   colours and stay up for their own time (before, a toast's colour went to its shadow, and a toast
   shown over another went away with the first)
@@ -587,7 +603,10 @@ None of it is in a release yet. What has been verified (on the Linux build unles
     pause button), and its menus at 0.44, held either way.
 - Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
   off, 99% of frames under 17 ms, on both OpenGL Core (the default) and Vulkan
-  (`-force-vulkan`).
+  (`-force-vulkan`), measured in earlier rounds on a quieter machine. Round 12's GPU times at
+  1600x900 (Vulkan): Low about 1.0 ms, Medium 1.1 to 1.4, High 1.6 to 1.9 (the same as round 11's
+  High) and Ultra 3.0 to 3.7. Whole-frame times that round were set by the machine's load (9 to 41
+  ms for every step and for round 11's build alike), so they say little about the game.
 - The audio mix sits around -14 LUFS with no clipped samples, and every loop is seamless.
 
 Rough edges, honestly:
@@ -619,7 +638,10 @@ Rough edges, honestly:
   trailer's mix, the generated B sections of the afternoon and wedding music, and the new
   "seaside" track.
 - **Weak GPUs are untested.** Auto graphics drops to Low when frame times stay high, but no real
-  low-end GPU has been tried; under a pure software renderer the game ran at about 5 fps.
+  low-end GPU has been tried; under a pure software renderer the game ran at about 5 fps. Low now
+  costs about 40% less GPU time than High on the development machine. Ultra's extras are mostly
+  fine detail that the tilt-shift blur softens; nobody but the screenshots has judged whether it's
+  worth twice the GPU time.
 - **The Linux binary on its own hangs at startup on some Wayland desktops.** On the development
   machine (KDE Plasma, Wayland), Unity's default X11 backend stops before the window appears,
   whatever the graphics API or window mode. `PocketWeather.sh` (in builds from the current source)
