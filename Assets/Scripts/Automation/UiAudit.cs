@@ -26,7 +26,8 @@ namespace PocketWeather
             DontDestroyOnLoad(new GameObject("UiAudit").AddComponent<UiAudit>().gameObject);
         }
 
-        void Audit(string screen)
+        /// <param name="collect">gather the problems here instead of logging a verdict (one check made of several layouts)</param>
+        void Audit(string screen, List<string> collect = null)
         {
             var es = EventSystem.current;
             var problems = new List<string>();
@@ -74,6 +75,12 @@ namespace PocketWeather
                 if (ox > 6f * unit && oy > 6f * unit) problems.Add($"{Path(a.transform)} overlaps {Path(b.transform)} ({ox / unit:0}x{oy / unit:0} units)");
             }
             string texts = menuOpen ? MenuTexts(controls, problems) : "";
+            if (collect != null)
+            {
+                if (count == 0) problems.Add("no controls found");
+                foreach (var p in problems) collect.Add($"{screen}: {p}");
+                return;
+            }
             bool ok = problems.Count == 0 && count > 0;
             Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} {screen}: {count} controls{texts} at {Screen.width}x{Screen.height}" +
                       (problems.Count > 0 ? "\n    " + string.Join("\n    ", problems) : count == 0 ? " (none found)" : ""));
@@ -313,6 +320,25 @@ namespace PocketWeather
 
         IEnumerator Settle(float s = 1.2f) { yield return new WaitForSecondsRealtime(s); }
 
+        /// <summary>Every tip the sunset card can step through, laid out in its pill in turn.</summary>
+        IEnumerator SunsetTips()
+        {
+            var card = GameFlow.I.SunsetCard;
+            var problems = new List<string>();
+            int n = 0;
+            foreach (var t in FailCard.AllTips())
+            {
+                card.DebugShowTip(t);
+                Canvas.ForceUpdateCanvases();
+                yield return null;
+                n++;
+                Audit($"tip \"{t.Substring(0, Mathf.Min(24, t.Length))}…\"", problems);
+            }
+            bool ok = problems.Count == 0;
+            Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} sunset card, every tip ({n}) at {Screen.width}x{Screen.height}" + (ok ? "" : "\n    " + string.Join("\n    ", problems)));
+            if (ok) passes++; else fails++;
+        }
+
         /// <summary>Every need in every day has a decided "wants" badge, and its icon exists.</summary>
         IEnumerator WantBadges()
         {
@@ -418,6 +444,7 @@ namespace PocketWeather
             f.DebugCloseMenus();
             f.DebugStart(1, true); yield return Settle(1.2f);
             f.DebugSunset(); yield return Settle(3.2f); Audit("sunset");
+            yield return SunsetTips();
             f.DebugStart(1, true); yield return Settle(1.2f);
             f.DebugSunset(true); yield return Settle(3.2f); Audit("sunset, offering a slower sun");
             // Settings > Relaxed days: the postcard's par line and the results card's par stamp say so

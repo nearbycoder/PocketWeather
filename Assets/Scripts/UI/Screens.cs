@@ -1010,35 +1010,101 @@ namespace PocketWeather
             var unmet = new List<Need>();
             foreach (var n in level.Needs) if (n.Required && !n.Met) unmet.Add(n);
             float step = Mathf.Min(124f, (Ui.MenuNarrow ? 760f : 900f) / Mathf.Max(1, unmet.Count));
+            // one tip per kind of friend left, in turn, with the icons it's about lit
+            tips.Clear();
+            tipFor.Clear();
+            icons.Clear();
             for (int i = 0; i < unmet.Count; i++)
             {
                 var it = Ui.Rect("U" + i, row, new Vector2(0.5f, 0.5f), new Vector2(110, 110), new Vector2((i - (unmet.Count - 1) / 2f) * step, 0));
+                string t = Tip(unmet[i]);
+                if (!tips.Contains(t)) tips.Add(t);
+                tipFor.Add(tips.IndexOf(t));
+                icons.Add(Ui.Group(it.gameObject));
                 Ui.Image(it, Ui.Circle, Res.Hex("F6DCD6"), new Vector2(104, 104), Vector2.zero, null, "Bg");
                 Ui.Icon(it, unmet[i].Icon, 72, new Vector2(0, 2));
                 Ui.PopIn(it, 0.3f + 0.08f * i, 0.4f, step / 124f);
             }
-            tip.text = unmet.Count > 0 ? Tip(unmet[0]) : "";
+            ShowTip(0);
             Open();
             Tween.To(600, 0, 0.55f, y => card.anchoredPosition = new Vector2(0, y), k => Ease.OutBack(k, 1.1f), 0, null, card);
         }
 
-        /// <summary>One concrete hint for the first friend left unhelped.</summary>
-        static string Tip(Need n) => n switch
+        readonly List<string> tips = new();
+        readonly List<int> tipFor = new();          // each icon in the row: the tip it belongs to
+        readonly List<CanvasGroup> icons = new();
+        int tipIndex;
+        float tipTimer;
+        /// <summary>Seconds each tip shows before the next, when friends of more than one kind were left.</summary>
+        public const float TipSeconds = 4f;
+        /// <summary>The tip showing, and how many there are (for the self-tests).</summary>
+        public string TipText => tip.text;
+        public int TipCount => tips.Count;
+        /// <summary>Which icons in the row are lit (the ones the tip is about).</summary>
+        public bool[] LitIcons()
         {
-            FireNeed _ => "Tip: rain on a fire the moment it starts, before it spreads.",
-            SunnyNeed _ => "Tip: give them a little rain, then fly away so the sun can shine on them.",
-            BedNeed b when b.Soggy => "Tip: that bed got soggy. Rain in short bursts and stop inside the band.",
-            BedNeed _ => "Tip: some beds were still thirsty. Drink your fill, then rain until the bar fills.",
-            ShadeNeed _ => "Tip: hover over hot animals and keep your shadow on them for a while.",
-            BoatNeed _ => "Tip: blow from behind a boat, pointing where it needs to go.",
-            LaundryNeed _ => "Tip: blow gusts at the washing to dry it, and keep the rain away.",
-            WindmillNeed _ => "Tip: keep blowing gusts at the sails until the windmill spins up.",
-            RainbowWishNeed _ => "Tip: rain right beside them, then move away so the sun makes a rainbow.",
-            CampfireNeed _ => "Tip: the campfire should keep burning, so keep your rain off it.",
-            KeepDryNeed _ => "Tip: some things want to stay dry. Watch where your rain falls.",
-            PondLineNeed _ => "Tip: don't drink the duck pond below its line. Raining into it fills it back up.",
-            _ => "Tip: the bubbles over everyone's heads show what they need.",
+            var lit = new bool[icons.Count];
+            for (int i = 0; i < icons.Count; i++) lit[i] = icons[i] != null && icons[i].alpha > 0.9f;
+            return lit;
+        }
+        /// <summary>The tip each icon in the row belongs to (for the self-tests).</summary>
+        public int TipOfIcon(int i) => tipFor[i];
+
+        void ShowTip(int i, bool next = false)
+        {
+            tipIndex = i;
+            tipTimer = 0;
+            tip.text = tips.Count > 0 ? tips[i] : "";
+            for (int k = 0; k < icons.Count; k++)
+                if (icons[k] != null) icons[k].alpha = tips.Count < 2 || tipFor[k] == i ? 1f : 0.35f;
+            if (next) Tween.Punch(tipPill, 0.05f, 0.35f);
+        }
+
+        void Update()
+        {
+            if (!IsOpen || tips.Count < 2) return;
+            tipTimer += Time.unscaledDeltaTime;
+            if (tipTimer >= TipSeconds) ShowTip((tipIndex + 1) % tips.Count, true);
+        }
+
+        /// <summary>UI audit: every tip the card can show, and a way to show one.</summary>
+        public static IEnumerable<string> AllTips() => TipTexts;
+        public void DebugShowTip(string text) { tip.text = text; }
+
+        static readonly string[] TipTexts =
+        {
+            "Tip: rain on a fire the moment it starts, before it spreads.",
+            "Tip: give them a little rain, then fly away so the sun can shine on them.",
+            "Tip: that bed got soggy. Rain in short bursts and stop inside the band.",
+            "Tip: some beds were still thirsty. Drink your fill, then rain until the bar fills.",
+            "Tip: hover over hot animals and keep your shadow on them for a while.",
+            "Tip: blow from behind a boat, pointing where it needs to go.",
+            "Tip: blow gusts at the washing to dry it, and keep the rain away.",
+            "Tip: keep blowing gusts at the sails until the windmill spins up.",
+            "Tip: rain right beside them, then move away so the sun makes a rainbow.",
+            "Tip: the campfire should keep burning, so keep your rain off it.",
+            "Tip: some things want to stay dry. Watch where your rain falls.",
+            "Tip: don't drink the duck pond below its line. Raining into it fills it back up.",
+            "Tip: the bubbles over everyone's heads show what they need.",
         };
+
+        /// <summary>One concrete hint for a friend left unhelped.</summary>
+        static string Tip(Need n) => TipTexts[n switch
+        {
+            FireNeed _ => 0,
+            SunnyNeed _ => 1,
+            BedNeed b when b.Soggy => 2,
+            BedNeed _ => 3,
+            ShadeNeed _ => 4,
+            BoatNeed _ => 5,
+            LaundryNeed _ => 6,
+            WindmillNeed _ => 7,
+            RainbowWishNeed _ => 8,
+            CampfireNeed _ => 9,
+            KeepDryNeed _ => 10,
+            PondLineNeed _ => 11,
+            _ => 12,
+        }];
     }
 
     // ===================================================================== Ending

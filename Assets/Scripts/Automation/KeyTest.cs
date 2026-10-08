@@ -451,6 +451,30 @@ namespace PocketWeather
             Check("a day being saved doesn't say \"Not long left\"", !saidOnSave && Now == GameFlow.State.Results, $"{Now}, said {saidOnSave}");
             GameFlow.I.DebugCloseMenus();
 
+            // --- the sunset card steps through a tip for each kind of friend left, lighting their icons
+            GameFlow.I.DebugStart(4, true);
+            yield return new WaitForSeconds(0.5f);
+            GameFlow.I.DebugSunset();
+            var sunsetCard = GameFlow.I.SunsetCard;
+            yield return WaitFor(() => Now == GameFlow.State.Failed && sunsetCard.IsOpen, 6f);
+            yield return new WaitForSecondsRealtime(0.3f);
+            string tip0 = sunsetCard.TipText;
+            bool LitMatches(int tipNo)
+            {
+                var lit = sunsetCard.LitIcons();
+                if (lit.Length == 0) return false;
+                for (int i = 0; i < lit.Length; i++) if (lit[i] != (sunsetCard.TipOfIcon(i) == tipNo)) return false;
+                return true;
+            }
+            bool first = LitMatches(0);
+            float shownAt = Time.unscaledTime;
+            yield return WaitFor(() => sunsetCard.TipText != tip0, FailCard.TipSeconds + 1f);
+            float changed = Time.unscaledTime - shownAt;
+            Check("the sunset card has a tip for each kind of friend left, in turn, with their icons lit",
+                  sunsetCard.TipCount >= 2 && first && sunsetCard.TipText != tip0 && changed <= 5f && LitMatches(1),
+                  $"{sunsetCard.TipCount} tips, '{tip0}' then '{sunsetCard.TipText}' after {changed:0.0}s, lit {string.Join("", System.Array.ConvertAll(sunsetCard.LitIcons(), b => b ? "1" : "0"))}");
+            GameFlow.I.DebugCloseMenus();
+
             // --- the first mistake of each kind says how to put it right, once a sitting, and only with hints on
             Onboarding.DebugForgetRecoveries();
             GameSettings.Hints = true;

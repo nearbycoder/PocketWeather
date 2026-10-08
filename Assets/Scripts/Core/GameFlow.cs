@@ -409,6 +409,8 @@ namespace PocketWeather
         /// <summary>Sunsets per day since the game started.</summary>
         readonly System.Collections.Generic.Dictionary<string, int> sunsets = new();
         public bool SunsetOffersSlower => fail.OfferingSlower;
+        /// <summary>The sunset card (for the self-tests).</summary>
+        public FailCard SunsetCard => fail;
 
         void OnSunset()
         {
