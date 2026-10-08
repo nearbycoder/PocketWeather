@@ -47,6 +47,10 @@ namespace PocketWeather
         RectTransform toast;
         Text toastText;
         RectTransform toastPanel;
+        Image toastPill;
+        Tween.Handle toastHide;
+        /// <summary>The toast pill's colour (for the self-tests).</summary>
+        public Color ToastColor => toastPill.color;
         Image toastIcon;
         public JuicyButton PauseButton { get; private set; }
         public System.Action OnPause;
@@ -57,7 +61,7 @@ namespace PocketWeather
             public RectTransform rt;
             public Image ring, icon, bg;
             public CanvasGroup group;
-            public float shown, phase, shake;
+            public float shown, phase, shake, nudge;
             public bool wasMet, wasProblem;
             public string iconName;
             public BedNeed bed;              // beds show their moisture against the "just right" band
@@ -153,6 +157,7 @@ namespace PocketWeather
             toast = Ui.Rect("Toast", chrome, new Vector2(0.5f, 1), new Vector2(640, 96), new Vector2(0, -190));
             var tp = Ui.Panel(toast, new Vector2(640, 96), Vector2.zero, Ui.Butter, null, 48f);
             toastPanel = tp.rectTransform;
+            toastPill = tp;
             toastIcon = Ui.Icon(tp.transform, "stamp_flower", 84, new Vector2(-260, 2));
             toastText = Ui.Label(tp.transform, "", 38, Ui.Ink, new Vector2(500, 80), new Vector2(40, 2), true);
             toast.gameObject.SetActive(false);
@@ -388,11 +393,14 @@ namespace PocketWeather
             toastPanel.sizeDelta = new Vector2(w, h);
             toast.sizeDelta = new Vector2(w, h);
             toastIcon.rectTransform.anchoredPosition = new Vector2(-w / 2f + 62f, 2);
-            toast.GetComponentInChildren<Image>().color = color ?? Ui.Butter;
+            // the pill itself (the first Image under the toast is its shadow)
+            toastPill.color = color ?? Ui.Butter;
             toast.gameObject.SetActive(true);
             Tween.KillOwner(toast);
             Tween.To(260, 0, 0.5f, y => toast.anchoredPosition = new Vector2(0, ToastY + y), k => Ease.OutBack(k), 0, null, toast);
-            Tween.Delay(seconds, () =>
+            // a toast stays up for its own time: the one before it mustn't put it away
+            toastHide?.Kill();
+            toastHide = Tween.Delay(seconds, () =>
             {
                 Tween.To(0, 300, 0.4f, y => { if (toast != null) toast.anchoredPosition = new Vector2(0, ToastY + y); }, Ease.InCubic, 0,
                     () => { if (toast != null) toast.gameObject.SetActive(false); });
@@ -424,6 +432,22 @@ namespace PocketWeather
         public void PunchTrayFor(Need n)
         {
             foreach (var t in trayItems) if (t.need == n) Tween.Punch(t.bg.transform.parent, 0.3f, 0.45f);
+        }
+
+        /// <summary>Draws the eye to a need: its bubble pulses for a couple of seconds and its tray
+        /// item punches ("Not long left" points at who's still waiting).</summary>
+        public void Nudge(Need n, float seconds = 2f)
+        {
+            foreach (var b in bubbles) if (b.need == n) b.nudge = seconds;
+            PunchTrayFor(n);
+        }
+
+        /// <summary>The needs whose bubbles are pulsing right now (for the self-tests).</summary>
+        public List<Need> Nudged()
+        {
+            var list = new List<Need>();
+            foreach (var b in bubbles) if (b.nudge > 0) list.Add(b.need);
+            return list;
         }
 
         Vector2 WorldToCanvas(Vector3 world, out bool visible)
@@ -656,7 +680,9 @@ namespace PocketWeather
                 b.shake = Mathf.MoveTowards(b.shake, 0, dt * 2f);
                 b.rt.anchoredPosition = lp + new Vector2(Mathf.Sin(t * 40f) * 6f * b.shake, bob);
                 b.group.alpha = vis ? Ease.OutCubic(b.shown) : 0;
-                b.rt.localScale = Vector3.one * (BubbleScale * (0.6f + 0.4f * Ease.OutBack(b.shown)));
+                b.nudge = Mathf.Max(0, b.nudge - dt);
+                float pulse = b.nudge > 0 ? 1f + 0.2f * Mathf.Abs(Mathf.Sin(t * 7f)) * Mathf.Clamp01(b.nudge / 0.4f) : 1f;
+                b.rt.localScale = Vector3.one * (BubbleScale * (0.6f + 0.4f * Ease.OutBack(b.shown)) * pulse);
                 bool problem = b.need.Problem;
                 string icon = problem ? b.need.ProblemIcon : b.need.Icon;
                 if (icon != b.iconName)

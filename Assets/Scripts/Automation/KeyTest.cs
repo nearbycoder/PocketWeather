@@ -438,10 +438,25 @@ namespace PocketWeather
             string said = hudL.ToastText;
             Check("\"Not long left\" comes as 85% of the day goes by, with the count",
                   !early && said == GameFlow.LateWarning(waiting) && after <= 1f, $"'{said}' {after:0.00}s after crossing, {waiting} waiting, early {early}");
+            var nudged = hudL.Nudged();
+            bool nudgedRight = nudged.Count == waiting;
+            foreach (var n in nudged) nudgedRight &= n.Required && !n.Met;
+            Check("\"Not long left\" points at exactly the friends still waiting", nudgedRight && waiting > 0, $"{nudged.Count} pulsing, {waiting} waiting");
+            var col = hudL.ToastColor;
+            Check("a toast's pill is drawn in the colour asked for", Mathf.Abs(col.r - GameFlow.LateWarningColor.r) < 0.01f && Mathf.Abs(col.g - GameFlow.LateWarningColor.g) < 0.01f && Mathf.Abs(col.b - GameFlow.LateWarningColor.b) < 0.01f,
+                  $"pill {ColorUtility.ToHtmlStringRGB(col)}, asked for {ColorUtility.ToHtmlStringRGB(GameFlow.LateWarningColor)}");
             yield return WaitFor(() => !hudL.ToastShowing, 6f);
             bool again = false;
             for (float w = 0; w < 2f; w += Time.unscaledDeltaTime) { again |= hudL.ToastText.StartsWith("Not long left"); yield return null; }
             Check("\"Not long left\" is said only once a day", !again && Now == GameFlow.State.Playing, $"{Now}");
+            // a toast shown while another is up stays for its own time
+            hudL.Toast("First toast", "clock", 3f);
+            yield return new WaitForSecondsRealtime(1.5f);
+            hudL.Toast("Second toast", "clock", 3f);
+            yield return new WaitForSecondsRealtime(2.5f);
+            Check("a toast stays up for its own time, whatever came before it", hudL.ToastShowing && hudL.ToastText == "Second toast" && hudL.ToastRect.position.y < Screen.height,
+                  $"showing {hudL.ToastShowing}, '{hudL.ToastText}'");
+            yield return WaitFor(() => !hudL.ToastShowing, 3f);
             // a day being saved sweeps its clock past 85% in the timelapse: nobody's waiting, so nothing's said
             GameFlow.I.DebugStart(3, true);
             yield return WaitFor(() => !hudL.ToastShowing, 5f);

@@ -570,6 +570,7 @@ namespace PocketWeather
         public const float LateWarningAt = 0.85f;
         bool lateWarned;
         static readonly bool trailer = GameRoot.HasArg("-pwTrailer");   // the trailer's shots set late hours of their own
+        public static readonly Color LateWarningColor = Res.Hex("FFC9B5");
         public static string LateWarning(int left) => $"Not long left! {left} still {(left == 1 ? "needs" : "need")} you";
 
         /// <summary>Once a day, when the sun track starts to pulse, say how many friends are still
@@ -583,7 +584,9 @@ namespace PocketWeather
             foreach (var n in Level.Needs) if (n.Required && !n.Met) left++;
             if (left == 0) return;
             lateWarned = true;
-            Hud.Toast(LateWarning(left), "clock", 3f, Res.Hex("FFC9B5"));
+            Hud.Toast(LateWarning(left), "clock", 3f, LateWarningColor);
+            // and point at them: their bubbles pulse and their tray items punch
+            foreach (var n in Level.Needs) if (n.Required && !n.Met) Hud.Nudge(n);
             Debug.Log($"[PW] not long left: {left} still waiting at {Level.Hour:0.00}");
         }
 
