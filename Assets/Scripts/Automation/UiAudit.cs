@@ -131,6 +131,26 @@ namespace PocketWeather
         }
 
         /// <summary>Where a text's glyphs actually are on screen (its rect is often far wider).</summary>
+        int lateCaptions;
+        bool glyphsFound;
+        Rect glyphs;
+        /// <summary>A caption whose font atlas is rebuilt as it's laid out (shrunk captions ask for
+        /// new sizes) can come back with no glyphs until a later frame's rebuild: seen about once in
+        /// 20 audits, even when laid out again at once, and again when measured after a second
+        /// layout pass. A player sees it a frame later. Give it up to 3 frames, keep the glyphs from
+        /// the frame they're found in for Measure, and count how often a frame was needed.</summary>
+        IEnumerator GlyphsWithin(Text label)
+        {
+            glyphsFound = false;
+            for (int f = 0; f < 3; f++)
+            {
+                Canvas.ForceUpdateCanvases();
+                if (GlyphRect(label, out glyphs)) { glyphsFound = true; if (f > 0) lateCaptions++; yield break; }
+                label.SetAllDirty();
+                yield return null;
+            }
+        }
+
         static bool GlyphRect(Text t, out Rect r)
         {
             r = default;
@@ -229,6 +249,7 @@ namespace PocketWeather
             var t = Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
             if (!hud.TouchButtonsVisible) problems.Add("touch buttons not shown");
             int hints = 0, toasts = 0, wrapped = 0;
+            lateCaptions = 0;
             float widest = 0, smallest = 99f;
             var toastTexts = new List<string> { "Rain into the pond to fill it back up!", "Careful! The ducks need their pond", "Oh no! Make them a rainbow!", "Encore: a scorcher!", GameFlow.LateWarning(7) };
             foreach (var id in LevelLibrary.Campaign)
@@ -245,11 +266,10 @@ namespace PocketWeather
                 float m = 4f * Platform.PixelsPerCssPx;
                 if (r.xMin < m - 0.5f || r.yMin < -1 || r.xMax > Screen.width - m + 0.5f || r.yMax > Screen.height + 1) problems.Add($"{kind} \"{text}\" off screen or touching its edges {r}");
                 if (kind == "hint" && r.Overlaps(t)) problems.Add($"hint \"{text}\" {r} overlaps the touch buttons {t}");
-                Canvas.ForceUpdateCanvases();
-                // a font atlas rebuilt this frame (shrunk captions ask for new sizes) can leave the
-                // text's layout empty until it's rebuilt: lay it out once more before giving up
-                bool laidOut = GlyphRect(label, out var g);
-                if (!laidOut) { label.SetAllDirty(); Canvas.ForceUpdateCanvases(); laidOut = GlyphRect(label, out g); }
+                // the glyphs as GlyphsWithin found them, without laying the canvas out again (which
+                // can rebuild the font's atlas and empty the text's layout once more)
+                bool laidOut = glyphsFound;
+                var g = glyphs;
                 if (!laidOut) problems.Add($"{kind} \"{text}\" has no visible glyphs");
                 else if (g.xMin < r.xMin - 1 || g.xMax > r.xMax + 1 || g.yMin < r.yMin - 1 || g.yMax > r.yMax + 1) problems.Add($"{kind} \"{text}\" runs out of its pill: text {g}, pill {r}");
                 if (label.cachedTextGenerator.lineCount > 1) wrapped++;
@@ -262,6 +282,7 @@ namespace PocketWeather
                 hud.ShowHint(h, "wind", 10f);
                 hud.DebugSettleCaptions();
                 yield return null;
+                yield return GlyphsWithin(hud.HintLabel);
                 hints++;
                 Measure("hint", h, hud.HintRect, hud.HintLabel, 40);
             }
@@ -270,6 +291,7 @@ namespace PocketWeather
                 hud.Toast(s, "stamp_flower", 10f);
                 hud.DebugSettleCaptions();
                 yield return null;
+                yield return GlyphsWithin(hud.ToastLabel);
                 toasts++;
                 Measure("toast", s, hud.ToastRect, hud.ToastLabel, 38);
             }
@@ -277,7 +299,7 @@ namespace PocketWeather
             hud.HideHint();
             bool ok = problems.Count == 0;
             Debug.Log($"[UiAudit] {(ok ? "PASS" : "FAIL")} captions fit, day {day + 1}: {hints} hints and {toasts} toasts, widest {widest * 100f:0}% of the screen, " +
-                      $"{wrapped} on two lines, text at least x{smallest:0.00} at {Screen.width}x{Screen.height}" +
+                      $"{wrapped} on two lines, text at least x{smallest:0.00}, {lateCaptions} laid out a frame late, at {Screen.width}x{Screen.height}" +
                       (ok ? "" : "\n    " + string.Join("\n    ", problems)));
             if (ok) passes++; else fails++;
         }
@@ -406,7 +428,11 @@ namespace PocketWeather
             f.DebugResults(false, true); yield return Settle(1.6f); Audit("results, relaxed day");
             f.DebugCloseMenus();
             GameSettings.RelaxedDays = false;
-            f.DebugEnding(); yield return Settle(4f); Audit("ending");
+            // the ending opens behind a cloud wipe and loads the wedding's music: wait for it to be
+            // open (once, at load 32, it wasn't 4 s after being asked for) rather than a fixed time
+            f.DebugEnding();
+            for (float t = 0; f.Current != GameFlow.State.Ending && t < 12f; t += Time.unscaledDeltaTime) yield return null;
+            yield return Settle(2f); Audit("ending");
             f.DebugStart(3, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 4");
             f.DebugStart(11, true); yield return Settle(1.6f); CheckTopBar("hud top bar, day 12 (7 needs)");
             foreach (int d in new[] { 0, 3, 11 }) yield return CheckFraming(d);
