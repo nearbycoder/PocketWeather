@@ -46,6 +46,7 @@ namespace PocketWeather
                 case "bouquet": yield return BouquetShots(); break;
                 case "relaxed": yield return RelaxedShots(); break;
                 case "late": yield return LateShot(); break;
+                case "mistakes": yield return MistakeShots(); break;
                 default: yield return Shot("start"); break;
             }
             Debug.Log("[PW] capture done");
@@ -388,6 +389,56 @@ namespace PocketWeather
             while (!GameFlow.I.Hud.ToastText.StartsWith("Not long left")) yield return null;
             yield return new WaitForSeconds(0.8f);
             yield return Shot("l01_not_long_left");
+        }
+
+        /// <summary>Round 11: a mistake's way back, the sunset card's tips in turn, and "Not long left"
+        /// pointing at who's waiting.</summary>
+        IEnumerator MistakeShots()
+        {
+            var f = GameFlow.I;
+            Onboarding.DebugForgetRecoveries();
+            // Day 2: a bed rained on until it's soggy
+            f.DebugStart(1, true);
+            yield return new WaitForSeconds(1.5f);
+            BedNeed bed = null;
+            foreach (var n in L.Needs) if (n is BedNeed b && !(n is SunnyNeed) && n.Required) { bed = b; break; }
+            yield return MoveTo(bed.transform.position.x, bed.transform.position.z, 0.2f);
+            C.Input.Virtual(bed.transform.position, true);
+            for (float t = 0; !bed.Soggy && t < 10f; t += Time.deltaTime) { C.SetWater(90f); yield return null; }
+            C.Input.Virtual(bed.transform.position + new Vector3(1.6f, 0, -0.6f), false);
+            yield return new WaitForSeconds(0.9f);
+            yield return Shot("r01_soggy_hint");
+            // Day 3: a sheep soaked
+            f.DebugStart(2, true);
+            yield return new WaitForSeconds(1.5f);
+            ShadeNeed sheep = null;
+            foreach (var n in L.Needs) if (n is ShadeNeed sh && n.Required && sh.Def.dislike != "none" && sh.Def.dislike != "love") { sheep = sh; break; }
+            yield return MoveTo(sheep.transform.position.x, sheep.transform.position.z, 0.2f);
+            int oops = L.Oopses;
+            C.Input.Virtual(sheep.transform.position, true);
+            for (float t = 0; L.Oopses == oops && t < 8f; t += Time.deltaTime) { C.SetWater(90f); yield return null; }
+            C.Input.Virtual(sheep.transform.position, false);
+            yield return new WaitForSeconds(0.9f);
+            yield return Shot("r02_shade_hint");
+            // Day 5's sunset: a tip for each kind left, in turn
+            f.DebugStart(4, true);
+            yield return new WaitForSeconds(1.0f);
+            f.DebugSunset();
+            while (!f.SunsetCard.IsOpen) yield return null;
+            yield return new WaitForSecondsRealtime(1.6f);
+            yield return Shot("r03_sunset_tip_1");
+            string first = f.SunsetCard.TipText;
+            while (f.SunsetCard.TipText == first) yield return null;
+            yield return new WaitForSecondsRealtime(0.6f);
+            yield return Shot("r04_sunset_tip_2");
+            f.DebugCloseMenus();
+            // Day 4: "Not long left", with the waiting bubbles pulsing
+            f.DebugStart(3, true);
+            yield return new WaitForSeconds(1.0f);
+            L.SetHour(Mathf.Lerp(L.Def.startHour, L.Def.endHour, GameFlow.LateWarningAt - 0.002f));
+            while (!f.Hud.ToastText.StartsWith("Not long left")) yield return null;
+            yield return new WaitForSeconds(0.55f);
+            yield return Shot("r05_not_long_left");
         }
 
         IEnumerator Menus()
