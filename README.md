@@ -14,7 +14,7 @@
   <img alt="Input: mouse, touch, keyboard, gamepad" src="https://img.shields.io/badge/input-mouse%20%7C%20touch%20%7C%20keys%20%7C%20gamepad-6CCB8A">
   <img alt="Models: Blender 4.5" src="https://img.shields.io/badge/models-Blender%204.5-E87D0D?logo=blender&logoColor=white">
   <img alt="Audio: synthesised with numpy" src="https://img.shields.io/badge/audio-synthesised%20with%20numpy-4D77CF?logo=numpy&logoColor=white">
-  <img alt="Version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-B79CFF">
+  <img alt="Release 0.1.0" src="https://img.shields.io/badge/release-0.1.0-B79CFF">
 </p>
 
 <p align="center">
@@ -29,7 +29,9 @@
   </a>
 </p>
 
-<p align="center"><sub>Click to watch (MP4, 1080p, with sound). Every shot was staged by an in-game script, not a screen recording; see <a href="#the-trailer-is-built-by-the-game">how</a>.</sub></p>
+<p align="center"><sub>Click to watch (MP4, 1080p, 2:00, with the game's own music and sound).
+Recorded from the current source at the Ultra graphics setting. Every shot was staged by an
+in-game script, not a screen recording; see <a href="#the-trailer-is-built-by-the-game">how</a>.</sub></p>
 
 ## About
 
@@ -55,28 +57,20 @@ The camera looks down at an angle, so Pip floats above your cursor or finger and
 | --- | --- | --- | --- | --- |
 | Move | Pip follows the cursor | WASD / arrows | Left stick | Drag |
 | Rain | Hold left button | Hold Space | Hold A / RT | Hold still until the ring fills, or hold the 💧 button |
-| Gust | Right button: press, drag to aim, release | E (blows the way you're moving) | X / RB (aim with the right stick) | Flick, or the 🌬 button |
-| Drink | Hover over open water without raining | | | |
-| Pause | Esc / P | | Start | ⏸ button |
+| Gust | Right button: press, drag to aim, release | E or Q (blows the way you're moving) | X / RB (aim with the right stick) | Flick, or the 🌬 button |
+| Drink | Hover over open water without raining | Fly over water, not raining | Fly over water, not raining | Drag over water, not raining |
+| Pause | ⏸ button, or Esc | Esc / P | Start | ⏸ button |
+| Mute music | | M | | |
 
-M mutes the music and brings it back at your own volume. The pause menu shows a one-line reminder of
-the controls for whatever you're playing with. Every menu works with mouse, touch, keyboard and
-gamepad (d-pad or stick to move, A to choose, B to go back); with the keys or a pad, a ring
-glides to the control that Enter or A will press, and hides again when the mouse moves. **Settings → Tap to rain** turns rain
-into a toggle for anyone who finds holding a button tiring, and **Settings → Touch buttons** can be
-Auto (shown once you touch the screen), On or Off. **Settings → Relaxed days** gives the sun half as
-long again to cross the sky, for anyone who keeps running out of daylight (the sunset card offers it
-too, from a day's second sunset); a relaxed day is saved as usual, but the "Before par" stamp and best
-times wait for the usual pace. The game pauses itself when the window loses
-focus, a phone sends it to the background or the controller you're flying with disconnects. It's laid out for landscape, but a phone held upright
-gets a bigger, rearranged interface and a closer view that follows Pip from side to side (and, in
-the browser, a nudge to turn sideways). On a phone the HUD is drawn larger than its design scale so
-the pause button and clock stay finger- and eye-sized, and the menus are drawn larger too: held
-sideways with settings in two columns and the pause menu in a grid, and held upright with narrower,
-taller cards and three map cards a row. In a phone's browser the first tap on the game goes
-fullscreen, and so does the first tap after coming back from another app
-(Settings → Fullscreen turns it off, and leaving fullscreen yourself sticks). The game goes quiet
-whenever its tab is hidden.
+Every menu works with mouse, touch, keyboard and gamepad (d-pad or stick to move, A or Enter to
+choose, B or Esc to go back). With the keys or a pad, a blue ring glides to the control that Enter
+or A will press, and hides again when the mouse moves or you touch the screen. The pause menu shows
+a one-line reminder of the controls for whatever you're playing with.
+
+Each need has a thought bubble with a progress ring and a badge for what helps. When 85% of the
+day has gone, "Not long left" says how many friends still need you and their bubbles pulse. If the
+sun sets first, the sunset card has a tip for each kind of friend left and a "Try again" that goes
+straight back into the day.
 
 ## Features
 
@@ -110,7 +104,8 @@ catching vapour motes: morning dew, chimney steam, the steam off a doused fire.
 ### A world of competing wants
 Everything that needs you shows a thought bubble with a progress ring, and a small badge for
 what helps: a drop for rain, Pip for shade, a gust of wind, the sun, or a crossed-out drop for
-"keep the rain off". The same badges sit on the needs tray.
+"keep the rain off". The same badges sit on the needs tray, whose met and problem marks don't
+rely on telling green from red.
 
 - **Beds** (flowers, vegetables, wheat, a pig's wallow) want moisture inside a green band, and
   go soggy above it until the sun dries them. Their ring shows the band and a notch at its top,
@@ -123,6 +118,9 @@ what helps: a drop for rain, Pip for shade, a gust of wind, the sun, or a crosse
   **wedding cake** must stay dry. **Sunflowers** want sun, not shade. And the **duck pond** must
   not be drunk below its line.
 
+The first time each kind of mistake happens, a hint says how to put it right ("Too wet! The sun
+will dry it", "They wanted shade, not rain").
+
 </td>
 </tr>
 <tr>
@@ -131,19 +129,21 @@ what helps: a drop for rain, Pip for shade, a gust of wind, the sun, or a crosse
 ### Rainbows
 Rain leaves a sparkling mist behind. Step aside and let the sun shine through it, and a rainbow
 arcs over the spot. Anyone under it is delighted, forgives being rained on, and some wishes can
-only be granted that way. That's the move the wedding finale is built around.
+only be granted that way. That's the move the wedding finale is built around, and when the bride
+throws her bouquet, a ring on the ground shows where to catch it.
 
 </td>
 <td><img src="docs/media/screenshot-rainbow.jpg" alt="A rainbow over a picnic"></td>
 </tr>
 <tr>
-<td><img src="docs/media/screenshot-campfire.jpg" alt="Raining out a haystack fire at night"></td>
+<td><img src="docs/media/screenshot-campfire.jpg" alt="Raining out a burning haystack at night, its fire lighting the grass and hay around it"></td>
 <td>
 
 ### Days that change the rules
 Day 9 happens at night, with haystack fires that spread if left alone and a campfire that must
-stay lit. The regatta needs several boats at once. The heatwave dries beds as fast as you water
-them and has sunflowers that droop in your shadow. The wedding has a twist of its own.
+stay lit; every fire lights the hay, grass, campers and Pip around it. The regatta needs several
+boats at once. The heatwave dries beds as fast as you water them and has sunflowers that droop in
+your shadow. The wedding has a twist of its own.
 
 </td>
 </tr>
@@ -151,17 +151,16 @@ them and has sunflowers that droop in your shadow. The wedding has a twist of it
 <td>
 
 ### Save the day, collect the stamps
-When 85% of the day has gone, a note says how many friends still need you, and their bubbles
-pulse. Meet every need at the
-same moment and the day is saved: a hit-stop, confetti, and the rest of
+Meet every need at the same moment and the day is saved: a hit-stop, confetti, and the rest of
 the day plays out as a timelapse into a starry night. Each day has three stamps: **Day saved**,
 **Before par** (finish before the par hour on the sun track) and **Delight**, a secret reaction
-hinted at by a riddle in the pause menu.
+hinted at by a riddle in the pause menu. Postcards and results cards keep your best finishing time.
 
-Once a day is saved, its postcard offers an **Encore** (the results card says so the first time):
-the same diorama on a scorcher. The sun
-races across the sky, the beds dry out as you watch, and Pip sets off half-empty. Saving it
-earns that day's fourth stamp, and its postcard keeps your best scorcher time to beat.
+### Encores
+Once a day is saved, its postcard offers an **Encore**: the same diorama on a scorcher. The sun
+crosses the sky in three quarters of the time, the beds dry out as you watch, and Pip sets off
+half-empty. Saving it earns that day's fourth stamp, and its postcard keeps your best scorcher
+time to beat.
 
 </td>
 <td><img src="docs/media/screenshot-day-saved.jpg" alt="The day-saved card with three stamps"></td>
@@ -169,12 +168,48 @@ earns that day's fourth stamp, and its postcard keeps your best scorcher time to
 </table>
 
 Also included: a title screen over the diorama of the day you're up to, a map of Pocketvale with
-your stamps, a postcard before each day, pause and settings (music, sound and ambience volume,
-a Graphics slider from Low to Ultra or Auto, fullscreen, screen shake, tilt-shift blur, hints, touch buttons,
-tap-to-rain, relaxed days, reset progress), your best finishing time on each postcard and results card, a sunset
-card with a tip for each kind of friend left undone and a straight-back-in "Try again", an ending, wordless device-aware onboarding hints,
-a hint saying how to put each kind of mistake right the first time it happens (a soggy bed dries in the sun), and
-saved progress.
+your stamps, a postcard before each day, wordless onboarding hints worded for the device you're
+using, an ending, and saved progress. Restart and Map in the pause menu ask "Sure?" once a day is
+a few seconds old.
+
+### Graphics Fidelity
+
+**Settings → Graphics** is a slider with five steps, moved by mouse, touch, the arrow keys or the
+d-pad. The steps trade fine detail and effects for GPU time; it takes effect at once.
+
+| Step | What it draws | GPU time a frame* |
+| --- | --- | --- |
+| **Auto** (the default) | High, dropping to Low if the GPU can't keep up; a machine that needed Low starts there next time | |
+| **Low** | 75% resolution (upscaled with AMD FSR 1 where the build has its shader), no MSAA, no ambient occlusion, a cheaper depth of field that blurs only the far band, one short 1024 shadow cascade with cheap soft shadows, no lights besides the sun, 0.6x particles | 0.85 to 0.89 ms |
+| **Medium** | full resolution, 2x MSAA, no ambient occlusion, bokeh depth of field, a 2048 shadow map with medium soft shadows, fire light | 1.15 to 1.22 ms |
+| **High** | the full look: 4x MSAA, ambient occlusion, bokeh depth of field, two 4096 shadow cascades, high-quality bloom, fire light | 1.47 to 1.58 ms |
+| **Ultra** | rendered at 1.5x and downsampled, four shadow cascades, finer and deeper ambient occlusion, high-quality bokeh sampling, a finer colour grade, a wetness map twice as fine (crisper wet and green edges where it rained), 1.6x particles and a second scatter of tufts and wildflowers | 2.79 to 2.97 ms |
+
+<sub>*Measured on the development machine's integrated AMD Radeon 8060S at 1600x900 (Vulkan), on
+three days; whole frames there are set by the CPU, at 10 to 17 ms. The web build starts from a
+lighter base (80% resolution, 2x MSAA, one 2048 cascade), so its Ultra renders at 1.2x and has no
+ambient occlusion. Comparison screenshots of every step are in
+[docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md#round-12-results).</sub>
+
+### Settings and accessibility
+
+- **Volume:** music, sounds and ambience, each on its own slider; M mutes the music and brings it
+  back at your own volume. A look-ahead limiter keeps the mix from clipping.
+- **Look:** Graphics (above), tilt-shift blur strength, screen shake on or off, fullscreen.
+- **Tap to rain:** rain becomes a toggle for anyone who finds holding a button tiring.
+- **Relaxed days:** the sun takes half as long again to cross the sky on ordinary days (Encores
+  keep their pace). The sunset card offers it too, from a day's second sunset. A relaxed day is
+  saved as usual, but the "Before par" stamp and best times wait for the usual pace.
+- **Hints** on or off, **Touch buttons** Auto (shown once you touch the screen), On or Off, and
+  **Reset progress** (it asks first).
+- The game pauses itself when the window loses focus, a phone sends it to the background, or the
+  controller you're flying with disconnects (and says why). In the browser it goes quiet whenever
+  its tab is hidden.
+- **Phones:** held sideways, the HUD and menus are drawn larger (a 44 px pause button, settings in
+  two columns, the pause menu in a grid). Held upright, the interface is rearranged, and a closer
+  camera follows Pip from side to side, with the bubbles of needs out of frame waiting at the
+  screen's edge. In a phone's browser the first tap goes fullscreen (Settings → Fullscreen turns
+  that off).
 
 ## Content
 
@@ -213,9 +248,32 @@ twelve Encore stamps.
 </tr>
 </table>
 
+<sub>The trailer, the teaser and every screenshot on this page were captured from the current
+source at the Ultra setting on October 8, 2026.</sub>
+
+## System requirements
+
+- **Linux:** x86_64, a GPU with OpenGL Core (the default) or Vulkan (`-force-vulkan`) drivers, and
+  about 130 MB of disk. Developed and tested on CachyOS with KDE Plasma (Wayland) and an AMD
+  Radeon 8060S integrated GPU, where every step of the Graphics slider takes under 3 ms of GPU time
+  a frame (whole frames averaged 10 to 17 ms with the machine shared and busy). No minimum has been
+  measured: weaker GPUs haven't been tried, Auto drops to Low when
+  frames run slow, and under a pure software renderer the game ran at about 5 fps.
+- **Web:** a browser with WebGL 2. About 17.7 MB downloads before the title screen, and the music
+  and ambience (about 10 MB) follow in the background. Tested in headless Chrome and Firefox,
+  including Chrome's phone emulation; not yet on a real phone or in Safari.
+- **macOS:** `Tools/unity.sh mac` builds a universal app, but it has never been run on a Mac.
+- **Windows:** no build yet (this machine lacks Unity's Windows Build Support module).
+
 ## Play it
 
-Download the latest build from [**Releases**](https://github.com/nearbycoder/PocketWeather/releases):
+Download the latest release from [**Releases**](https://github.com/nearbycoder/PocketWeather/releases).
+
+> **The v0.1.0 downloads (October 4, 2026) are older than this page.** They predate all twelve
+> improvement rounds in [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md): no Graphics Fidelity slider
+> (v0.1.0 has an Auto, High or Low button), Encores, Relaxed days, focus ring, fire light, the
+> bouquet's landing ring, mistake hints, phone layouts or Linux launcher. To play the game this
+> page describes, [build it from source](#build-from-source).
 
 - **Linux (x86_64):** unzip `PocketWeather-0.1.0-linux-x86_64.zip` and run `PocketWeather.x86_64`.
   On Wayland, add `-force-wayland` if the window doesn't appear (some compositors hang on the
@@ -223,16 +281,78 @@ Download the latest build from [**Releases**](https://github.com/nearbycoder/Poc
   you, and starts the game again if it crashes while starting: start the game with it.
 - **Web:** unzip `PocketWeather-0.1.0-web.zip` and serve the folder over HTTP (browsers won't run
   it from `file://`), for example `python3 -m http.server 8080` inside it, then open
-  `http://localhost:8080`. It's made for desktop and phone browsers alike, with touch controls
-  (see the known issues for what has and hasn't been tested).
+  `http://localhost:8080`.
 
 The current source builds a web version that's ready for a static host: the game fills the
-window, loads behind its own loading card (about 17 MB; the music and ambience follow in the
-background once the game is running), offers a reload instead of a frozen screen if the game
-crashes or the browser takes its graphics back, and needs no server configuration (see [docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet, and the v0.1.0 downloads above
-predate it and the other changes listed in [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md).
+window, loads behind its own loading card, offers a reload instead of a frozen screen if the game
+crashes or the browser takes its graphics back, and needs no server configuration (see
+[docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet.
 
-## Build from source
+## Status and known issues
+
+Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
+every input method. Twelve improvement rounds have been merged since; their plans, measurements
+and screenshots are in [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md). None of them is in a release
+yet.
+
+What has been verified on the Linux build unless noted. The full self-test passed every row on
+round 12's code; the bots' margins come from earlier rounds' runs:
+
+- All twelve levels pass the static validator. The expert AutoPilot saves every day before par
+  with no exceptions or missing-asset warnings, and found 12 of 12 delights in the final run;
+  Day 6's rainbow and the wedding bouquet depend on timing and have each been missed in some
+  earlier runs. The newcomer bot also saves all twelve days before par (closest: Day 9, 1.2
+  game-hours inside), and both bots save all twelve Encores before sundown.
+- Keyboard (78 checks), gamepad (37) and touch (23) self-tests pass through the real Input System,
+  and the UI audit passes at eight window shapes, from 1600x900 to a 360x800 phone held upright:
+  every control reachable and on screen, no overlaps, no clipped text, the focus ring on screen
+  around every menu control, and phone-sized text and buttons.
+- **Web, in headless Chrome and Firefox 157:** plays with real browser touch events and a clean
+  console, on desktop and phone emulation; goes quiet behind another tab; remembers Auto's drop to
+  Low; and shows its reload card when the WebGL context is lost.
+- The audio mix sits around -14 LUFS with no clipped samples, and every loop is seamless.
+
+Rough edges, honestly:
+
+- **No human playtesting yet.** The newcomer bot is a heuristic stand-in; par times, the
+  difficulty curve, the Encores' balance and whether the bubbles, badges and hints help still need
+  real players. So does whether a relaxed day should be able to earn "Before par" (it can't, for
+  now).
+- **No real touchscreen, controller or phone testing.** Touch and gamepad have only been exercised
+  through virtual devices and emulated browser touch. There's no native Android or iOS build, and
+  phone-browser performance is untested. Portrait works, but landscape is better, and the web page
+  still suggests turning sideways.
+- **The audio has never been heard by a person.** It was balanced by measurement (loudness,
+  peaks, spectra), so tone and repetitiveness may need adjusting by ear. The same goes for the
+  trailer's mix.
+- **Weak GPUs are untested.** Ultra's extras are mostly fine detail that the tilt-shift blur
+  softens; nobody but the screenshots has judged whether it's worth twice High's GPU time.
+- **Linux on Wayland:** the binary on its own can hang at startup on some Wayland desktops (Unity's
+  default X11 backend), and once in about 45 automated launches it crashed inside Unity's Wayland
+  backend. `PocketWeather.sh` (in builds from the current source, not v0.1.0) starts it on Wayland
+  and relaunches it once after a crash in its first 20 s. X11 sessions and other compositors
+  haven't been tried.
+- **Started with `-screen-fullscreen`, the Linux player keeps its prefs in
+  `~/.config/unity3d/unknown/unknown/`**, a file other Unity games share, instead of
+  `~/.config/unity3d/Pocketvale Studio/Pocket Weather/`. It's a Unity quirk; launched normally it
+  uses the right folder.
+- **The web build has only run in headless Chrome and Firefox.** Safari (iPhone, iPad, Mac) hasn't
+  been tried, and the reload card was tested by losing the WebGL context on purpose, not by a real
+  crash. The web build isn't hosted yet ([docs/HOSTING.md](docs/HOSTING.md)).
+- **Colour blindness was checked by simulation only.** Under simulated protanopia and
+  deuteranopia, a bed's just-right and soggy rings turn the same beige; the soggy bubble also
+  swaps its icon for a puddle and its fill runs past the notch, so it should still read, but
+  nobody colour-blind has tried it.
+- **macOS is untested and there's no Windows build** (see System requirements); the macOS app
+  isn't signed or notarised, so Gatekeeper warns on first launch.
+- **No license has been chosen yet.** Until a `LICENSE` file is added, the default copyright
+  rules apply to the code and assets (the fonts remain under the OFL).
+
+---
+
+## For developers
+
+### Build from source
 
 You'll need **Unity 6000.6.2f1** with the Linux Build Support module (plus WebGL Build Support
 for the web build and Mac Build Support (Mono) for macOS). The project uses URP, the Input System
@@ -302,40 +422,22 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   devices drive the real Input System from the title screen through menus and play (78, 37 and
   23 checks), including the Graphics slider stepped with the arrows and the d-pad (its label, the
   saved setting and the renderer's settings at each step), the focus ring settling on the selected
-  map card, pause button and slider and hiding when the mouse moves, a new player's first tap going straight to Day 1, the pause menu's
-  controls line, Restart asking "Sure?" well into a day, hints hiding behind pause, the Touch
-  buttons Off setting, best times, the hint on each day that brings in a new idea, and opening an
-  Encore from its postcard, saving it, and
-  finding its own best time there (and the ordinary day's left alone), a day's first save saying
-  its Encore is open (and a second save not repeating it), and a controller that drops out
-  mid-flight pausing the day (but not when the keys are flying). The keyboard test also checks
-  Relaxed days (an ordinary day's sun at 2/3, an Encore's untouched, a relaxed save with no par
-  stamp or best time, and "Slower sun" offered at a day's second sunset and not its first), the
-  "Not long left" note (once, at 85%, with the right count, pointing at exactly the friends
-  still waiting, and not during a saved day's timelapse), toasts drawn in their own colour and kept
-  up for their own time, the first soggy bed and soaked sheep saying how to put it right (once,
-  and not with hints off), the sunset card stepping through a tip for each kind of friend left, and
-  Restart and Try again going straight back into the day. It also
-  throws the wedding bouquet four times: the smallest Pip waiting on the ring must catch three
-  throws at different angles, and must miss one when parked 2.5 units off it.
-- **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen (the Encore
-  postcard and results, Day 12's postcard, the sunset card offering a slower sun and a relaxed day's
-  postcard and results included, with every tip the sunset card can show) must receive a tap at its centre and sit
-  fully on screen, at 16:9, 20:9, 4:3, two phones held sideways (844x390 and 740x360) and three
-  portrait sizes (720x1280, and 390x844 and 360x800 phones). No two controls may overlap, and no
-  menu text may run off screen, into a control it isn't part of, or out of the card, pill or
-  button it's drawn on, and the focus ring a key or pad would draw around each menu control must
-  stay on screen and go round it. The HUD's gauge, sun track, needs tray and pause button must not overlap, the UI
-  must be drawn at its design scale, a desktop's tray must keep its full size (Day 12 included),
-  and on a phone-sized screen the pause button must be at least 44 px, the clock's text 15 px and
-  the tray's items no smaller than the old layout drew them. On a phone held either way, the
-  smallest menu text must be 11.5 CSS px or more, and a desktop-sized screen's menus must keep
-  their design scale. Every hint, in every device's words, and the longest toasts must fit on
-  screen with room at the sides, inside their pills and no smaller than 75%, and the hint must stay
-  clear of the touch buttons. It checks the
-  camera too: landscape framing unchanged, portrait at least 1.5x closer on a phone, and Pip and
-  every thought bubble on screen with Pip at either end of the island. It also loads all twelve
-  days and fails if any need is missing its "what helps" badge.
+  map card, pause button and slider and hiding when the mouse moves, a new player's first tap going
+  straight to Day 1, the pause menu's controls line, Restart asking "Sure?" well into a day, hints
+  hiding behind pause, the Touch buttons Off setting, best times, the hint on each day that brings
+  in a new idea, Encores (opening one from its postcard, saving it, and its own best time), and a
+  controller that drops out mid-flight pausing the day. The keyboard test also checks Relaxed days,
+  the "Not long left" note, toasts, the hints after a first mistake, the sunset card's tips, and
+  Restart and Try again going straight back into the day. It also throws the wedding bouquet four
+  times: the smallest Pip waiting on the ring must catch three throws at different angles, and
+  must miss one when parked 2.5 units off it.
+- **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen must receive a tap
+  at its centre and sit fully on screen, at 16:9, 20:9, 4:3, two phones held sideways (844x390
+  and 740x360) and three portrait sizes (720x1280, and 390x844 and 360x800 phones). No two
+  controls may overlap, no menu text may run off screen or out of its card, pill or button, and
+  the focus ring around each menu control must stay on screen. It checks the HUD's layout and
+  sizes on desktops and phones, that every hint and the longest toasts fit, the camera's framing
+  in landscape and portrait, and that every need on all twelve days has its "what helps" badge.
 - **Linux launcher** (`Tools/linux/test_launcher.sh`): stand-in games check that `PocketWeather.sh`
   starts the game again after a crash while starting (once, with the same arguments), not after
   a clean exit, an error exit or a crash later on, and that stopping it stops the game. The
@@ -356,30 +458,27 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   connection and screenshots the loading card; `--portrait` holds the phone upright and checks the
   "turn sideways" card; `--mouse` is a desktop with no touchscreen; `--firefox` runs it all in
   Firefox over WebDriver BiDi (a mouse desktop, or touch with `--phone`); `--dir` points it at
-  another build, for comparisons. It fails unless a phone's first hint and the title's prompt speak
-  touch ("Drag to fly", "Tap to play") and a mouse-only desktop's speak mouse, before anything has
-  been touched, or if the clock the rain's notes take their chords from doesn't move with the
-  music. It also hides the page behind another tab for 3 s and fails if the game's audio keeps
-  running, doesn't come back, or the screen is black on return. A phone must go fullscreen at its
-  first tap and again at the first tap after coming back, but not after leaving fullscreen itself
-  (a desktop never goes fullscreen). A phone's HUD must be at least 0.47 CSS px per design unit,
-  and its menus, held either way, at least 0.43. The ambience, fetched after boot, must arrive and
-  play. Last, it checks the page's reload card: an error from another script shows nothing,
-  losing the WebGL context shows the card within 1 s and its Reload boots the game again with its
-  progress, an error from the game's own files shows the card, and no browser dialog ever opens.
-  It isn't part of `selftest.sh`, which tests the Linux build.
+  another build, for comparisons. It checks the device-aware wording, the rain notes' chord clock,
+  going quiet in a hidden tab, fullscreen on a phone's first tap, the phone HUD's and menus' scale,
+  the ambience arriving after boot, and the page's reload card. It isn't part of `selftest.sh`,
+  which tests the Linux build.
 
 ### Rebuilding the trailer and README media
 
 ```sh
-R=$PWD/Recordings
-PW_W=1920 PW_H=1080 Tools/play.sh -pwTrailer -pwFreshSave -pwVideo $R/trailer -pwVideoQuality 95 -logFile $R/trailer.log
-Tools/.venv/bin/python Tools/make_trailer.py docs/media/pocket-weather-trailer.mp4 $R/trailer $R/trailer.log
+R=$PWD/Recordings/trailer-capture
+PW_CONFIG=$R/config PW_W=1920 PW_H=1080 Tools/play.sh -pwTrailer -pwFreshSave -pwVideo $R/frames -pwVideoQuality 95 -logFile $R/trailer.log
+Tools/.venv/bin/python Tools/make_trailer.py docs/media/pocket-weather-trailer.mp4 $R/frames $R/trailer.log
 ```
 
-Needs ffmpeg and ImageMagick 7. This also rewrites the teaser loop and the poster.
+The capture runs in a private KWin; on the development machine, shared and busy (load 22 to 106),
+it took about half an hour and `make_trailer.py` another 12 minutes. `-pwTrailerGraphics high`
+records at another step (Ultra is the default). It needs ffmpeg and ImageMagick 7.
+`make_trailer.py` also rewrites the teaser loop, the poster and the logo, and leaves two frames
+per beat in `$R/trailer_work/check` for checking. The README's screenshots are frames of the same
+capture.
 
-## Project structure
+### Project structure
 
 ```
 Assets/
@@ -416,10 +515,11 @@ Tools/           unity.sh, play.sh, nested.sh, selftest.sh, serve_web.sh, packag
                  make_levels.py, validate_levels.py, make_video.py, make_trailer.py,
                  make_web_template.py, audio/ (synth, sfx, music)
 docs/            PLAN.md (design and technical plan), BRIEF.md (the original brief),
-                 IMPROVEMENTS.md (the improvement round), HOSTING.md (web hosting), media/
+                 IMPROVEMENTS.md (twelve improvement rounds: plans and results),
+                 HOSTING.md (web hosting), media/
 ```
 
-## Tech highlights
+### Tech highlights
 
 - **Levels are data, used three ways.** Each `levelNN.json` (generated by `Tools/make_levels.py`)
   is the single source of truth for the island's shape, water, props, needs, day length and par.
@@ -430,15 +530,19 @@ docs/            PLAN.md (design and technical plan), BRIEF.md (the original bri
   `Graphics.RenderMeshInstanced`. On impact it delivers an exact amount of water to whatever it
   hit, paints the wetness map, spawns a splash or ripple, adds to the rainbow mist and plays a
   note.
-- **Wet and green ground.** A 256×179 render texture over the island stores wetness (which the sun
-  dries) and greenness (which stays for the day). The ground and toon shaders sample it by world
-  position, so watered soil darkens and dry grass greens exactly where it rained.
+- **Wet and green ground.** A render texture over the island (256 texels wide, 512 at Ultra)
+  stores wetness (which the sun dries) and greenness (which stays for the day). The ground and toon
+  shaders sample it by world position, so watered soil darkens and dry grass greens exactly where
+  it rained.
 - **Musical weather.** `Tools/audio/synth.py` exports each track's tempo and chord timeline to
   `music.json`. Rain notes, mote arpeggios and chimes pick pitches from whichever chord is playing,
   so playing well sounds good. A look-ahead limiter on the listener keeps the mix from clipping.
 - **Shade by shader.** The cloud's shadow is a global shader vector (position, radius,
   strength); every surface inside that cylinder darkens, even the sheep's backs, and gameplay
   uses the same test.
+- **Firelight in a toon world.** The toon, ground and cloud shaders read URP's additional lights
+  (Forward+ clusters on desktop, the forward renderer's list on the web) through a softer, wrapped
+  version of the sun's ramp, so a burning haystack paints a warm pool on the grass at night.
 - **A face made of maths.** Pip's face is a signed-distance-field shader with 13 continuously
   blended parameters (eye openness, happy arcs, squeeze, brows, mouth curve and roundness, blush,
   sweat, sparkle...) behind 17 expression presets, from drinking to the finale's "ah... ah... CHOO".
@@ -452,20 +556,21 @@ docs/            PLAN.md (design and technical plan), BRIEF.md (the original bri
   bundle in `StreamingAssets`. Desktop players open one from disk when it's first played; the web
   build starts without them, downloads them one at a time in the background, and decodes one only
   when it's about to play (browsers keep decoded audio as raw samples, 15–20 MB a track). The
-  models use Unity's mesh compression, which takes about 1.8 MB more off the first download.
+  models use Unity's mesh compression.
 - **Bots that play it.** The AutoPilot plays every level through the same input intents as a
   player, which is how par times, delights and regressions are checked without a human.
 
 ### The trailer is built by the game
 
 `-pwVideo` locks the game clock to 30 fps and writes every frame plus the mixed audio, so
-recordings are smooth however slow the machine is. `-pwTrailer` runs `Trailer.cs`, a shot list
-that loads each day, sets the hour and the camera, drives Pip through the virtual input API and
-marks where each shot begins and ends. The in-game music is muted for the capture but keeps
-playing the trailer's track underneath, so the musical raindrops stay in key with the music bed
-added later. `Tools/make_trailer.py` then cuts the beats, draws the captions in the game's own
-fonts, icons and colours, chains them with crossfades, and mixes the game's music under the
-captured sound effects with sidechain-style ducking, normalised for loudness.
+recordings are smooth however slow the machine is, which is why the trailer can be shot at Ultra.
+`-pwTrailer` runs `Trailer.cs`, a shot list that loads each day, sets the hour and the camera,
+drives Pip through the virtual input API (and the settings menu through a virtual keyboard), and
+marks where each shot begins and ends. The in-game music is muted for the capture but keeps playing
+the trailer's track underneath, so the musical raindrops stay in key with the music bed added
+later. `Tools/make_trailer.py` then cuts the beats, draws the captions in the game's own fonts,
+icons and colours, chains them with crossfades, and mixes the game's music under the captured
+sound effects with sidechain-style ducking, normalised for loudness.
 
 ## Credits
 
@@ -487,195 +592,3 @@ with [Claude Code](https://claude.com/claude-code).
   [FFmpeg](https://ffmpeg.org) and [ImageMagick](https://imagemagick.org).
 
 There are no other third-party assets: no stock models, textures, sounds or music.
-
-## Status and known issues
-
-Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, twelve improvement rounds (see
-[docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
-
-- a web page that's ready to host
-- the "just right" band and "what helps" badges on the bubbles
-- hints for every new idea, and a controls card in the pause menu
-- best times and a three-way touch-buttons setting
-- longer music loops, and a fourth daytime track so no track plays on more than three days
-- an unsigned macOS build
-- a portrait layout for phones held upright
-- Encore days (a scorcher for a fourth stamp per day)
-- a first tap that takes a new player straight to Day 1
-- a closer portrait camera that follows Pip, with bubbles of out-of-frame needs at the screen's edge
-- touch wording in the very first hint on phones and tablets
-- a web download that no longer waits for the music (21 MB up front instead of 28.8 MB)
-- self-tests and bots that keep their settings changes away from the real prefs
-- Linux prefs in the game's own folder, and a launcher that starts on Wayland
-- a web smoke test in Firefox as well as Chrome
-- rain notes that follow the music's chords on the web too (before, they all came from each
-  track's first chord)
-- a title prompt in the words of the device in use ("Click to play" with a mouse)
-- met and problem marks on the needs tray that don't depend on telling green from red
-- a HUD sized for phones (a 44 px pause button and a 16 px clock, where they were 33 and 12 px)
-- a web game that goes quiet when its tab is hidden (before, its music played on)
-- fullscreen at the first tap on a phone in the browser, and again after switching apps
-- menus drawn larger on a phone held sideways (the smallest text 12 CSS px, where it was 9 to 11)
-- a needs tray that keeps its full size on desktops on Days 10 to 12
-- menus drawn larger on a phone held upright, with narrow layouts (the smallest text 11.8 to 12.3
-  CSS px, where it was 7.8 to 9.8)
-- hints and toasts that fit the narrowest phones, and a 44 px pause button on a 360-wide one
-- touch flicks that measure the same on a phone held either way (upright, a flick had to be twice
-  as long)
-- a best time of its own for each Encore, shown on its postcard and results
-- a wedding bouquet you can catch: a ring shows where it will come down, from the moment the
-  bride cheers
-- Restart and Map in the pause menu ask "Sure?" once a day is 5 s old
-- a smaller web download (17.0 MB before the title, from 21.0 MB): the ambience follows after
-  boot like the music, and the models are mesh-compressed
-- a day that pauses when the controller flying Pip disconnects, and says why
-- a results card that says a day's Encore is open, the first time the day is saved
-- a Linux launcher that starts the game again if it crashes while starting
-- a web page that offers a reload when the game crashes or the browser takes its graphics back
-  (before: a developer's `alert()` for any error on the page, or a frozen screen)
-- test and capture windows in a private KWin on a virtual screen, never on the desktop
-- Relaxed days: a slower sun on ordinary days, in Settings and offered at a day's second sunset
-- a "Not long left" note at 85% of the day, with how many friends are still waiting
-- Try again and Restart that go straight back into the day, without the postcard
-- a hint, the first time each kind of mistake happens, saying how to put it right (a soggy bed
-  dries in the sun, a soaked sheep wanted shade, wet washing can be blown dry again)
-- a sunset card with a tip for each kind of friend left, in turn, not just the first
-- a Graphics Fidelity slider (Auto, Low, Medium, High, Ultra): Ultra supersamples and adds finer
-  ambient occlusion, four shadow cascades, a finer wetness map, denser particles and more
-  wildflowers; Low drops ambient occlusion and extra lights for weak GPUs
-- fires and the campfire that light the hay, grass, campers and Pip around them at night (their
-  lights were there, but the shaders ignored them)
-- a focus ring that shows which menu control the keys or a pad will press, and sliders and toggles
-  that answer hover and focus like the buttons
-- "Not long left" pulses the bubbles of the friends still waiting, and toasts show in their own
-  colours and stay up for their own time (before, a toast's colour went to its shadow, and a toast
-  shown over another went away with the first)
-
-None of it is in a release yet. What has been verified (on the Linux build unless noted):
-
-- All twelve levels pass the static validator. The expert AutoPilot finishes every day before
-  par with no exceptions or missing-asset warnings, and usually finds 11 or 12 of the delights.
-  Two of them depend on timing:
-  - Day 6's rainbow depends on where the mist builds up. The bot gets a second try and found it
-    in 7 of 8 runs in round 1, and 6 of 6 in round 7 (each rainbow centred about 0.5 units from
-    Rosa). The misses seen in full campaigns came under heavy machine load; the game now logs where
-    each rainbow lands and whom it covers, so a future miss can be traced.
-  - Catching the wedding bouquet: since round 8 a ring shows where it will come down, and the
-    bot, waiting on the ring as a player would, caught it in 6 of 6 runs of Day 12 (5 of 6
-    before).
-- The newcomer bot also saves all twelve days before par; its closest margins are Day 9 (1.2
-  game-hours inside par) and Day 5 (1.5).
-- Both bots save all twelve Encores before sundown. The newcomer's tightest were Becalmed (66 of
-  105 s) and the Heatwave (78 of 135 s).
-- Keyboard (67 checks), gamepad (32), touch (23) and UI-reachability self-tests pass through the
-  real Input System; the touch test also passes in 844x390 and 390x844 windows. The UI audit runs
-  at eight window shapes: two landscape phones and three portrait. On the phone sizes it checks a
-  44 px pause button, a 15 px or larger clock and tray items no smaller than before (the HUD is
-  scaled up 1.33x to 1.6x there; desktops 1x). The menus are scaled up 1.22x (844x390) and 1.32x
-  (740x360) held sideways, and 1.35x (390x844) and 1.4x (360x800) upright, so their smallest text is
-  11.6 to 12.3 CSS px; desktop menus are unchanged. Every hint and the longest toasts fit on screen
-  at every size, at 75% of their usual size or more. The
-  once-flaky "rain waters the bed" check now lines Pip up first; both keyboard and gamepad tests
-  passed 10 runs out of 10.
-- **Web, in headless Chrome and Firefox 157:**
-  - The build plays with real browser touch events and a clean console on desktop and phone
-    emulation in Chrome, and with mouse and touch actions in Firefox.
-  - The download before the title screen is 17.0 MB, down from 21.0 MB in round 7, 28.8 MB in
-    round 2 and 32.6 MB for v0.1.0. The music (7.9 MB) and the ambience (2.4 MB) arrive
-    afterwards; the title's track plays 1 to 2 s after the title appears, even at 8 Mbps.
-  - Booting on an emulated 8 Mbps link took 19.8 s in round 8 (about 23.5 s for round 7's
-    larger build and 32.0 s for round 2's, in earlier runs), and 12.5 s at 20 Mbps (about 14 s
-    and 18.0 s), with the machine busy.
-  - The page's "turn sideways" card for phones held upright works in phone emulation.
-  - The first hint says "Drag to fly" on an emulated phone, held either way, and "Point to fly"
-    in a browser without a touchscreen. The title says "Tap to play" and "Click to play" to
-    match.
-  - The clock the rain's notes take their chords from now runs with the browser's audio clock
-    (10.0 to 10.3 s, 10 s into a track); before, Unity reported the music's position as 0.00 s.
-  - Auto graphics remembers dropping to Low on the next visit.
-  - Hidden behind another tab for 3 s, the game's audio stops (its clock moved 0.00 s; before,
-    the music played on) and comes back with the page. Play pauses itself, and the screen isn't
-    left black. Checked in all six browser modes.
-  - An emulated phone goes fullscreen at its first tap, held either way, and again at its first
-    tap after the page was hidden; after leaving fullscreen itself, a tap doesn't bring it back.
-    Desktops never go fullscreen. The phone's HUD draws at 0.48 CSS px per design unit (a 44 px
-    pause button), and its menus at 0.44, held either way.
-- Performance on the development machine's integrated Radeon 8060S: 2 to 8 ms a frame with vsync
-  off, 99% of frames under 17 ms, on both OpenGL Core (the default) and Vulkan
-  (`-force-vulkan`), measured in earlier rounds on a quieter machine. Round 12's GPU times at
-  1600x900 (Vulkan): Low 0.85 to 0.9 ms, Medium 1.15 to 1.2, High 1.5 to 1.6 (the same as round 11's
-  High) and Ultra 2.8 to 3.0. Whole frames averaged 10 to 13 ms from Low to High and 16 to 17 ms at
-  Ultra with the machine at load 16; they're set by the CPU there, and swung from 9 to 41 ms at
-  higher loads for round 11's build and round 12's alike.
-- The audio mix sits around -14 LUFS with no clipped samples, and every loop is seamless.
-
-Rough edges, honestly:
-
-- **No human playtesting yet.** The newcomer bot is a heuristic stand-in; par times and the
-  difficulty curve still need real players. Relaxed days (round 10) give anyone who keeps missing
-  sundown a way through, but whether the usual pace is right still needs people, as does whether
-  a relaxed day should be able to earn "Before par" (it can't, for now). The bots don't read the bubbles or the
-  hints, so whether the band, the badges and the hints after a mistake (round 11: their wording, and
-  whether once a sitting is too often or not enough) help can only be judged by people.
-- **No real touchscreen or controller testing.** Touch and gamepad have only been exercised
-  through virtual devices and emulated browser touch. There's no native Android or iOS build, and
-  phone-browser performance is untested. The phone-sized HUD and menus, going fullscreen at the
-  first tap (and again after switching apps) and going quiet in a hidden tab were checked in
-  headless Chrome's phone emulation (and Firefox for the last), not on a phone. Whether the bigger
-  menus feel right in the hand, and how real Android browsers order their fullscreen and
-  visibility events, can only be judged on a phone.
-- **Portrait works, but landscape is better.** Held upright, the interface is bigger and the
-  camera frames about 60% of the island and follows Pip, which makes the island 1.56x bigger on a
-  20:9 phone. The rest of the island is a pan away, and needs out of frame wait at the screen's
-  edge. Whether edge-scrolling under a finger feels right hasn't been tried on a real phone. The
-  web page still suggests turning sideways. The menus now have narrow layouts upright, judged in
-  emulation and screenshots only.
-- **Encore balance is judged by bots only.** Both finish every Encore with time to spare, so
-  skilled players may find them gentle. Each Encore now keeps its own best time to beat, but the
-  Encores themselves haven't been retuned.
-- **The audio has never been heard by a person.** It was balanced by measurement (loudness,
-  peaks, spectra), so tone and repetitiveness may need adjusting by ear. The same goes for the
-  trailer's mix, the generated B sections of the afternoon and wedding music, and the new
-  "seaside" track.
-- **Weak GPUs are untested.** Auto graphics drops to Low when frame times stay high, but no real
-  low-end GPU has been tried; under a pure software renderer the game ran at about 5 fps. Low now
-  costs about 40% less GPU time than High on the development machine. Ultra's extras are mostly
-  fine detail that the tilt-shift blur softens; nobody but the screenshots has judged whether it's
-  worth twice the GPU time.
-- **The Linux binary on its own hangs at startup on some Wayland desktops.** On the development
-  machine (KDE Plasma, Wayland), Unity's default X11 backend stops before the window appears,
-  whatever the graphics API or window mode. `PocketWeather.sh` (in builds from the current source)
-  starts it with Unity's Wayland backend instead, as `Tools/play.sh` does. The v0.1.0 zip predates
-  it. X11 sessions and other compositors haven't been tried.
-- **The Linux player can crash at startup under Wayland.** Once in about 45 automated launches,
-  it crashed inside Unity's Wayland window backend. Relaunching works, and `PocketWeather.sh`
-  (in builds from the current source) now does that by itself: a game that dies of a signal in
-  its first 20 s is started once more. Checked by crashing the real build on purpose 2 s in; the
-  crash itself hasn't been seen again to watch the launcher catch it.
-- **Platforms:** Linux and web are tested. `Tools/unity.sh mac` builds a universal macOS app,
-  but it has **never been run on a Mac**. It isn't signed with a Developer ID or notarised, so
-  Gatekeeper warns on first launch. There's no Windows build: the entry point exists, but this
-  machine lacks Unity's Windows Build Support module.
-- **Started with `-screen-fullscreen`, the Linux player keeps its prefs in
-  `~/.config/unity3d/unknown/unknown/`**, a file other Unity games share, instead of
-  `~/.config/unity3d/Pocketvale Studio/Pocket Weather/`. It's a Unity quirk (the player opens its
-  prefs before reading the game's name). Launched normally it uses the right folder, and
-  `Tools/play.sh` no longer passes that flag. Progress saved in the old place by earlier
-  `Tools/play.sh` runs is brought over once on first launch; settings aren't.
-- **The web page's reload card was checked by pretending.** The test loses the WebGL context
-  on purpose and fires a pretend WebAssembly trap; a real phone dropping the game's graphics, and
-  a real crash, haven't been seen. A browser that loses the context during loading shows the
-  card too, untested.
-- **The web build has only run in headless Chrome and headless Firefox** (desktop Firefox 157;
-  its phone mode can't fake a phone's coarse pointer, so the touch wording before the first
-  touch is checked in Chrome only). Safari (iPhone, iPad, Mac) hasn't been tried: Playwright's
-  WebKit needs system libraries that aren't installed here. If a track can't be fetched the game
-  plays on without it.
-- **Colour blindness was checked by simulation only.** Under simulated protanopia and
-  deuteranopia, a bed's just-right and soggy rings turn the same beige; the soggy bubble also
-  swaps its icon for a puddle and its fill runs past the notch, so it should still read, but
-  nobody colour-blind has tried it.
-- **The web build isn't hosted anywhere yet.** See [docs/HOSTING.md](docs/HOSTING.md).
-- **No license has been chosen yet.** Until a `LICENSE` file is added, the default copyright
-  rules apply to the code and assets (the fonts remain under the OFL).
