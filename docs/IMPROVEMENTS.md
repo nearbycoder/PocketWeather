@@ -2126,3 +2126,114 @@ the machine's load.
   owner's.
 - Whether a relaxed day should still be able to earn "Before par" is a design call; this round
   keeps the stamp for the usual pace and notes it for the owner.
+
+## Round 10 results
+
+Implemented on `improvements-10`, one commit per item, plus a UI audit fix that the proof runs
+turned up. Screenshots are in [`docs/media/improvements/round10/`](media/improvements/round10/).
+Every game window this round opened in a private KWin on a virtual screen, and every tool run used a
+throwaway config folder in `Recordings/`. The machine's load average was 8 to 51 during the round;
+runs are noted with their load.
+
+The full self-test, run inside its private KWin on a Linux build of the round's final code
+(`33ec0eb`; load 17 at the start, 16 at the end), **passed every row** (`Recordings/r10/selftest-final2.txt`):
+- validator and loop seams
+- the Linux launcher with stand-in games (9 cases), and the real build booting through it
+- keyboard 59 checks (was 47), gamepad 32 and touch 23
+- the UI audit at eight sizes, 27 checks each (was 24)
+- the AutoPilot campaign 12/12 with **12/12 delights**, no exceptions
+- prefs in the game's own folder, and all 13 windows on the private KWin's display with no X11
+
+An earlier full self-test on `1062761` (the three items, before the audit fix below) passed every
+row but the UI audit at 1600x900; see R10-4.
+
+A newcomer bot campaign with Relaxed days on (`-pwNewcomer -pwRelaxed`, load 16) saved all 12
+days, the wedding's scripted finale included, with no par stamps, no best times and no exceptions
+(`Recordings/r10/runs/auto-relaxed-newcomer.log`). The real prefs files' `pw.` entries were
+identical before the round's first tool run and after the last.
+
+### R10-1. Relaxed days: done
+
+- **Settings → Relaxed days (slower sun)**, off by default. On an ordinary day the sun runs at 2/3
+  of its usual speed from the moment it's turned on, mid-day included, so Day 1's 120 s becomes
+  180 s and the wedding's 200 s becomes 300 s. Encores keep their scorcher pace.
+- From a day's second sunset (in one sitting), the sunset card offers **Slower sun** between Map and
+  Try again. It turns the setting on and goes straight back into the day.
+- A day that ran relaxed for any of its length is saved and finds its delight as usual. "Before
+  par" and the best time wait for the usual pace: the postcard's par line reads "Relaxed day: no
+  par stamp" with a snail, and the results card labels the par stamp "Usual pace only" and says
+  "Finished at 7:04 on a relaxed day".
+- Bots and self-tests start with it off whatever their sandbox's prefs hold, so one test turning it
+  on can't slow another's days. `-pwRelaxed` starts them with it on.
+- **Keyboard test** (55 checks after this item, was 47; load 31): Day 1's sun ran at 4.333 h/min
+  relaxed against 6.500 usual, and its Encore's at 8.667, unchanged. A relaxed Day 2 was saved
+  with stamps = 1 (saved, no par) and no best time, and the card said so. Day 3's first sunset
+  offered nothing; the second offered Slower sun, which turned the setting on and restarted the day
+  at pace 0.67.
+- **UI audit** (27 checks, was 24): the settings menu with its new row, the sunset card offering a
+  slower sun, and a relaxed day's postcard and results passed at all eight sizes.
+- The first postcard wording ("Relaxed: a slower sun, no par stamp") wrapped onto a second line in
+  the screenshots, which the audit allows; it was shortened before the commit.
+
+![relaxed days](media/improvements/round10/1-relaxed-days.jpg)
+
+![relaxed days, held upright](media/improvements/round10/1b-relaxed-days-upright.jpg)
+
+Not judged: whether 2/3 is the right pace, and whether a relaxed day should be able to earn "Before
+par". That's for people and the owner.
+
+### R10-2. "Not long left": done
+
+- When 85% of a day has gone (the moment the sun track starts to pulse) and friends still need Pip,
+  a toast says "Not long left! 3 still need you", once. It waits for a toast already showing, and
+  doesn't speak while a saved day's timelapse sweeps the clock past 85%, or in the trailer's staged
+  shots.
+- **Keyboard test** (58 checks after this item; load 30): on Day 4 the toast came 0.02 s after the
+  clock crossed 85%, with the right count (3), and not again; saving Day 4 swept past 85% without it.
+- **UI audit:** the longest wording ("… 7 still need you", Day 12) fits at every size.
+
+![not long left](media/improvements/round10/2-not-long-left.jpg)
+
+### R10-3. Try again goes straight back into the day: done
+
+- The sunset card's Try again (and Slower sun) and the pause menu's Restart, after its "Sure?",
+  reload the day and start it 0.35 s later, without its postcard. Replay on the results card and
+  picking a day on the map still show the postcard, where the Encore is chosen.
+- **Keyboard test** (59 checks; load 38): Restart and Try again each landed in play at the day's
+  start hour with no postcard. The gamepad (32) and touch (23) tests passed unchanged.
+
+### R10-4. Proof runs: done, and they found the caption flake again
+
+- **On round 9's final code** (a build of `83a6c7a`), the UI audit passed **20 of 20** runs: 10 at
+  1200x900 and 10 at 740x360, load 8.7 to 32.8 (`Recordings/r10/ui-repeat.txt`).
+- **The first full self-test on the round's code** (`1062761`, load 26 at the start, 23 at the
+  end) passed every row but one: the UI audit at 1600x900, 26 of 27, with the hint "Drag to fly"
+  "with no visible glyphs". So round 9's fix (laying the text out once more) doesn't stop it.
+- A first fix let the check wait up to 3 frames for the glyphs. In 10 more runs (load 16 to 32) it
+  failed twice: once on a caption again, because the measuring step laid the canvas out a second
+  time and the font atlas's rebuild emptied the text once more; and once on the ending screen,
+  audited 4 s after it was asked for at load 32 and not yet open.
+- **The fix:** the glyphs are kept from the frame they're found in, and the ending is audited once
+  it's open. Then the UI audit passed **20 of 20** runs (10 at 1600x900, 5 each at 1200x900 and
+  740x360, load 12 to 23). In 3 of them a caption needed an extra frame, which the audit now counts
+  in its log ("1 laid out a frame late"). A player would see that caption a frame later.
+
+**Web:** `web_smoke` passed in all six modes (Chrome desktop, `--mouse`, `--phone` and
+`--portrait`; `--firefox` and `--firefox --phone`) on a web build of the round's code, with 0
+console errors and no browser dialogs, at load 13 to 51 (`Recordings/r10/web-*.log`). The
+download before the title is 17,626,084 bytes in `Build/` (17,607,262 in round 9).
+
+### Found along the way, not fixed
+
+- The toast's colour argument doesn't reach its pill (the "Not long left" toast asks for a soft
+  coral and draws in the usual butter yellow, as other tinted toasts do). Cosmetic and older than
+  this round; left alone.
+- The touch test's "a second tap restarts the day" passes while the day is in its 0.35 s lead-in,
+  so it doesn't itself prove there's no postcard; the keyboard test checks that.
+
+### Decisions for the owner
+
+- **New:** whether a relaxed day may earn "Before par" (it can't, for now), and whether Relaxed
+  days should be offered sooner or later than a day's second sunset.
+- Unchanged: hosting the web build, a new release zip (v0.1.0 predates all ten rounds), the
+  trailer, licences, signing and Windows Build Support.

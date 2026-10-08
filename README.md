@@ -63,7 +63,10 @@ M mutes the music and brings it back at your own volume. The pause menu shows a 
 the controls for whatever you're playing with. Every menu works with mouse, touch, keyboard and
 gamepad (d-pad or stick to move, A to choose, B to go back). **Settings → Tap to rain** turns rain
 into a toggle for anyone who finds holding a button tiring, and **Settings → Touch buttons** can be
-Auto (shown once you touch the screen), On or Off. The game pauses itself when the window loses
+Auto (shown once you touch the screen), On or Off. **Settings → Relaxed days** gives the sun half as
+long again to cross the sky, for anyone who keeps running out of daylight (the sunset card offers it
+too, from a day's second sunset); a relaxed day is saved as usual, but the "Before par" stamp and best
+times wait for the usual pace. The game pauses itself when the window loses
 focus, a phone sends it to the background or the controller you're flying with disconnects. It's laid out for landscape, but a phone held upright
 gets a bigger, rearranged interface and a closer view that follows Pip from side to side (and, in
 the browser, a nudge to turn sideways). On a phone the HUD is drawn larger than its design scale so
@@ -147,7 +150,8 @@ them and has sunflowers that droop in your shadow. The wedding has a twist of it
 <td>
 
 ### Save the day, collect the stamps
-Meet every need at the same moment and the day is saved: a hit-stop, confetti, and the rest of
+When 85% of the day has gone, a note says how many friends still need you. Meet every need at the
+same moment and the day is saved: a hit-stop, confetti, and the rest of
 the day plays out as a timelapse into a starry night. Each day has three stamps: **Day saved**,
 **Before par** (finish before the par hour on the sun track) and **Delight**, a secret reaction
 hinted at by a riddle in the pause menu.
@@ -165,8 +169,8 @@ earns that day's fourth stamp, and its postcard keeps your best scorcher time to
 Also included: a title screen over the diorama of the day you're up to, a map of Pocketvale with
 your stamps, a postcard before each day, pause and settings (music, sound and ambience volume,
 graphics Auto/High/Low, fullscreen, screen shake, tilt-shift blur, hints, touch buttons,
-tap-to-rain, reset progress), your best finishing time on each postcard and results card, a sunset
-card with a tip for whatever was left undone, an ending, wordless device-aware onboarding hints, and
+tap-to-rain, relaxed days, reset progress), your best finishing time on each postcard and results card, a sunset
+card with a tip for whatever was left undone and a straight-back-in "Try again", an ending, wordless device-aware onboarding hints, and
 saved progress.
 
 ## Content
@@ -292,18 +296,23 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
 - **Audio loop seams** (`Tools/.venv/bin/python Tools/audio/check_loops.py`): no click or level
   jump where any looping clip wraps.
 - **Keyboard, gamepad and touch self-tests** (`-pwKeyTest`, `-pwPadTest`, `-pwTouchTest`): virtual
-  devices drive the real Input System from the title screen through menus and play (47, 32 and
+  devices drive the real Input System from the title screen through menus and play (59, 32 and
   23 checks), including a new player's first tap going straight to Day 1, the pause menu's
   controls line, Restart asking "Sure?" well into a day, hints hiding behind pause, the Touch
   buttons Off setting, best times, the hint on each day that brings in a new idea, and opening an
   Encore from its postcard, saving it, and
   finding its own best time there (and the ordinary day's left alone), a day's first save saying
   its Encore is open (and a second save not repeating it), and a controller that drops out
-  mid-flight pausing the day (but not when the keys are flying). The keyboard test also
+  mid-flight pausing the day (but not when the keys are flying). The keyboard test also checks
+  Relaxed days (an ordinary day's sun at 2/3, an Encore's untouched, a relaxed save with no par
+  stamp or best time, and "Slower sun" offered at a day's second sunset and not its first), the
+  "Not long left" note (once, at 85%, with the right count, and not during a saved day's
+  timelapse), and Restart and Try again going straight back into the day. It also
   throws the wedding bouquet four times: the smallest Pip waiting on the ring must catch three
   throws at different angles, and must miss one when parked 2.5 units off it.
 - **UI audit** (`-pwUiAudit`): every button, slider and toggle on every screen (the Encore
-  postcard and results, and Day 12's postcard, included) must receive a tap at its centre and sit
+  postcard and results, Day 12's postcard, the sunset card offering a slower sun and a relaxed day's
+  postcard and results included) must receive a tap at its centre and sit
   fully on screen, at 16:9, 20:9, 4:3, two phones held sideways (844x390 and 740x360) and three
   portrait sizes (720x1280, and 390x844 and 360x800 phones). No two controls may overlap, and no
   menu text may run off screen, into a control it isn't part of, or out of the card, pill or
@@ -468,7 +477,7 @@ There are no other third-party assets: no stock models, textures, sounds or musi
 ## Status and known issues
 
 Version 0.1.0 is complete: all twelve days, the finale and ending, menus, settings, saves, and
-every input method. Since then, nine improvement rounds (see
+every input method. Since then, ten improvement rounds (see
 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)) added:
 
 - a web page that's ready to host
@@ -512,6 +521,9 @@ every input method. Since then, nine improvement rounds (see
 - a web page that offers a reload when the game crashes or the browser takes its graphics back
   (before: a developer's `alert()` for any error on the page, or a frozen screen)
 - test and capture windows in a private KWin on a virtual screen, never on the desktop
+- Relaxed days: a slower sun on ordinary days, in Settings and offered at a day's second sunset
+- a "Not long left" note at 85% of the day, with how many friends are still waiting
+- Try again and Restart that go straight back into the day, without the postcard
 
 None of it is in a release yet. What has been verified (on the Linux build unless noted):
 
@@ -529,7 +541,7 @@ None of it is in a release yet. What has been verified (on the Linux build unles
   game-hours inside par) and Day 5 (1.5).
 - Both bots save all twelve Encores before sundown. The newcomer's tightest were Becalmed (66 of
   105 s) and the Heatwave (78 of 135 s).
-- Keyboard (47 checks), gamepad (32), touch (23) and UI-reachability self-tests pass through the
+- Keyboard (59 checks), gamepad (32), touch (23) and UI-reachability self-tests pass through the
   real Input System; the touch test also passes in 844x390 and 390x844 windows. The UI audit runs
   at eight window shapes: two landscape phones and three portrait. On the phone sizes it checks a
   44 px pause button, a 15 px or larger clock and tray items no smaller than before (the HUD is
@@ -570,7 +582,9 @@ None of it is in a release yet. What has been verified (on the Linux build unles
 Rough edges, honestly:
 
 - **No human playtesting yet.** The newcomer bot is a heuristic stand-in; par times and the
-  difficulty curve still need real players. The bots don't read the bubbles, so whether the new
+  difficulty curve still need real players. Relaxed days (round 10) give anyone who keeps missing
+  sundown a way through, but whether the usual pace is right still needs people, as does whether
+  a relaxed day should be able to earn "Before par" (it can't, for now). The bots don't read the bubbles, so whether the new
   band and badges help can only be judged by people.
 - **No real touchscreen or controller testing.** Touch and gamepad have only been exercised
   through virtual devices and emulated browser touch. There's no native Android or iOS build, and
