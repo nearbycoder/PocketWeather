@@ -67,6 +67,9 @@ namespace PocketWeather
             recoveryShown.Add(kind);
             RecoveriesShown++;
             hud.ShowHint(text, icon, 4.5f);
+            // the day's own hints wait until it's been read: a mistake in the first second of Day 3
+            // used to say "They wanted shade, not rain" and be replaced by "Shade the hot sheep" at once
+            wait = Mathf.Max(wait, 4.5f);
             Debug.Log($"[PW] after a mistake ({kind}, {n.Id}): {text}");
         }
 
