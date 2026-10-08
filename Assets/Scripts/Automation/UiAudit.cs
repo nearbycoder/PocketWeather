@@ -250,6 +250,10 @@ namespace PocketWeather
             GameFlow.I.DebugStart(day, true);
             Hud.ForceTouchButtons = true;
             yield return Settle(1.2f);
+            // the day's own hints wait 1.2 s of game time, which under load can land in the middle of
+            // the loop below: one popped the pill in from nothing while a caption was being measured
+            // (a 0x0 pill at 1600x900). The audit shows every caption itself, so the day's are off.
+            foreach (var o in FindObjectsByType<Onboarding>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)) o.enabled = false;
             var problems = new List<string>();
             var c = new Vector3[4];
             hud.TouchRect.GetWorldCorners(c);

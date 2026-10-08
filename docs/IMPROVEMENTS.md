@@ -2378,8 +2378,8 @@ reported at the end.
 - With friends of more than one kind left, the sunset card's tip steps through one tip per kind
   every 4 s, looping, and lights the icons it's talking about (the others dim to 35%). One kind left
   looks as it did.
-- **Keyboard test** (64 checks; load 26, `key-2.log`): Day 5's sunset, with washing, a bed and a
-  dog left, had 3 tips; the first lit the two shirts only, and 3.7 s after it was measured the tip
+- **Keyboard test** (64 checks; load 26, `key-2.log`): Day 5's sunset, with two lines of washing, a
+  bed and a friend wanting shade left, had 3 tips; the first lit the two shirts only, and 3.7 s after it was measured the tip
   moved to the bed's, lighting only the bed.
 - **UI audit** (28 checks, was 27): every one of the 13 tips laid out in the card's pill, with no
   text spilling out or off screen, at 1600x900, 740x360, 390x844 and 360x800 (load 22,
