@@ -5,6 +5,7 @@ html, body {
   background: linear-gradient(180deg, #A9CCEF 0%, #CFE1F4 55%, #EADCEB 100%);
   overscroll-behavior: none; touch-action: none;
   -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif;
 }
 #unity-canvas {
@@ -17,7 +18,15 @@ html, body {
   transition: opacity 0.6s ease;
 }
 #pw-loader.done { opacity: 0; pointer-events: none; }
-#pw-loader[hidden], #pw-error[hidden], #pw-rotate[hidden], #pw-crash[hidden], #pw-crash [hidden] { display: none; }
+/* the notch, rounded corners and home indicator, for the game to read (PW_SafeInset); tests can
+   pretend to have them with --pw-test-inset-* */
+#pw-safe {
+  position: fixed; left: 0; top: 0; width: 0; height: 0; visibility: hidden; pointer-events: none;
+  padding: max(env(safe-area-inset-top, 0px), var(--pw-test-inset-top, 0px)) max(env(safe-area-inset-right, 0px), var(--pw-test-inset-right, 0px))
+    max(env(safe-area-inset-bottom, 0px), var(--pw-test-inset-bottom, 0px)) max(env(safe-area-inset-left, 0px), var(--pw-test-inset-left, 0px));
+}
+#pw-recovered { margin: 12px 18px 0; color: #3B3A5A; font-size: 15px; text-align: center; background: #FFF8EC; border-radius: 14px; padding: 8px 14px; }
+#pw-loader[hidden], #pw-error[hidden], #pw-recovered[hidden], #pw-rotate[hidden], #pw-crash[hidden], #pw-crash [hidden] { display: none; }
 #pw-rotate {
   position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
   background: rgba(59, 58, 90, 0.35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
