@@ -230,7 +230,17 @@ namespace PocketWeather
 
             if (tc == null || !tc.press.isPressed)
             {
-                // released: flick?
+                // released: flick? Judged to where the finger lifted, which a quick flick on a slow
+                // frame rate (a phone's browser) may reach only in the frame it ends
+                if (tc != null && tc.press.wasReleasedThisFrame)
+                {
+                    Vector2 end = tc.position.ReadValue();
+                    if (end != Vector2.zero && end != touchLastPos)
+                    {
+                        touchVel = Vector2.Lerp(touchVel, (end - touchLastPos) / Mathf.Max(dt, 1e-3f), 0.5f);
+                        touchLastPos = end;
+                    }
+                }
                 float dur = Time.unscaledTime - touchStart;
                 float px = TouchUnit;
                 float speed = touchVel.magnitude * px;

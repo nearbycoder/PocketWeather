@@ -208,10 +208,13 @@ namespace PocketWeather
 
         public float GustPhase => gustTimer;        // -1 idle, 0..0.14 inhale, 0.14..0.5 blow
         public Vector3 GustDirection => gustDir;
+        /// <summary>Gusts blown so far (the web build's test report counts them).</summary>
+        public int Gusts { get; private set; }
         public bool GustStrong => gustStrong;
 
         void StartGust(Vector3 dir)
         {
+            Gusts++;
             dir.y = 0;
             if (dir.sqrMagnitude < 1e-4) dir = Facing;
             gustDir = dir.normalized;

@@ -35,8 +35,9 @@ namespace PocketWeather
         RectTransform bubbleLayer;
         readonly List<Bubble> bubbles = new();
         // touch buttons
-        RectTransform touchRoot;
+        RectTransform touchRoot, gustBtn;
         HoldButton rainBtn;
+        float touchScale = 1f;
         // hint + toast
         RectTransform hintRoot;
         Text hintText;
@@ -140,6 +141,7 @@ namespace PocketWeather
                 if (Cloud.Instance != null) Cloud.Instance.Input.ButtonGust = true;
             }, "wind", null, 40, "GustBtn");
             gust.Silent = true;
+            gustBtn = (RectTransform)gust.transform;
             touchRoot.gameObject.SetActive(false);
 
             // ---- hint caption (bottom-centre)
@@ -164,6 +166,12 @@ namespace PocketWeather
         }
 
         public bool TouchButtonsVisible => touchRoot != null && touchRoot.gameObject.activeInHierarchy;
+        /// <summary>The on-screen Rain and Gust buttons (for the web build's test report).</summary>
+        public RectTransform RainButtonRect => rainBtn != null ? (RectTransform)rainBtn.transform : null;
+        public RectTransform GustButtonRect => gustBtn;
+        /// <summary>The smallest the on-screen buttons are drawn, in CSS px per design unit: Rain is
+        /// then 80 px across and Gust 59, thumb-sized (phone guidelines ask for 44 at least).</summary>
+        public const float TouchMinCssScale = 0.42f, MaxTouchScale = 1.5f;
         /// <summary>A hint caption is on screen (faded in and not hidden behind the pause menu).</summary>
         public bool HintVisible => hintRoot != null && hintRoot.gameObject.activeInHierarchy && hintGroup.alpha > 0.5f;
         public string HintText => hintText != null ? hintText.text : "";
@@ -546,6 +554,14 @@ namespace PocketWeather
                 Debug.Log($"[PW] HUD scale: {CssScale:0.000} CSS px per design unit, top bar x{k:0.00} at {Screen.width}x{Screen.height} ({Platform.PixelsPerCssPx:0.##} px per CSS px)");
             }
             chrome.sizeDelta = safe.rect.size * (1f / k - 1f);
+            // the on-screen buttons grow for thumbs the same way, from their corner of the safe area
+            float tk = Mathf.Clamp(TouchMinCssScale / Mathf.Max(CssScale, 0.01f), 1f, MaxTouchScale);
+            if (Mathf.Abs(tk - touchScale) > 0.005f)
+            {
+                touchScale = tk;
+                touchRoot.localScale = new Vector3(tk, tk, 1f);
+                touchRoot.anchoredPosition = new Vector2(-230f, 160f) * tk;
+            }
             bool c = k > 1f;
             if (laidOutPortrait != Ui.Portrait || c != compact) Layout(Ui.Portrait, c);
             // landscape: the sun track moves left (no closer than the gauge) as far as the tray needs
@@ -554,7 +570,9 @@ namespace PocketWeather
             if (!Ui.Portrait)
             {
                 float half = chrome.rect.width * 0.5f, sunHalf = sunTrack.sizeDelta.x * 0.5f;
-                x = Mathf.Clamp(half - 174f - tray.sizeDelta.x - sunHalf, -half + 474f + sunHalf, 0f);
+                // and right, clear of the gauge, when a phone's notch insets narrow the bar
+                float lo = -half + 474f + sunHalf, hi = half - 174f - tray.sizeDelta.x - sunHalf;
+                x = lo <= hi ? Mathf.Max(lo, Mathf.Min(0f, hi)) : (lo + hi) * 0.5f;
             }
             sunTrack.anchoredPosition = new Vector2(x, Ui.Portrait ? -190f : -74f);
             if (hintText.text.Length > 0 && Mathf.Abs(chrome.rect.width - fittedWidth) > 1f) FitHint();   // turned, or the window resized
@@ -562,8 +580,22 @@ namespace PocketWeather
         }
 
         /// <summary>Held upright, the hint goes above the touch buttons (290 design units tall,
-        /// unscaled), which a wide caption would otherwise run into.</summary>
-        void PlaceHint() => hintRoot.anchoredPosition = new Vector2(0f, Ui.Portrait ? 300f / chromeScale + 12f + hintH / 2f : 62f + hintH / 2f);
+        /// times their scale), which a wide caption would otherwise run into; held sideways, it moves
+        /// left as far as it has to so it clears them, while they're shown.</summary>
+        void PlaceHint()
+        {
+            float x = 0f;
+            if (!Ui.Portrait && touchRoot.gameObject.activeSelf)
+            {
+                // in the safe area's units: the caption's right edge and the Gust button's left edge
+                float half = safe.rect.width * 0.5f;
+                float right = half + hintRoot.sizeDelta.x * 0.5f * chromeScale;
+                float touchLeft = safe.rect.width - 440f * touchScale;
+                float over = right + 16f - touchLeft;
+                if (over > 0f) x = -Mathf.Min(over, half - hintRoot.sizeDelta.x * 0.5f * chromeScale - 16f) / chromeScale;
+            }
+            hintRoot.anchoredPosition = new Vector2(Mathf.Min(0f, x), Ui.Portrait ? 300f * touchScale / chromeScale + 12f + hintH / 2f : 62f + hintH / 2f);
+        }
 
         /// <summary>Portrait screens are too narrow for gauge + sun track + tray in one row: the sun
         /// track drops to a second row (and the toast below it); on a phone the tray takes a third.
@@ -714,8 +746,15 @@ namespace PocketWeather
             }
 
             // ---- touch buttons
-            bool wantTouch = ForceTouchButtons || GameSettings.TouchButtons == 1 || (GameSettings.TouchButtons == 0 && cloud != null && cloud.Input.LastDevice == CloudInput.Device.Touch);
-            if (touchRoot.gameObject.activeSelf != (wantTouch && running)) touchRoot.gameObject.SetActive(wantTouch && running);
+            // Auto: on a touch-first device from the start and after any touch, hidden as soon as a
+            // key, mouse or gamepad is used (Platform.TouchMode)
+            bool wantTouch = ForceTouchButtons || GameSettings.TouchButtons == 1 || (GameSettings.TouchButtons == 0 && Platform.TouchMode);
+            if (touchRoot.gameObject.activeSelf != (wantTouch && running))
+            {
+                touchRoot.gameObject.SetActive(wantTouch && running);
+                Debug.Log($"[PW] touch buttons: {(wantTouch && running ? "shown" : "hidden")}");
+                PlaceHint();
+            }
             if (cloud != null) cloud.Input.ButtonRain = rainBtn != null && rainBtn.Held && running;
 
             // ---- hint (tucked away, with its clock stopped, while the pause menu is up)

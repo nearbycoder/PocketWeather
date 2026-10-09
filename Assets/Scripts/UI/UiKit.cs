@@ -551,7 +551,7 @@ namespace PocketWeather
         Rect last;
         void Update()
         {
-            var sa = Screen.safeArea;
+            var sa = Platform.SafeArea;
             if (sa == last || Screen.width == 0) return;
             last = sa;
             var rt = (RectTransform)transform;

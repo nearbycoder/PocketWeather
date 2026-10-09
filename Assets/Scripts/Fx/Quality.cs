@@ -85,6 +85,13 @@ namespace PocketWeather
             // seconds of every visit while Auto works it out again (phones, browsers)
             if ((Mode)GameSettings.Graphics == Mode.Auto && PlayerPrefs.GetInt(RememberKey, 0) == 1 && !GameRoot.Automated)
                 AutoDowngraded = true;
+            // the web page saw the last visit killed (a phone short of memory): Auto starts on Low
+            // this time, without remembering it
+            if ((Mode)GameSettings.Graphics == Mode.Auto && GameRoot.HasArg("-pwWebRecovered"))
+            {
+                AutoDowngraded = true;
+                Debug.Log("[PW] graphics: the last visit was cut short, so Auto starts on Low");
+            }
             Apply();
             Debug.Log($"[PW] graphics: {Current.ToString().ToLowerInvariant()} ({(Mode)GameSettings.Graphics}), GPU frame timing {(FrameTimingManager.IsFeatureEnabled() ? "enabled" : "unavailable")}, FSR {(FsrAvailable ? "yes" : "no")}, {SystemInfo.graphicsDeviceName} / {SystemInfo.graphicsDeviceType}");
         }
