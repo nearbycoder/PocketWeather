@@ -30,9 +30,20 @@ The page is ready but is being published separately, so the link may not work fo
 - **Needs WebGL 2:** a current Chrome, Edge, Firefox or Safari. About 17 MB downloads before the
   title screen; the music and ambience (about 10 MB) follow in the background, and later visits
   start from the browser's cache.
+- **Phones and tablets:** Rain and Gust buttons appear in the bottom corner on a touch-first device
+  (a finger as its pointer and no mouse or trackpad), or after any touch, and hide as soon as a
+  key, mouse or gamepad is used (Settings → Touch buttons: Auto, On or Off). They're thumb-sized
+  (80 and 59 px across on an iPhone held sideways), keep clear of the notch, rounded corners and
+  home indicator, and work with several fingers: hold Rain with one thumb while the other steers.
+  Dragging, holding still to rain and flicking work as well. Sideways is best; held upright, the
+  game rearranges itself after a "turn sideways" card (Play anyway). There's no zoom, text
+  selection or long-press menu over the game, sound starts at the first tap, and if the phone ran
+  short of memory and killed the tab, the next visit says so and starts on lighter graphics.
 - **Tested** in headless Chrome 154, Chromium 151 and Firefox 157 on Linux, served from a copy of
-  the site under `/PocketWeather/`: mouse, keyboard and emulated phone touch. Safari and real phones haven't
-  been tried.
+  the site under `/PocketWeather/`: mouse, keyboard and emulated phone touch. Phones and tablets
+  were emulated with real touch events, multi-touch included, in Playwright's WebKit (iPhone 15 and
+  iPad Pro 11) and Chromium (Pixel 7) (`node Tools/mobile_check.mjs`). Real phones and Safari
+  itself haven't been tried.
 - **What differs from the desktop game:** sound starts at your first click, tap or key (a browser
   rule). There's no Quit button; close the tab. Progress and settings are kept in the browser's
   storage for this site, separate from a desktop save, and clearing the site's data erases them.
@@ -218,7 +229,8 @@ ambient occlusion. Comparison screenshots of every step are in
 - **Relaxed days:** the sun takes half as long again to cross the sky on ordinary days (Encores
   keep their pace). The sunset card offers it too, from a day's second sunset. A relaxed day is
   saved as usual, but the "Before par" stamp and best times wait for the usual pace.
-- **Hints** on or off, **Touch buttons** Auto (shown once you touch the screen), On or Off, and
+- **Hints** on or off, **Touch buttons** Auto (shown on phones and tablets, or once you touch the
+  screen, and hidden when you use keys, a mouse or a pad), On or Off, and
   **Reset progress** (it asks first).
 - The game pauses itself when the window loses focus, a phone sends it to the background, or the
   controller you're flying with disconnects (and says why). In the browser it goes quiet whenever
@@ -278,8 +290,9 @@ source at the Ultra setting on October 8, 2026.</sub>
   measured: weaker GPUs haven't been tried, Auto drops to Low when
   frames run slow, and under a pure software renderer the game ran at about 5 fps.
 - **Web:** a browser with WebGL 2. About 17.7 MB downloads before the title screen, and the music
-  and ambience (about 10 MB) follow in the background. Tested in headless Chrome and Firefox,
-  including Chrome's phone emulation; not yet on a real phone or in Safari.
+  and ambience (about 10 MB) follow in the background. Tested in headless Chrome and Firefox, and
+  on emulated iPhone, iPad and Android phones (headless WebKit and Chromium); not yet on a real
+  phone or in Safari itself.
 - **macOS:** `Tools/unity.sh mac` builds a universal app, but it has never been run on a Mac.
 - **Windows:** no build yet (this machine lacks Unity's Windows Build Support module).
 
@@ -339,8 +352,13 @@ Rough edges, honestly:
   now).
 - **No real touchscreen, controller or phone testing.** Touch and gamepad have only been exercised
   through virtual devices and emulated browser touch. There's no native Android or iOS build, and
-  phone-browser performance is untested. Portrait works, but landscape is better, and the web page
-  still suggests turning sideways.
+  phone-browser performance is untested (emulation runs on a software renderer). Portrait works,
+  but landscape is better, and the web page still suggests turning sideways.
+- **A phone's memory limit is untested.** In headless WebKit with an iPhone profile the tab's
+  process peaks at about 1.1 GB, but about 360 MB of that is this Linux WebKit's own empty page
+  and software WebGL; the game holds a 171 MB WebAssembly heap and about 60-70 MB of WebGL
+  resources, and Chrome's Pixel profile peaks at about 520 MB for the page plus 310 MB for its GPU
+  process. Whether an older iPhone keeps the tab alive needs a real one.
 - **The audio has never been heard by a person.** It was balanced by measurement (loudness,
   peaks, spectra), so tone and repetitiveness may need adjusting by ear. The same goes for the
   trailer's mix.
@@ -355,9 +373,10 @@ Rough edges, honestly:
   `~/.config/unity3d/unknown/unknown/`**, a file other Unity games share, instead of
   `~/.config/unity3d/Pocketvale Studio/Pocket Weather/`. It's a Unity quirk; launched normally it
   uses the right folder.
-- **The web build has only run in headless Chrome and Firefox.** Safari (iPhone, iPad, Mac) hasn't
-  been tried, and the reload card was tested by losing the WebGL context on purpose, not by a real
-  crash. It's staged for GitHub Pages ([docs/HOSTING.md](docs/HOSTING.md)).
+- **The web build has only run in headless Chrome, Firefox and Playwright's WebKit.** Safari itself
+  (iPhone, iPad, Mac) hasn't been tried; that WebKit can't play sound on this machine, so the
+  sound on an iPhone has only been checked to start at the first tap, not heard. The reload card
+  was tested by losing the WebGL context on purpose, not by a real crash. It's staged for GitHub Pages ([docs/HOSTING.md](docs/HOSTING.md)).
 - **Colour blindness was checked by simulation only.** Under simulated protanopia and
   deuteranopia, a bed's just-right and soggy rings turn the same beige; the soggy bubble also
   swaps its icon for a puddle and its fill runs past the notch, so it should still read, but
@@ -483,6 +502,14 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   phone's first tap, the phone HUD's and menus' scale, the ambience arriving after boot, and the
   page's reload card. It isn't part of `selftest.sh`,
   which tests the Linux build.
+- **Phone and tablet check** (`node Tools/mobile_check.mjs --device iphone`, also `ipad`, `pixel`,
+  `*-portrait` and `desktop`): plays Builds/pages from `/PocketWeather/` in Playwright's headless
+  WebKit or Chromium with a phone's profile and real touch events: title, Start, drag, hold to rain,
+  flick, then the on-screen buttons (size, safe area, Rain held by one finger while another
+  steers, Gust), Pause and Resume, and a key press hiding them; `desktop` checks they never show.
+  It samples the tab's memory (the browser's processes, the WebAssembly heap, WebGL) and frame
+  rate. `--title-only` measures memory alone; `--recovery` checks the page's answer to a tab killed
+  for memory. Needs the blog's Playwright (see the script's header).
 
 ### Rebuilding the trailer and README media
 

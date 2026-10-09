@@ -94,9 +94,41 @@ so `check-pages.mjs` only checks the audio's start after the click there.
   extension) are logged to the console and otherwise left alone, so a host's own scripts can't
   stop the game with a pop-up.
 
+## Phones and tablets
+
+```sh
+node Tools/mobile_check.mjs --device iphone            # also ipad, pixel, iphone-portrait, pixel-portrait, desktop
+node Tools/mobile_check.mjs --device iphone --title-only   # memory at the title only, for comparing builds
+node Tools/mobile_check.mjs --device iphone --recovery     # a tab killed for memory is noticed at the next load
+```
+
+It serves `Builds/pages` under `/PocketWeather/` itself and plays it with real touch events in the
+blog's Playwright: headless WebKit with the iPhone 15 and iPad Pro 11 profiles (coarse pointer,
+WebGL 2, no WebGPU), and Chromium with the Pixel 7 profile. The notch insets are pretended (headless
+browsers have none). This Linux WebKit has no audio output and no AAC decoder: the script gives
+the game a silent audio context that, like iOS, only starts inside a tap, and stubs the music's
+media elements.
+
+What the page does for phones:
+
+- The game's on-screen Rain and Gust buttons show on a touch-first device (coarse pointer, no fine
+  one) and after any touch, and hide at the first key, mouse movement or gamepad press: the page
+  tells them apart by its pointer events (`window.pwInput`) and the game asks for it each frame.
+- The notch, rounded corners and home indicator reach the game through an invisible element padded
+  by `env(safe-area-inset-*)` (`#pw-safe`); the HUD, title and map keep inside them.
+- Sound resumes at the end of each tap, click or key press (iOS doesn't count the touchstart Unity
+  asks on). No pinch or double-tap zoom, long-press callout, context menu or text selection.
+- Once the game runs, the loader's 27 MB copy of the unpacked WebAssembly is let go. The
+  WebAssembly heap may grow to 1 GB (it uses about 171 MB); past that the reload card shows.
+- A visit killed while on screen (a phone short of memory kills the tab silently) leaves a mark in
+  `localStorage`; the next load says so on the loading card and starts Auto graphics on Low.
+
 ## Known limits
 
-- Phone browsers are only tested in Chrome's phone emulation (SwiftShader, no real GPU). Real
-  phones, especially older ones, are untested. The page caps the render resolution at 1.5x on
-  phones and 2x on desktops, and Auto graphics remembers when it had to drop to Low.
+- Phones and tablets are only tested in emulation (WebKit and Chromium on a software renderer).
+  Real phones, especially older ones, are untested, and so is iOS's per-tab memory limit, which
+  desktop WebKit doesn't enforce. In headless WebKit with the iPhone profile the tab's process
+  peaked at about 1.1 GB, about 360 MB of it this WebKit's empty page and software WebGL. The page
+  caps the render resolution at 1.5x on phones and 2x on desktops, and Auto graphics remembers
+  when it had to drop to Low.
 - Audio starts after the first tap or click (a browser rule).

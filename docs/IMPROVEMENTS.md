@@ -2712,3 +2712,55 @@ turned most of the island yellow. Lights are off at Low.
 Whether a relaxed day may earn "Before par" and when the slower sun is offered; hosting the web
 build, a new release zip (v0.1.0 predates all twelve rounds), the trailer, licences, signing and
 Windows Build Support.
+
+## Mobile web
+
+The owner opened one of the fifteen games on an iPhone and the tab crashed, so the web build was
+measured and played on emulated phones and tablets: Playwright's headless WebKit with the iPhone 15
+and iPad Pro 11 profiles, and Chromium with the Pixel 7 profile, driven by real touch events
+(`Tools/mobile_check.mjs`). The machine was shared and loaded (load average 45 to 100 during the
+runs), so the frame rates below are a software renderer's under load, not a phone's.
+
+### Before (main at 445655c, the live site's build)
+
+- Reached the title on all three. 17.0 MB before the title, 10.3 MB of music and ambience after.
+- Tab memory: WebKit's web process peaked at 1,122 / 1,145 / 1,212 MB on the iPhone profile (three
+  runs, title only) and 1,415 MB on the iPad (one run, as for the Pixel); Chromium's Pixel renderer
+  at 535 MB plus 303 MB in its GPU process. WebKit's empty page alone is about 323 MB here and a
+  WebGL 2 context about 360 MB (Linux libraries and software GL), so the game's own share is nearer
+  780 MB. Inside it: a 171 MB WebAssembly heap (Unity: 101 MB allocated, 137 MB reserved), 57 MB of
+  WebGL at the title and 71 MB at most in play (textures, render targets, buffers; 157 MB at the
+  iPad's larger screen), and the loader's 27 MB copy of the unpacked WebAssembly, kept for the whole
+  visit.
+- By touch: drag, hold still to rain and the menus worked. The on-screen buttons only appeared after
+  the first touch in play, Gust was 44 CSS px across on the iPhone, nothing kept the HUD clear of
+  the notch (Unity's Screen.safeArea is the whole canvas in a browser), and sound was resumed only
+  on touchstart, which iOS doesn't count as a gesture. In this WebKit the page's own "Play anyway"
+  didn't answer a tap (it makes no click of one).
+- In headless WebKit the tab died about 20 s after boot. That was this WebKit, not the game: it has
+  no GStreamer audio sink here, and with Web Audio removed it ran on. The check gives WebKit a
+  silent audio context instead (one that, like iOS, starts only inside a tap).
+
+### After
+
+- Controls: Rain and Gust show from the start on a touch-first device and after any touch, hide at
+  the first key, mouse movement or gamepad press; 80 and 59 CSS px on the iPhone, inside the safe
+  area; Rain held by one finger while another steers moves Pip and rains. Pause, Resume and every
+  step by tap. The HUD, title and map keep inside the notch insets; the sun track no longer runs
+  into the gauge there.
+- Memory: the loader's 27 MB copy of the WebAssembly is freed once the game runs (checked in the
+  page). The peak comes during boot, before that, so it barely moved: the iPhone web process
+  peaked at 1,103 to 1,139 MB over six title-only runs (median about 1,124), against 1,122 to
+  1,212 (median 1,145) before, within this machine's run-to-run noise; in a full session 1,108 MB
+  on the iPhone, 1,294 on the iPad, and 529 MB plus 305 in the GPU process on the Pixel. The heap
+  and WebGL are unchanged: their contents are the levels, the sounds and the screen. The heap's
+  maximum is now 1 GB, so running out shows the reload card; a tab killed while on screen is
+  noticed at the next load, which says so and starts Auto on Low (`--recovery`).
+- Desktop: the buttons never showed in Chromium or Firefox (`check-pages.mjs --play`), and
+  `web_smoke.mjs` passes as a phone, upright and with a mouse.
+
+### Only a real phone can tell
+
+Whether an iPhone (especially an older one) keeps the tab under its memory limit, the frame rate on
+a real GPU, the sound (this WebKit can't play or decode it), how the buttons feel under thumbs, and
+where Safari's own bars and insets actually fall.
