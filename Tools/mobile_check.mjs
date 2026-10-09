@@ -235,7 +235,8 @@ const log = [], errors = [];
 // and Chrome sends touches uncancelable when the page's main thread is too busy to answer (a few fps
 // here); html's touch-action: none means nothing scrolls either way
 const envNoise = (t) => (prof.engine === "webkit" && /EncodingError: Decoding failed|^Decode error: null|Loading FSB failed|getFrequency\(\) is not supported/.test(t)) ||
-  (prof.engine === "chromium" && /^Ignored attempt to cancel a touch(start|move) event with cancelable=false/.test(t));
+  (prof.engine === "chromium" && /^Ignored attempt to cancel a touch(start|move|end) event with cancelable=false/.test(t) && ++uncancelable);
+let uncancelable = 0;
 page.on("console", (m) => { const t = m.text(); log.push(`${stamp()} ${t}`); if (!envNoise(t) && (m.type() === "error" || /\b\w*Exception\b|RuntimeError|abort\(/.test(t))) errors.push(t); });
 page.on("pageerror", (e) => { log.push(`${stamp()} PAGEERROR ${e.message}`); if (!envNoise(e.message)) errors.push(e.message); });
 page.on("dialog", (d) => { log.push(`${stamp()} DIALOG ${d.message()}`); errors.push("dialog: " + d.message()); d.dismiss().catch(() => {}); });
@@ -475,6 +476,7 @@ try {
   console.log(`memory peaks: web process RSS ${fmtMB(mem.webRss)} (PSS ${fmtMB(mem.webPss)}), GPU process ${fmtMB(mem.gpuRss)}, all of the browser ${fmtMB(mem.totalPss)} PSS; wasm heap ${fmtMB(end.wasmPeak)}; WebGL ${fmtMB(end.glPeak)} peak (now textures ${fmtMB(end.tex)}, render targets ${fmtMB(end.rb)}, buffers ${fmtMB(end.buf)})`);
   console.log(`frame rate while playing: ${fps.toFixed(1)} fps (headless, software GL; load ${readFileSync("/proc/loadavg", "utf8").split(" ").slice(0, 3).join(" ")})`);
   check("no errors in the console", errors.length === 0, errors.slice(0, 3).join(" | "));
+  if (uncancelable) console.log(`note: Chrome sent ${uncancelable} touch event(s) uncancelable (its busy-main-thread intervention, at ${fps.toFixed(1)} fps); nothing scrolls either way`);
 } catch (e) {
   if (!e?.done) {   // (--title-only ends here on purpose)
     console.error(e);
