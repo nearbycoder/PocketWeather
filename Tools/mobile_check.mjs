@@ -22,6 +22,9 @@
 // iOS's per-tab limit isn't enforced by desktop WebKit, so the numbers are what to judge it by.
 //
 // --title-only stops at the title after 20 s, for comparing memory between builds over several runs.
+// --recovery checks the page's answer to a visit killed while on screen (a phone short of memory):
+// the running mark must be set once the game runs, and a load that finds it (pretended here, as a
+// kill can't be) must say so on the loading card and start Auto graphics on Low.
 //
 // Writes summary.json, console.txt and screenshots to --out (default Recordings/mobile/<device>),
 // prints a summary, and exits non-zero when a check fails.
@@ -63,6 +66,7 @@ const TOUCH = prof.device !== null;
 const INSETS = { iphone: [59, 59, 0, 21], "iphone-portrait": [0, 0, 59, 34], ipad: [0, 0, 0, 20], "ipad-portrait": [0, 0, 24, 20], pixel: [0, 0, 0, 0], "pixel-portrait": [0, 0, 0, 0], desktop: [0, 0, 0, 0] }[DEVICE];
 const PORTRAIT = /portrait/.test(DEVICE);
 const TITLE_ONLY = args.includes("--title-only");
+const RECOVERY = args.includes("--recovery");
 
 // ---------------------------------------------------------------- static server under /PocketWeather/
 const TYPES = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json" };
@@ -178,6 +182,8 @@ const browser = await engine.launch(launch);
 const ctxOpts = prof.device ? { ...pw.devices[prof.device] } : { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1, hasTouch: false, isMobile: false };
 const context = await browser.newContext(ctxOpts);
 await context.addInitScript(INIT);
+// --recovery: on a load after sessionStorage.pwSimKill is set, the mark a killed visit leaves is there
+await context.addInitScript(`try { if (sessionStorage.getItem("pwSimKill")) { sessionStorage.removeItem("pwSimKill"); localStorage.setItem("pw.web.running", String(Date.now() - 5000)); } } catch (e) {}`);
 await context.addInitScript(`document.addEventListener("DOMContentLoaded", () => { const s = document.documentElement.style; ${JSON.stringify(INSETS)}.forEach((v, i) => s.setProperty("--pw-test-inset-" + ["left", "right", "top", "bottom"][i], v + "px")); });`);
 // This Linux WebKit plays sound through GStreamer's autoaudiosink, which isn't installed here, and
 // its web process dies about 20 s after an AudioContext opens the missing sink (seen with
@@ -304,6 +310,23 @@ try {
   check("the loader's WebAssembly copy is freed", wasmCopy === 0, wasmCopy ? `${(wasmCopy / 1048576).toFixed(1)} MB still held` : "");
   let ui = await gameUi();
   if (ui) check("on-screen controls hidden on the title", !ui.touch.visible);
+  if (RECOVERY) {
+    const marked = await page.evaluate(() => !!localStorage.getItem("pw.web.running"));
+    check("a phone's running visit is marked", marked === TOUCH, `mark ${marked ? "set" : "not set"}`);
+    await page.evaluate(() => sessionStorage.setItem("pwSimKill", "1"));
+    const from = log.length;
+    await page.reload({ waitUntil: "commit" });
+    await sleep(800);
+    const card = await page.evaluate(() => { const e = document.getElementById("pw-recovered"); return e && !e.hidden ? e.textContent : ""; });
+    await shot("recovered_loading");
+    const again = await waitLog(/\[PW\] graphics: (low|high|medium|ultra) \(/, 300000, from);
+    const gfx = (log.slice(from).find((l) => /\[PW\] graphics: (low|high|medium|ultra) \(/.test(l)) || "").replace(/.*graphics: /, "").split(",")[0];
+    const said = log.slice(from).some((l) => /the last visit was cut short/.test(l));
+    check("after a killed visit: the loading card says so", TOUCH ? !!card : !card, card || "no message");
+    check("after a killed visit: Auto starts on Low", again && (TOUCH ? said && /^low \(Auto\)/.test(gfx) : !said), gfx);
+    await sleep(3000);
+    throw { done: true };
+  }
   if (TITLE_ONLY) {
     await sleep(14000);
     sampleProcs();
