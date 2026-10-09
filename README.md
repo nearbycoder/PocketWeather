@@ -21,6 +21,24 @@
   <img src="docs/media/teaser.webp" alt="Pip rains on a flower bed, makes a rainbow over a picnic, gusts a sailboat home and catches the bouquet at the wedding" width="800">
 </p>
 
+## Play in your browser
+
+**[Play Pocket Weather in your browser](https://nearbycoder.github.io/PocketWeather/)** at
+https://nearbycoder.github.io/PocketWeather/: no install, the current source rather than v0.1.0.
+The page is ready but is being published separately, so the link may not work for a little while.
+
+- **Needs WebGL 2:** a current Chrome, Edge, Firefox or Safari. About 17 MB downloads before the
+  title screen; the music and ambience (about 10 MB) follow in the background, and later visits
+  start from the browser's cache.
+- **Tested** in headless Chromium 151 and Firefox 157 on Linux, served from a copy of the site
+  under `/PocketWeather/`: mouse, keyboard and emulated phone touch. Safari and real phones haven't
+  been tried.
+- **What differs from the desktop game:** sound starts at your first click, tap or key (a browser
+  rule). There's no Quit button; close the tab. Progress and settings are kept in the browser's
+  storage for this site, separate from a desktop save, and clearing the site's data erases them.
+  Auto graphics starts on High and drops to Low (and remembers it) if frames run slow; the Graphics
+  slider works as on desktop. Fullscreen is in Settings, and a phone's first tap asks for it.
+
 ## Trailer
 
 <p align="center">
@@ -286,7 +304,8 @@ Download the latest release from [**Releases**](https://github.com/nearbycoder/P
 The current source builds a web version that's ready for a static host: the game fills the
 window, loads behind its own loading card, offers a reload instead of a frozen screen if the game
 crashes or the browser takes its graphics back, and needs no server configuration (see
-[docs/HOSTING.md](docs/HOSTING.md)). It isn't hosted anywhere yet.
+[docs/HOSTING.md](docs/HOSTING.md)). `Tools/build-pages.sh` stages it for GitHub Pages; see
+[Play in your browser](#play-in-your-browser).
 
 ## Status and known issues
 
@@ -338,7 +357,7 @@ Rough edges, honestly:
   uses the right folder.
 - **The web build has only run in headless Chrome and Firefox.** Safari (iPhone, iPad, Mac) hasn't
   been tried, and the reload card was tested by losing the WebGL context on purpose, not by a real
-  crash. The web build isn't hosted yet ([docs/HOSTING.md](docs/HOSTING.md)).
+  crash. It's staged for GitHub Pages ([docs/HOSTING.md](docs/HOSTING.md)).
 - **Colour blindness was checked by simulation only.** Under simulated protanopia and
   deuteranopia, a bed's just-right and soggy rings turn the same beige; the soggy bubble also
   swaps its icon for a puddle and its fill runs past the notch, so it should still read, but
@@ -371,6 +390,7 @@ Tools/nested.sh <command>     # run a command with its windows in a private KWin
                               # (play.sh's tool runs and selftest.sh do this by themselves; PW_NESTED=0 opts out)
 Tools/serve_web.sh            # serve the web build on :8080, with LAN addresses for a phone
 Tools/package_web.sh          # zip Builds/WebGL for a static host (docs/HOSTING.md)
+Tools/build-pages.sh          # build and stage the GitHub Pages site in Builds/pages (docs/HOSTING.md)
 ```
 
 `Tools/unity.sh` expects the editor at `~/Unity/Hub/Editor/6000.6.2f1/Editor/Unity`; set `UNITY=`
@@ -458,9 +478,10 @@ screen (`Tools/nested.sh`), so they never appear on the desktop; it checks that 
   connection and screenshots the loading card; `--portrait` holds the phone upright and checks the
   "turn sideways" card; `--mouse` is a desktop with no touchscreen; `--firefox` runs it all in
   Firefox over WebDriver BiDi (a mouse desktop, or touch with `--phone`); `--dir` points it at
-  another build, for comparisons. It checks the device-aware wording, the rain notes' chord clock,
-  going quiet in a hidden tab, fullscreen on a phone's first tap, the phone HUD's and menus' scale,
-  the ambience arriving after boot, and the page's reload card. It isn't part of `selftest.sh`,
+  another build, for comparisons, and `--url` at a page that's already served. It checks the
+  device-aware wording, the rain notes' chord clock, going quiet in a hidden tab, fullscreen on a
+  phone's first tap, the phone HUD's and menus' scale, the ambience arriving after boot, and the
+  page's reload card. It isn't part of `selftest.sh`,
   which tests the Linux build.
 
 ### Rebuilding the trailer and README media
@@ -510,6 +531,7 @@ Assets/
 ArtSource/       Blender generators: pw_lib (the kit), props_core, props_world, characters,
                  terrain (one island per level JSON), icons, contact_sheet, build_all
 Tools/           unity.sh, play.sh, nested.sh, selftest.sh, serve_web.sh, package_web.sh, web_smoke.mjs,
+                 build-pages.sh and check-pages.mjs (the GitHub Pages site and its check),
                  linux/PocketWeather.sh (the launcher copied next to every Linux build) and its
                  test_launcher.sh,
                  make_levels.py, validate_levels.py, make_video.py, make_trailer.py,
