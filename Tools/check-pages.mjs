@@ -14,7 +14,8 @@
 // the title's Settings gear; headless Chromium never holds sound back, so there only the second
 // half is checked). In Settings, Graphics is set to Medium (the slider's middle notch)
 // and Esc closes it; then a click on the title, Start on Day 1's postcard, flying Pip with the
-// mouse and holding to rain, and the arrow keys. A reload in the same profile must come back on
+// mouse and holding to rain, and the arrow keys; the phone's on-screen touch buttons must stay hidden
+// throughout (a desktop has no touchscreen). A reload in the same profile must come back on
 // Medium graphics with the day counted as played (browser storage survives a reload).
 //
 // Chrome: CHROME=/path, else the newest cached Playwright headless shell under
@@ -150,6 +151,8 @@ async function key(name, holdMs = 80) {
 async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (log.slice(from).some((l) => re.test(l))) return true; await sleep(250); } return false; }
 const lineAfter = (re, from = 0) => log.slice(from).find((l) => re.test(l)) || "";
 const audioStates = async () => JSON.parse(await evaluate("JSON.stringify((window.pwAudioContexts || []).map((c) => c.state))"));
+// the game's own report of its on-screen touch buttons (GameRoot.PwReportUi), or null on a build without it
+const touchUi = async () => JSON.parse(await evaluate("(() => { try { window.pwUi = null; window.pwInstance.SendMessage('GameRoot', 'PwReportUi'); return JSON.stringify(window.pwUi ? { visible: window.pwUi.touch.visible, mode: window.pwUi.touchMode } : null); } catch (e) { return 'null'; } })()") || "null");
 const cards = async () => JSON.parse(await evaluate("JSON.stringify(['pw-error', 'pw-crash'].filter((id) => { const e = document.getElementById(id); return e && !e.hidden; }))"));
 
 async function connect() {
@@ -263,6 +266,7 @@ function check(name, ok, note) { results.push({ name, ok }); console.log(`${ok ?
     await click(...ui(300, -220));
     await sleep(4000);
     await shot("c04_play");
+    const touchInPlay = await touchUi();
     const [sx, sy] = at(0.2, 0.42), [ex, ey] = at(0.35, 0.55);
     await mouse("move", sx, sy);
     for (let i = 1; i <= 12; i++) { await mouse("move", sx + (ex - sx) * i / 12, sy + (ey - sy) * i / 12); await sleep(60); }
@@ -273,6 +277,11 @@ function check(name, ok, note) { results.push({ name, ok }); console.log(`${ok ?
     for (const k of ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"]) await key(k, 400);
     await sleep(1000);
     await shot("c06_keys");
+    const touchAfter = await touchUi();
+    // a desktop never shows the phone's on-screen Rain and Gust buttons
+    if (touchInPlay || touchAfter)
+      check("no on-screen touch buttons", !touchInPlay?.visible && !touchAfter?.visible && !touchInPlay?.mode,
+        `in play: ${touchInPlay?.visible ? "SHOWN" : "hidden"} (touch mode ${touchInPlay?.mode ? "ON" : "off"}); after the mouse and keys: ${touchAfter?.visible ? "SHOWN" : "hidden"}`);
     const hints = log.slice(playFrom).filter((l) => /\[PW\] hint: /.test(l)).map((l) => l.replace(/.*hint: /, ""));
     check("play", hints.length > 0, `hints shown in play: ${hints.map((h) => `"${h}"`).join(", ") || "none (the day may not have started)"}`);
     const quality = lineAfter(/\[PW\] Auto graphics: /);
