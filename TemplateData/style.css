@@ -1,0 +1,82 @@
+/* Pocket Weather web page: the game fills the window; a cloud-paper loading card sits over the sky
+   until it's ready. Colours are the game's own (Ui.cs): paper FFF8EC, ink 3B3A5A, sky 5FB8E6. */
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+  background: linear-gradient(180deg, #A9CCEF 0%, #CFE1F4 55%, #EADCEB 100%);
+  overscroll-behavior: none; touch-action: none;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif;
+}
+#unity-canvas {
+  position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
+  display: block; outline: none; background: transparent;
+}
+#pw-loader, #pw-error {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #A9CCEF 0%, #CFE1F4 55%, #EADCEB 100%);
+  transition: opacity 0.6s ease;
+}
+#pw-loader.done { opacity: 0; pointer-events: none; }
+#pw-loader[hidden], #pw-error[hidden], #pw-rotate[hidden], #pw-crash[hidden], #pw-crash [hidden] { display: none; }
+#pw-rotate {
+  position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+  background: rgba(59, 58, 90, 0.35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+#pw-rotate-card {
+  width: min(320px, 82vw); background: #FFF8EC; color: #3B3A5A; border-radius: 28px; padding: 24px 22px 20px;
+  text-align: center; box-shadow: 0 10px 24px rgba(59, 58, 90, 0.25);
+}
+#pw-rotate-card h1 { font-size: 22px; margin: 14px 0 6px; }
+#pw-rotate-card p { font-size: 16px; line-height: 1.4; margin: 0 0 16px; color: #6E6A8E; }
+#pw-rotate-phone {
+  width: 34px; height: 58px; margin: 6px auto 0; border: 5px solid #5FB8E6; border-radius: 9px;
+  animation: pw-turn 2.4s ease-in-out infinite;
+}
+#pw-rotate-play {
+  font: inherit; font-weight: 700; font-size: 18px; color: #fff; background: #FF7A6B; border: 0;
+  border-radius: 22px; padding: 10px 26px; box-shadow: 0 5px 0 #c85d52; cursor: pointer;
+}
+@keyframes pw-turn { 0%, 30% { transform: rotate(0deg); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+#pw-card { display: flex; flex-direction: column; align-items: center; width: min(560px, 86vw); }
+#pw-logo { width: 100%; margin: 0 0 22px; animation: pw-bob 2.6s ease-in-out infinite; filter: drop-shadow(0 6px 8px rgba(59, 58, 90, 0.15)); }
+#pw-bar {
+  width: 82%; height: 22px; border-radius: 11px; background: #FFF8EC; padding: 5px; box-sizing: content-box;
+  box-shadow: 0 6px 14px rgba(59, 58, 90, 0.16);
+}
+#pw-fill { width: 0%; height: 100%; border-radius: 11px; background: #5FB8E6; transition: width 0.25s ease; }
+#pw-status { margin-top: 14px; color: #3B3A5A; font-weight: 700; font-size: 18px; }
+#pw-tip { margin-top: 6px; color: #6E6A8E; font-size: 15px; }
+#pw-error-card {
+  max-width: min(520px, 86vw); background: #FFF8EC; color: #3B3A5A; border-radius: 28px;
+  padding: 26px 30px; text-align: center; box-shadow: 0 10px 24px rgba(59, 58, 90, 0.2);
+}
+#pw-error-card img { width: 96px; }
+#pw-error-card h1 { font-size: 26px; margin: 8px 0; }
+#pw-error-card p { font-size: 17px; line-height: 1.45; margin: 0; }
+/* the game stopped (a crash) or the browser took its graphics back: a card over the game */
+#pw-crash {
+  position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+  background: rgba(59, 58, 90, 0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+#pw-crash-card {
+  width: min(400px, 84vw); background: #FFF8EC; color: #3B3A5A; border-radius: 28px; padding: 20px 24px 22px;
+  text-align: center; box-shadow: 0 10px 24px rgba(59, 58, 90, 0.25);
+}
+#pw-crash-card img { width: 84px; filter: drop-shadow(0 3px 4px rgba(59, 58, 90, 0.3)); }
+#pw-crash-card h1 { font-size: 22px; margin: 6px 0; }
+#pw-crash-card p { font-size: 16px; line-height: 1.4; margin: 0 0 16px; color: #6E6A8E; }
+#pw-crash-card button {
+  font: inherit; font-weight: 700; color: #fff; border: 0; border-radius: 22px; cursor: pointer; margin: 4px 6px;
+}
+#pw-crash-card button:focus { outline: none; }
+#pw-crash-card button:focus-visible { outline: 3px solid #5FB8E6; outline-offset: 3px; }
+#pw-crash-reload { font-size: 18px; background: #FF7A6B; padding: 10px 28px; box-shadow: 0 5px 0 #c85d52; }
+#pw-crash-carry-on { font-size: 15px; background: #A99BE0; padding: 8px 18px; box-shadow: 0 4px 0 #8577c0; }
+@keyframes pw-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@media (max-height: 420px) {   /* phones held landscape */
+  #pw-logo { width: 70%; margin-bottom: 10px; }
+  #pw-status { font-size: 16px; }
+  #pw-crash-card { width: min(460px, 84vw); padding: 14px 22px 16px; }
+  #pw-crash-card img { width: 56px; }
+  #pw-crash-card p { margin-bottom: 10px; }
+}

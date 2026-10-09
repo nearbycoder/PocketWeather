@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Pocket Weather: a tiny cloud helps a miniature world through its day</title>
+    <meta name="description" content="A cosy puzzle game about being the weather. Rain on thirsty gardens, shade hot sheep and gust sailboats home across twelve tilt-shift dioramas. Plays in the browser with mouse, touch, keyboard or gamepad.">
+    <meta name="theme-color" content="#BFD9F2">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Pocket Weather">
+    <meta property="og:description" content="You're Pip, a tiny cloud helping a miniature world through its day. Play it in your browser.">
+    <meta property="og:url" content="https://nearbycoder.github.io/PocketWeather/">
+    <meta property="og:image" content="https://nearbycoder.github.io/PocketWeather/TemplateData/og.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" sizes="64x64" href="TemplateData/favicon.png">
+    <link rel="apple-touch-icon" href="TemplateData/icon-180.png">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body id="pw-page">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="pw-loader">
+      <div id="pw-card">
+        <img id="pw-logo" src="TemplateData/logo.png" alt="Pocket Weather">
+        <div id="pw-bar"><div id="pw-fill"></div></div>
+        <div id="pw-status">Floating over to Pocketvale…</div>
+        <div id="pw-tip">Mouse, touch, keyboard or gamepad · best with sound</div>
+      </div>
+    </div>
+    <div id="pw-rotate" hidden>
+      <div id="pw-rotate-card">
+        <div id="pw-rotate-phone" aria-hidden="true"></div>
+        <h1>Turn your phone sideways</h1>
+        <p>Pocketvale's little islands are wide. They fit best with the phone on its side.</p>
+        <button id="pw-rotate-play" type="button">Play anyway</button>
+      </div>
+    </div>
+    <div id="pw-error" hidden>
+      <div id="pw-error-card">
+        <img src="TemplateData/pip.png" alt="">
+        <h1>Pip can't float here</h1>
+        <p id="pw-error-text"></p>
+      </div>
+    </div>
+    <div id="pw-crash" hidden>
+      <div id="pw-crash-card" role="alertdialog" aria-labelledby="pw-crash-title" aria-describedby="pw-crash-text">
+        <img src="TemplateData/pip.png" alt="">
+        <h1 id="pw-crash-title"></h1>
+        <p id="pw-crash-text"></p>
+        <button id="pw-crash-reload" type="button">Reload</button>
+        <button id="pw-crash-carry-on" type="button">Try to carry on</button>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var canvas = document.getElementById("unity-canvas");
+        var loader = document.getElementById("pw-loader");
+        var fill = document.getElementById("pw-fill");
+        var status = document.getElementById("pw-status");
+        function fail(msg) {
+          loader.hidden = true;
+          document.getElementById("pw-error-text").textContent = msg;
+          document.getElementById("pw-error").hidden = false;
+        }
+        // phones held upright get a friendly nudge to turn sideways; it goes away by itself when they
+        // do, and "Play anyway" keeps it away for the rest of the visit
+        var rotate = document.getElementById("pw-rotate"), rotateDismissed = false;
+        var phone = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 600);
+        function checkRotate() { rotate.hidden = rotateDismissed || !phone || window.innerWidth >= window.innerHeight; }
+        document.getElementById("pw-rotate-play").addEventListener("click", function () { rotateDismissed = true; checkRotate(); canvas.focus(); });
+        window.addEventListener("resize", checkRotate);
+        window.addEventListener("orientationchange", checkRotate);
+        checkRotate();
+        // A hidden page (another tab in front, or a phone switched to another app) stops the game's
+        // frames but not its audio, so the music, ambience and any rain would loop on. Keep hold
+        // of the audio contexts the game makes and suspend them while the page is hidden.
+        var audioContexts = window.pwAudioContexts = [];
+        ["AudioContext", "webkitAudioContext"].forEach(function (name) {
+          var Base = window[name];
+          if (!Base) return;
+          var Tracked = function (options) { var c = new Base(options); audioContexts.push(c); return c; };
+          Tracked.prototype = Base.prototype;
+          Object.setPrototypeOf(Tracked, Base);
+          window[name] = Tracked;
+        });
+        // Fullscreen ending as the page is hidden (a phone switching apps does that) leaves the game
+        // drawing a black screen until its canvas changes size, so after a fullscreen change it's
+        // nudged by a pixel for a couple of frames when the page comes back.
+        var fullscreenChanged = false;
+        // Fullscreen that ends because the page was hidden is asked for again at the next tap (see
+        // the bottom); leaving it with the game showing (back gesture, Esc, Settings) sticks. Chrome
+        // ends fullscreen before the page is hidden but reports it only once the page is back, so
+        // the page goes by the last state it was told about.
+        var askedFullscreen = false, wasFullscreen = false, fullscreenAtHide = false, shownAt = -1e9;
+        document.addEventListener("fullscreenchange", function () {
+          fullscreenChanged = true;
+          wasFullscreen = !!document.fullscreenElement;
+          // a browser that still reported fullscreen when the page came back, and ends it now
+          if (!wasFullscreen && !document.hidden && fullscreenAtHide && performance.now() - shownAt < 1500) askedFullscreen = fullscreenAtHide = false;
+        });
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden) {
+            fullscreenAtHide = wasFullscreen || !!document.fullscreenElement;
+          } else {
+            shownAt = performance.now();
+            if (fullscreenAtHide && !document.fullscreenElement) askedFullscreen = fullscreenAtHide = false;
+          }
+          audioContexts.forEach(function (c) {
+            if (document.hidden) {
+              if (c.state === "running") { c.pwHidden = true; c.suspend(); }
+            } else if (c.pwHidden) {
+              c.pwHidden = false;
+              c.resume();
+            }
+          });
+          if (document.hidden || !fullscreenChanged) return;
+          fullscreenChanged = false;
+          canvas.style.width = Math.max(1, canvas.clientWidth - 1) + "px";
+          requestAnimationFrame(function () { requestAnimationFrame(function () { canvas.style.width = ""; }); });
+        });
+        // When the game stops (a crash) or the browser takes its graphics back (phones do that to
+        // save memory, and Unity can't rebuild them), a card says so and offers a reload: progress
+        // is saved as each stamp is earned, so a reload carries on from the map. Without this, Unity
+        // shows a developer's alert() for any error on the page, and a lost picture just freezes.
+        var crashCard = document.getElementById("pw-crash");
+        var crashKinds = {
+          stopped: ["Pip got lost in the clouds", "Something went wrong and the game stopped. Your stamps are saved, so reload to carry on from the map."],
+          lost: ["Pip lost sight of Pocketvale", "The browser took back the game's graphics, as phones sometimes do to save memory. Your stamps are saved, so reload to carry on from the map."],
+        };
+        function showCrash(kind, detail) {
+          if (!crashCard.hidden) return;
+          console.log("[page] " + (kind === "lost" ? "lost the picture (WebGL context)" : "the game stopped: " + String(detail).split("\n")[0]) + "; showing the reload card");
+          loader.hidden = true;
+          document.getElementById("pw-crash-title").textContent = crashKinds[kind][0];
+          document.getElementById("pw-crash-text").textContent = crashKinds[kind][1];
+          // without its graphics the game can't go on; after an error it sometimes can
+          document.getElementById("pw-crash-carry-on").hidden = kind === "lost";
+          crashCard.hidden = false;
+          if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
+          document.getElementById("pw-crash-reload").focus();
+        }
+        document.getElementById("pw-crash-reload").addEventListener("click", function () { location.reload(); });
+        document.getElementById("pw-crash-carry-on").addEventListener("click", function () { crashCard.hidden = true; canvas.focus(); });
+        canvas.addEventListener("webglcontextlost", function () { showCrash("lost"); });
+        // Unity hands every error and unhandled rejection on the page to this (and shows an alert()
+        // when nothing handles it). Only the game's own failures stop the game: a WebAssembly trap,
+        // an abort, running out of memory, or an error thrown from its Build/ files. Anything else
+        // (another script, a browser extension) is logged and left alone.
+        function gameStopped(message, filename) {
+          return /RuntimeError|abort\(|Aborted|out of memory|could not allocate|memory access out of bounds|unreachable/i.test(message) ||
+            /\/Build\/[^/]*\.(js|wasm)/.test(filename || "");
+        }
+        var probe = document.createElement("canvas");
+        if (!probe.getContext("webgl2")) {
+          fail("This browser doesn't have WebGL 2 switched on, which the game needs. Try a current Chrome, Edge, Firefox or Safari, and check that hardware acceleration is enabled.");
+          return;
+        }
+        var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+        // Phones have 2-3x screens; rendering every physical pixel with depth of field costs far more
+        // than it shows, so cap the backing resolution (the UI is scaled, so it stays crisp enough).
+        var dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2);
+        var config = {
+          arguments: [],
+          dataUrl: "Build/WebGL.data.unityweb",
+          frameworkUrl: "Build/WebGL.framework.js.unityweb",
+          codeUrl: "Build/WebGL.wasm.unityweb",
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: "Pocketvale Studio",
+          productName: "Pocket Weather",
+          productVersion: "0.1.0",
+          devicePixelRatio: dpr,
+          // Settings → Fullscreen takes the whole page, as the first tap on a phone does (below)
+          fullscreenElementID: "pw-page",
+          showBanner: function (msg, type) { if (type === "error") console.error(msg); else console.warn(msg); },
+          errorHandler: function (message, filename, lineno) {
+            if (gameStopped(String(message), filename)) showCrash("stopped", message);
+            else console.warn("[page] left alone a problem from another script: " + String(message).split("\n")[0].slice(0, 160) + " (" + (filename || "?") + ":" + (lineno || 0) + ")");
+            return true;   // handled: never Unity's alert()
+          },
+        };
+        var script = document.createElement("script");
+        script.src = "Build/WebGL.loader.js";
+        script.onload = function () {
+          createUnityInstance(canvas, config, function (p) {
+            fill.style.width = Math.round(100 * p) + "%";
+            status.textContent = p < 0.9 ? "Floating over to Pocketvale… " + Math.round(100 * p) + "%" : "Unpacking the dioramas…";
+          }).then(function (instance) {
+            window.pwInstance = instance;
+            loader.classList.add("done");
+            setTimeout(function () { loader.hidden = true; }, 600);
+            canvas.focus();
+          }).catch(function (message) {
+            fail("Something went wrong while loading: " + message);
+          });
+        };
+        script.onerror = function () { fail("The game files couldn't be downloaded. Check your connection and reload the page."); };
+        document.body.appendChild(script);
+        // keyboard players: clicking or tapping the game gives it the keys
+        canvas.addEventListener("pointerdown", function () { canvas.focus(); });
+        // On a phone, the first tap on the game asks for fullscreen: held sideways, the browser's
+        // own bars take a good share of a short screen. Once a visit, so leaving fullscreen (or
+        // Settings → Fullscreen) sticks, unless it ended while the page was hidden (switching
+        // apps): then the next tap asks again. Browsers without it (iPhone Safari) are left alone.
+        canvas.addEventListener("pointerup", function (e) {
+          if (askedFullscreen || !phone || e.pointerType !== "touch") return;
+          askedFullscreen = true;
+          if (!document.fullscreenEnabled || document.fullscreenElement || !document.body.requestFullscreen) return;
+          var asked = document.body.requestFullscreen({ navigationUI: "hide" });
+          if (asked && asked.catch) asked.catch(function () {});
+        });
+      })();
+    </script>
+  </body>
+</html>
