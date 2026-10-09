@@ -65,6 +65,10 @@ node Tools/check-pages.mjs http://127.0.0.1:8471/PocketWeather/ --play
 node Tools/web_smoke.mjs --mouse --url http://127.0.0.1:8471/PocketWeather/ --dir Builds/pages
 ```
 
+`web_smoke.mjs`'s hidden-tab check needs Chrome (its default, `google-chrome-stable`) or Firefox:
+Playwright's headless shell never reports the page hidden, and lets audio start without a click,
+so `check-pages.mjs` only checks the audio's start after the click there.
+
 ## Where else it could go
 
 - **GitHub Pages** (the owner's choice, see below): the game would live at

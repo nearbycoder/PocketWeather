@@ -30,8 +30,8 @@ The page is ready but is being published separately, so the link may not work fo
 - **Needs WebGL 2:** a current Chrome, Edge, Firefox or Safari. About 17 MB downloads before the
   title screen; the music and ambience (about 10 MB) follow in the background, and later visits
   start from the browser's cache.
-- **Tested** in headless Chromium 151 and Firefox 157 on Linux, served from a copy of the site
-  under `/PocketWeather/`: mouse, keyboard and emulated phone touch. Safari and real phones haven't
+- **Tested** in headless Chrome 154, Chromium 151 and Firefox 157 on Linux, served from a copy of
+  the site under `/PocketWeather/`: mouse, keyboard and emulated phone touch. Safari and real phones haven't
   been tried.
 - **What differs from the desktop game:** sound starts at your first click, tap or key (a browser
   rule). There's no Quit button; close the tab. Progress and settings are kept in the browser's
