@@ -7,7 +7,7 @@ itch.io. A host that does send `Content-Encoding: br` for `.unityweb` files skip
 starts slightly sooner. `PW_WEB_COMPRESSION=gzip Tools/unity.sh webgl` builds a gzip version
 instead.
 
-Nothing here has been deployed. Where it goes is the owner's call.
+The owner has chosen GitHub Pages (below); it hasn't been deployed yet.
 
 ## Build and package
 
@@ -35,11 +35,40 @@ caches `.bundle` files), so later visits start almost at once.
 Upload the whole folder, `StreamingAssets/` included; without it the game runs silent.
 `Tools/package_web.sh` zips all of it.
 
-## Where it could go
+## GitHub Pages
 
-- **GitHub Pages:** put the contents of the zip on a `gh-pages` branch (or in a `docs/`-style
-  Pages folder) and enable Pages for the repository. Every file is well under Pages' 100 MB limit.
-  The game would live at `https://nearbycoder.github.io/PocketWeather/`.
+```sh
+Tools/build-pages.sh               # builds the player, then stages Builds/pages (gitignored)
+Tools/build-pages.sh --no-build    # stages Builds/pages from the existing Builds/WebGL
+node Tools/check-pages.mjs https://nearbycoder.github.io/PocketWeather/            # title check, headless Chromium
+node Tools/check-pages.mjs https://nearbycoder.github.io/PocketWeather/ --firefox  # the same in Firefox
+```
+
+`Builds/pages` is the whole site: `index.html` at its root, a `.nojekyll` file, `Build/`,
+`TemplateData/` and `StreamingAssets/`. Its contents go at the root of the `gh-pages` branch.
+The script also points the link-preview tags (`og:url`, `og:image`) at the Pages address
+(`PAGES_URL=...` for another), refuses root-relative URLs (Pages serves the game under the
+case-sensitive `/PocketWeather/` subpath) and `.br`/`.gz` files (they'd need a `Content-Encoding`
+header Pages can't send), and stops if a file nears GitHub's 100 MB limit.
+
+`check-pages.mjs` exits 0 only when the page reaches the title screen with no console errors, no
+failed or 4xx/5xx requests and no error card. `--play` adds a short session under a real browser's
+autoplay rule: the audio must stay suspended until the first click and run after it, Graphics set
+to Medium in Settings must still be Medium after a reload, and so must the played day. To try it
+before deploying, serve a copy under the same subpath:
+
+```sh
+mkdir -p Recordings/pages-serve && rm -rf Recordings/pages-serve/PocketWeather
+cp -r Builds/pages Recordings/pages-serve/PocketWeather
+python3 -m http.server 8471 --bind 127.0.0.1 --directory Recordings/pages-serve &
+node Tools/check-pages.mjs http://127.0.0.1:8471/PocketWeather/ --play
+node Tools/web_smoke.mjs --mouse --url http://127.0.0.1:8471/PocketWeather/ --dir Builds/pages
+```
+
+## Where else it could go
+
+- **GitHub Pages** (the owner's choice, see below): the game would live at
+  `https://nearbycoder.github.io/PocketWeather/`.
 - **itch.io:** upload the zip as an HTML project, tick "This file will be played in the
   browser", and choose a 16:9 viewport (for example 1280x720) with the fullscreen button on. Also
   tick "Mobile friendly", since the game has touch controls.
@@ -49,8 +78,8 @@ Upload the whole folder, `StreamingAssets/` included; without it the game runs s
 ## Before publishing
 
 - `og:image` in `index.html` is a relative path (`TemplateData/og.jpg`). Some link-preview
-  crawlers need an absolute URL, so once the address is known, edit the built `index.html` (or
-  the template in `Assets/WebGLTemplates/PocketWeather/index.html`) to use the full URL.
+  crawlers need an absolute URL: `Tools/build-pages.sh` writes the Pages one; for another host,
+  edit the built `index.html` to use the full URL.
 - The page is the game's own (`Assets/WebGLTemplates/PocketWeather`). Its images come from
   `python3 Tools/make_web_template.py`, which derives them from the logo, Pip's icon and the
   trailer poster.

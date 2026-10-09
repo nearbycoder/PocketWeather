@@ -2,7 +2,7 @@
 // Smoke test for the WebGL build in headless Chrome (over the DevTools protocol) or Firefox (over
 // WebDriver BiDi). No npm packages needed; Node >= 22 for the global WebSocket.
 //
-//   node Tools/web_smoke.mjs [outDir] [--phone] [--portrait] [--mouse] [--firefox] [--throttle <Mbps>] [--dir <build folder>]
+//   node Tools/web_smoke.mjs [outDir] [--phone] [--portrait] [--mouse] [--firefox] [--throttle <Mbps>] [--dir <build folder>] [--url <url>]
 //   (outDir defaults to Recordings/web-smoke)
 //
 // --phone emulates an Android phone held landscape (844x390 CSS px, 2x); --portrait holds it
@@ -15,6 +15,8 @@
 // --throttle 20 emulates a 20 Mbps connection with 60 ms latency, to time a realistic first visit
 // (a fresh browser profile each run, so nothing is cached). --dir serves another build folder
 // (default Builds/WebGL), e.g. an older release, to compare load times under the same conditions.
+// --url opens a page that's already served (e.g. Builds/pages under /PocketWeather/ on a local
+// static server, as GitHub Pages serves it) instead of serving --dir, whose size is still reported.
 //
 // Serves Builds/WebGL on localhost, opens it in a throwaway Chrome profile with touch emulation,
 // collects the game's console log, then uses real browser touch events: tap the title, tap the
@@ -41,10 +43,11 @@ const PORTRAIT = args.includes("--portrait");   // a phone held upright (implies
 const PHONE = args.includes("--phone") || PORTRAIT;
 const FIREFOX = args.includes("--firefox");
 const MOUSE = (args.includes("--mouse") || FIREFOX) && !PHONE;   // a desktop with no touchscreen
-const ti = args.indexOf("--throttle"), di = args.indexOf("--dir");
+const ti = args.indexOf("--throttle"), di = args.indexOf("--dir"), ui_ = args.indexOf("--url");
 const MBPS = ti >= 0 ? parseFloat(args[ti + 1]) : 0;
 const WEBDIR = di >= 0 ? args[di + 1] : join(ROOT, "Builds/WebGL");
-const OUT = args.find((a, i) => !a.startsWith("--") && !(ti >= 0 && i === ti + 1) && !(di >= 0 && i === di + 1)) || join(ROOT, "Recordings", "web-smoke");
+const URL_ = ui_ >= 0 ? args[ui_ + 1] : "";
+const OUT = args.find((a, i) => !a.startsWith("--") && !(ti >= 0 && i === ti + 1) && !(di >= 0 && i === di + 1) && !(ui_ >= 0 && i === ui_ + 1)) || join(ROOT, "Recordings", "web-smoke");
 const W = PORTRAIT ? 390 : PHONE ? 844 : 1280, H = PORTRAIT ? 844 : PHONE ? 390 : 720;
 // free ports each run: other projects on this machine run the same kind of smoke test, and a fixed
 // port can silently serve (and "test") somebody else's build
@@ -56,7 +59,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = [];
 
 if (FIREFOX && MBPS > 0) { console.error("--throttle needs Chrome (WebDriver BiDi has no network throttling)"); process.exit(2); }
-const server = spawn("python3", ["-m", "http.server", String(PORT), "--bind", "127.0.0.1"], { cwd: WEBDIR, stdio: "ignore" });
+const server = URL_ ? null : spawn("python3", ["-m", "http.server", String(PORT), "--bind", "127.0.0.1"], { cwd: WEBDIR, stdio: "ignore" });
 // a throwaway browser profile inside the repo's gitignored Recordings/ (not the shared /tmp)
 const profile = join(ROOT, "Recordings", `${FIREFOX ? "firefox" : "chrome"}-profile-${PORT}`);
 rmSync(profile, { recursive: true, force: true });
@@ -81,7 +84,7 @@ if (FIREFOX) {
 
 function cleanup() {
   try { browser.kill("SIGKILL"); } catch {}
-  try { server.kill(); } catch {}
+  try { server?.kill(); } catch {}
   try { rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch {}
 }
 process.on("exit", cleanup);
@@ -275,7 +278,7 @@ async function waitLog(re, ms, from = 0) { const t0 = Date.now(); while (Date.no
   const bytes = readdirSync(buildDir).reduce((n, f) => n + statSync(join(buildDir, f)).size, 0);
   console.log(`download ${(bytes / 1048576).toFixed(1)} MB${MBPS > 0 ? ` at ${MBPS} Mbps` : " (localhost, unthrottled)"}`);
   const t0 = Date.now();
-  const url = `http://127.0.0.1:${PORT}/index.html`;
+  const url = URL_ || `http://127.0.0.1:${PORT}/index.html`;
   if (FIREFOX) await send("browsingContext.navigate", { context: ctx, url, wait: "none" });
   else await send("Page.navigate", { url });
   if (MBPS > 0) { await sleep(2500); await shot("w00_loading"); }   // the page's own loading card, mid-download
