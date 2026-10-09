@@ -570,9 +570,10 @@ namespace PocketWeather
             if (!Ui.Portrait)
             {
                 float half = chrome.rect.width * 0.5f, sunHalf = sunTrack.sizeDelta.x * 0.5f;
-                // and right, clear of the gauge, when a phone's notch insets narrow the bar
+                // and right, clear of the gauge, when a phone's notch insets narrow the bar (where
+                // even that can't fit, it keeps clear of the gauge and FitTray shrinks the tray)
                 float lo = -half + 474f + sunHalf, hi = half - 174f - tray.sizeDelta.x - sunHalf;
-                x = lo <= hi ? Mathf.Max(lo, Mathf.Min(0f, hi)) : (lo + hi) * 0.5f;
+                x = Mathf.Max(lo, Mathf.Min(0f, hi));
             }
             sunTrack.anchoredPosition = new Vector2(x, Ui.Portrait ? -190f : -74f);
             if (hintText.text.Length > 0 && Mathf.Abs(chrome.rect.width - fittedWidth) > 1f) FitHint();   // turned, or the window resized
