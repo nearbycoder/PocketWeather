@@ -18,12 +18,14 @@
   </head>
   <body id="pw-page">
     <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="pw-safe" aria-hidden="true"></div>
     <div id="pw-loader">
       <div id="pw-card">
         <img id="pw-logo" src="TemplateData/logo.png" alt="Pocket Weather">
         <div id="pw-bar"><div id="pw-fill"></div></div>
         <div id="pw-status">Floating over to Pocketvale…</div>
         <div id="pw-tip">Mouse, touch, keyboard or gamepad · best with sound</div>
+        <div id="pw-recovered" hidden>The browser ran short of memory last time, so Pocketvale starts on lighter graphics.</div>
       </div>
     </div>
     <div id="pw-rotate" hidden>
@@ -56,6 +58,13 @@
         var loader = document.getElementById("pw-loader");
         var fill = document.getElementById("pw-fill");
         var status = document.getElementById("pw-status");
+        // The page's own buttons answer a tap at the finger's lift as well as the click a browser
+        // usually makes of it (some don't make one when the touch is handled), but only once
+        var tapAt = -1e9;
+        function onTap(el, fn) {
+          el.addEventListener("pointerup", function (e) { if (e.pointerType === "touch" || e.pointerType === "pen") { tapAt = performance.now(); fn(); } });
+          el.addEventListener("click", function () { if (performance.now() - tapAt > 800) fn(); });
+        }
         function fail(msg) {
           loader.hidden = true;
           document.getElementById("pw-error-text").textContent = msg;
@@ -66,7 +75,7 @@
         var rotate = document.getElementById("pw-rotate"), rotateDismissed = false;
         var phone = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 600);
         function checkRotate() { rotate.hidden = rotateDismissed || !phone || window.innerWidth >= window.innerHeight; }
-        document.getElementById("pw-rotate-play").addEventListener("click", function () { rotateDismissed = true; checkRotate(); canvas.focus(); });
+        onTap(document.getElementById("pw-rotate-play"), function () { rotateDismissed = true; checkRotate(); canvas.focus(); });
         window.addEventListener("resize", checkRotate);
         window.addEventListener("orientationchange", checkRotate);
         checkRotate();
@@ -82,6 +91,26 @@
           Object.setPrototypeOf(Tracked, Base);
           window[name] = Tracked;
         });
+        // Which kind of input came last, for the game's on-screen buttons (shown for fingers, hidden
+        // for a mouse, trackpad or keys; PW_LastInput): the browser's own pointer events tell a finger
+        // from a mouse, where Unity's devices can't. A mouse counts once it moves or clicks.
+        var input = window.pwInput = { kind: 0, count: 0 };
+        function noteInput(kind) { if (input.kind !== kind || kind !== 2) input.count++; input.kind = kind; }
+        window.addEventListener("pointerdown", function (e) { if (e.isTrusted) noteInput(e.pointerType === "mouse" ? 2 : 1); }, true);
+        window.addEventListener("pointermove", function (e) { if (e.isTrusted && e.pointerType === "mouse" && (e.movementX || e.movementY)) noteInput(2); }, true);
+        window.addEventListener("keydown", function (e) { if (e.isTrusted) noteInput(3); }, true);
+        // Sound may only start inside a tap, click or key press. Unity asks on touchstart, which
+        // iOS doesn't count, and stops the click that would follow; so the page also resumes the
+        // game's audio at the end of each tap (touchend, pointerup), click and key press.
+        function unlockAudio(e) {
+          if (!e.isTrusted || document.hidden) return;
+          audioContexts.forEach(function (c) { if (c.state === "suspended" && !c.pwHidden) { var r = c.resume(); if (r && r.catch) r.catch(function () {}); } });
+        }
+        ["touchend", "pointerup", "click", "keydown"].forEach(function (t) { window.addEventListener(t, unlockAudio, true); });
+        // No pinch zoom (iOS ignores user-scalable=no), double-tap zoom or long-press menu over the game
+        ["gesturestart", "gesturechange", "gestureend"].forEach(function (t) { document.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false }); });
+        canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+        document.addEventListener("dblclick", function (e) { e.preventDefault(); }, { passive: false });
         // Fullscreen ending as the page is hidden (a phone switching apps does that) leaves the game
         // drawing a black screen until its canvas changes size, so after a fullscreen change it's
         // nudged by a pixel for a couple of frames when the page comes back.
@@ -138,8 +167,8 @@
           if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
           document.getElementById("pw-crash-reload").focus();
         }
-        document.getElementById("pw-crash-reload").addEventListener("click", function () { location.reload(); });
-        document.getElementById("pw-crash-carry-on").addEventListener("click", function () { crashCard.hidden = true; canvas.focus(); });
+        onTap(document.getElementById("pw-crash-reload"), function () { location.reload(); });
+        onTap(document.getElementById("pw-crash-carry-on"), function () { crashCard.hidden = true; canvas.focus(); });
         canvas.addEventListener("webglcontextlost", function () { showCrash("lost"); });
         // Unity hands every error and unhandled rejection on the page to this (and shows an alert()
         // when nothing handles it). Only the game's own failures stop the game: a WebAssembly trap,
@@ -155,11 +184,32 @@
           return;
         }
         var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+        // A phone that runs short of memory kills the tab without a word, and reloads it when the
+        // player comes back. The page marks a visit while the game runs and clears the mark when it
+        // is left normally (pagehide), so a mark still there means the last visit was killed: say
+        // so, and start Auto graphics on Low this time (the game's -pwWebRecovered).
+        var runKey = "pw.web.running", recovered = false;
+        try {
+          var last = +localStorage.getItem(runKey) || 0;
+          recovered = mobile && last > 0 && Date.now() - last < 30 * 60 * 1000;
+          localStorage.removeItem(runKey);
+        } catch (e) {}
+        if (recovered) {
+          document.getElementById("pw-recovered").hidden = false;
+          console.log("[page] the last visit ended without leaving the page (the browser ran short of memory?): starting lighter");
+        }
+        function markRunning() { try { localStorage.setItem(runKey, String(Date.now())); } catch (e) {} }
+        // only a visit killed while it was on screen counts: one swept away from the app switcher
+        // (or dropped in the background) isn't the game's doing
+        function clearRunning() { try { localStorage.removeItem(runKey); } catch (e) {} }
+        window.addEventListener("pagehide", clearRunning);
+        document.addEventListener("visibilitychange", function () { if (!mobile || !window.pwInstance) return; if (document.hidden) clearRunning(); else markRunning(); });
+        window.addEventListener("pageshow", function (e) { if (e.persisted && mobile && window.pwInstance) markRunning(); });
         // Phones have 2-3x screens; rendering every physical pixel with depth of field costs far more
         // than it shows, so cap the backing resolution (the UI is scaled, so it stays crisp enough).
         var dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2);
         var config = {
-          arguments: [],
+          arguments: recovered ? ["-pwWebRecovered"] : [],
           dataUrl: "Build/WebGL.data.unityweb",
           frameworkUrl: "Build/WebGL.framework.js.unityweb",
           codeUrl: "Build/WebGL.wasm.unityweb",
@@ -185,6 +235,14 @@
             status.textContent = p < 0.9 ? "Floating over to Pocketvale… " + Math.round(100 * p) + "%" : "Unpacking the dioramas…";
           }).then(function (instance) {
             window.pwInstance = instance;
+            // The loader keeps the unpacked WebAssembly (27 MB) after compiling it, and the browser
+            // has its own copy: let it go (detaching it frees it at once, wherever it's referenced)
+            try {
+              var wb = instance.Module && instance.Module.wasmBinary;
+              if (wb && wb.buffer && wb.buffer.byteLength > 0 && window.structuredClone) structuredClone(wb.buffer, { transfer: [wb.buffer] });
+              if (instance.Module) instance.Module.wasmBinary = null;
+            } catch (e) {}
+            if (mobile) { markRunning(); setInterval(function () { if (!document.hidden) markRunning(); }, 60000); }
             loader.classList.add("done");
             setTimeout(function () { loader.hidden = true; }, 600);
             canvas.focus();
